@@ -166,8 +166,9 @@ export default function AltroScreen() {
       </ScrollView>
 
       <Modal visible={showEditName} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowEditName(false)}>
-          <View style={styles.modalContent}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditName(false)} />
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <Text style={styles.modalTitle}>Modifica Nome</Text>
             <TextInput
               style={styles.modalInput}
@@ -175,6 +176,7 @@ export default function AltroScreen() {
               onChangeText={setNewName}
               placeholder="Nome Cognome"
               autoCapitalize="words"
+              autoFocus
             />
             <View style={styles.modalButtons}>
               <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditName(false)}>
@@ -185,7 +187,7 @@ export default function AltroScreen() {
               </Pressable>
             </View>
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </View>
   );
@@ -357,12 +359,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  modalBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   modalContent: {
     backgroundColor: BankColors.white,
     borderRadius: BorderRadius.md,
     padding: Spacing.xl,
     width: "85%",
     maxWidth: 400,
+    zIndex: 1,
   },
   modalTitle: {
     fontSize: 20,

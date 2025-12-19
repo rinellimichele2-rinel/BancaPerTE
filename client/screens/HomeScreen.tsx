@@ -162,8 +162,12 @@ export default function HomeScreen() {
   const balanceFormatted = user?.balance ? formatBalance(user.balance) : { integer: "0", decimal: "00" };
 
   const totalExpenses = transactions
-    .filter(t => parseFloat(t.amount) < 0)
+    .filter(t => t.type === "expense")
     .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
+
+  const totalIncome = transactions
+    .filter(t => t.type === "income")
+    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
   return (
     <View style={styles.container}>
@@ -272,6 +276,38 @@ export default function HomeScreen() {
             ))
           )}
         </View>
+
+        <View style={styles.analisiSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Analisi delle spese</Text>
+            <Pressable style={styles.viewAllBtn}>
+              <Text style={styles.viewAllText}>Vai alla sezione</Text>
+              <Feather name="chevron-right" size={16} color={BankColors.primary} />
+            </Pressable>
+          </View>
+
+          <View style={styles.analisiCard}>
+            <View style={styles.analisiRow}>
+              <Text style={styles.analisiLabel}>Uscite del mese</Text>
+              <View style={styles.analisiAmountRow}>
+                <Text style={styles.analisiAmountNegative}>
+                  - {totalExpenses.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
+                </Text>
+                <Feather name="arrow-down" size={16} color={BankColors.error} />
+              </View>
+            </View>
+            <View style={styles.analisiDivider} />
+            <View style={styles.analisiRow}>
+              <Text style={styles.analisiLabel}>Entrate del mese</Text>
+              <View style={styles.analisiAmountRow}>
+                <Text style={styles.analisiAmountPositive}>
+                  + {totalIncome.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
+                </Text>
+                <Feather name="arrow-up" size={16} color={BankColors.success} />
+              </View>
+            </View>
+          </View>
+        </View>
       </ScrollView>
 
       <Pressable style={[styles.chatButton, { bottom: tabBarHeight + Spacing.md }]}>
@@ -280,8 +316,9 @@ export default function HomeScreen() {
       </Pressable>
 
       <Modal visible={showEditBalance} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowEditBalance(false)}>
-          <View style={styles.modalContent}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditBalance(false)} />
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <Text style={styles.modalTitle}>Modifica Saldo</Text>
             <TextInput
               style={styles.modalInput}
@@ -289,6 +326,7 @@ export default function HomeScreen() {
               onChangeText={setNewBalance}
               keyboardType="decimal-pad"
               placeholder="0.00"
+              autoFocus
             />
             <View style={styles.modalButtons}>
               <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditBalance(false)}>
@@ -299,18 +337,20 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           </View>
-        </Pressable>
+        </View>
       </Modal>
 
       <Modal visible={showEditAccount} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowEditAccount(false)}>
-          <View style={styles.modalContent}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditAccount(false)} />
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <Text style={styles.modalTitle}>Modifica Numero Conto</Text>
             <TextInput
               style={styles.modalInput}
               value={newAccountNumber}
               onChangeText={setNewAccountNumber}
               placeholder="1000/00002521"
+              autoFocus
             />
             <View style={styles.modalButtons}>
               <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditAccount(false)}>
@@ -321,7 +361,7 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </View>
   );
@@ -566,11 +606,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  modalBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   modalContent: {
     backgroundColor: BankColors.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,
     width: "80%",
+    zIndex: 1,
   },
   modalTitle: {
     fontSize: 20,
@@ -613,5 +661,44 @@ const styles = StyleSheet.create({
     color: BankColors.white,
     fontSize: 16,
     fontWeight: "600",
+  },
+  analisiSection: {
+    padding: Spacing.lg,
+    backgroundColor: BankColors.white,
+  },
+  analisiCard: {
+    backgroundColor: BankColors.gray100,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+  },
+  analisiRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: Spacing.sm,
+  },
+  analisiLabel: {
+    fontSize: 15,
+    color: BankColors.gray700,
+  },
+  analisiAmountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  analisiAmountNegative: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: BankColors.error,
+  },
+  analisiAmountPositive: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: BankColors.primary,
+  },
+  analisiDivider: {
+    height: 1,
+    backgroundColor: BankColors.gray300,
+    marginVertical: Spacing.sm,
   },
 });

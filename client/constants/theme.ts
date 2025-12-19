@@ -1,11 +1,12 @@
 import { Platform } from "react-native";
 
 export const BankColors = {
-  primary: "#006B3F",
-  primaryDark: "#004D2C",
-  primaryLight: "#008B52",
-  gradientStart: "#006B3F",
-  gradientEnd: "#004D2C",
+  primary: "#208037",
+  primaryDark: "#1a6b2d",
+  primaryLight: "#2a9645",
+  gradientStart: "#208037",
+  gradientEnd: "#1a6b2d",
+  cardBlue: "#007AB7",
   white: "#FFFFFF",
   black: "#000000",
   gray100: "#F5F5F5",
@@ -19,10 +20,14 @@ export const BankColors = {
   gray900: "#212121",
   success: "#4CAF50",
   error: "#E53935",
+  errorLight: "#F44336",
   warning: "#FF9800",
-  link: "#006B3F",
+  link: "#208037",
   cardBackground: "#FFFFFF",
   divider: "#E0E0E0",
+  pagoBancomat: "#FFD700",
+  mastercardRed: "#EB001B",
+  mastercardOrange: "#F79E1B",
 };
 
 const tintColorLight = BankColors.primary;
