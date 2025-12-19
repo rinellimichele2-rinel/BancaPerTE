@@ -64,7 +64,7 @@ function DonutChart({
     const formatted = amount.toFixed(2).replace(".", ",");
     const parts = formatted.split(",");
     const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    return `${isExpense ? "-" : "+"}${intPart},...`;
+    return `${isExpense ? "-" : "+"}${intPart},${parts[1]}`;
   };
 
   const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
