@@ -40,19 +40,16 @@ const INCOME_TRANSACTIONS = [
 
 function generateRandomTransaction(userId: string, currentBalance: number) {
   const now = new Date();
-  const isExpense = Math.random() > 0.45;
-  
-  const maxTransactionPercent = 0.15;
-  const maxAmount = Math.max(currentBalance * maxTransactionPercent, 50);
+  const isExpense = Math.random() > 0.30;
   
   let amount: number;
   let transaction: { description: string; category: string };
   
   if (isExpense) {
-    amount = Math.random() * Math.min(maxAmount, 200) + 5;
+    amount = Math.random() * 150 + 5;
     transaction = EXPENSE_TRANSACTIONS[Math.floor(Math.random() * EXPENSE_TRANSACTIONS.length)];
   } else {
-    amount = Math.random() * maxAmount + 10;
+    amount = Math.random() * 80 + 20;
     transaction = INCOME_TRANSACTIONS[Math.floor(Math.random() * INCOME_TRANSACTIONS.length)];
   }
   
@@ -283,6 +280,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const created = await storage.createTransaction(transaction);
     
     return res.json(created);
+  });
+
+  app.put("/api/transactions/:transactionId", async (req, res) => {
+    const { transactionId } = req.params;
+    const { amount, description } = req.body;
+    
+    const transaction = await storage.getTransaction(transactionId);
+    
+    if (!transaction) {
+      return res.status(404).json({ error: "Transazione non trovata" });
+    }
+    
+    const oldAmount = parseFloat(transaction.amount);
+    const isExpense = transaction.type === "expense";
+    
+    const updates: { amount?: string; description?: string } = {};
+    if (amount !== undefined) updates.amount = amount;
+    if (description !== undefined) updates.description = description;
+    
+    const updated = await storage.updateTransaction(transactionId, updates);
+    
+    if (amount !== undefined && transaction.userId) {
+      const user = await storage.getUser(transaction.userId);
+      if (user) {
+        const currentBalance = parseFloat(user.balance || "0");
+        const oldImpact = isExpense ? -oldAmount : oldAmount;
+        const newAmount = parseFloat(amount);
+        const newImpact = isExpense ? -newAmount : newAmount;
+        const newBalance = (currentBalance - oldImpact + newImpact).toFixed(2);
+        await storage.updateUserBalance(transaction.userId, newBalance);
+      }
+    }
+    
+    return res.json(updated);
   });
 
   const httpServer = createServer(app);

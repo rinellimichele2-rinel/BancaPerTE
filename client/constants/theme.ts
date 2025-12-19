@@ -9,6 +9,7 @@ export const BankColors = {
   cardBlue: "#007AB7",
   white: "#FFFFFF",
   black: "#000000",
+  gray50: "#FAFAFA",
   gray100: "#F5F5F5",
   gray200: "#EEEEEE",
   gray300: "#E0E0E0",

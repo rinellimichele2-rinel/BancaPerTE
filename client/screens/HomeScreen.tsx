@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +22,9 @@ import { useAuth } from "@/lib/auth-context";
 import { apiRequest } from "@/lib/query-client";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { Transaction } from "@shared/schema";
+import type { HomeStackParamList } from "@/navigation/MainTabNavigator";
+
+type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, "HomeMain">;
 
 const QuickActionButton = ({ 
   icon, 
@@ -39,7 +44,7 @@ const QuickActionButton = ({
   </Pressable>
 );
 
-const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
+const TransactionItem = ({ transaction, onPress }: { transaction: Transaction; onPress: () => void }) => {
   const isExpense = transaction.type === "expense";
   const amountValue = Math.abs(parseFloat(transaction.amount));
   const formattedAmount = `${isExpense ? "-" : "+"} ${amountValue.toFixed(2).replace(".", ",")} \u20AC`;
@@ -50,7 +55,7 @@ const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
   }) : "";
 
   return (
-    <Pressable style={styles.transactionItem}>
+    <Pressable style={styles.transactionItem} onPress={onPress}>
       <View style={styles.transactionIcon}>
         <Feather 
           name={isExpense ? "arrow-down-left" : "arrow-up-right"} 
@@ -83,6 +88,7 @@ const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const queryClient = useQueryClient();
   const { user, userId, refreshUser, updateBalance, updateAccountNumber } = useAuth();
   const [showBalance, setShowBalance] = useState(false);
@@ -273,7 +279,11 @@ export default function HomeScreen() {
             <ActivityIndicator style={styles.loader} color={BankColors.primary} />
           ) : (
             transactions.slice(0, 5).map((transaction) => (
-              <TransactionItem key={transaction.id} transaction={transaction} />
+              <TransactionItem 
+                key={transaction.id} 
+                transaction={transaction} 
+                onPress={() => navigation.navigate("TransactionDetail", { transaction })}
+              />
             ))
           )}
         </View>

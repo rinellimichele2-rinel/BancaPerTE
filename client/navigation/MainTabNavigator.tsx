@@ -1,13 +1,21 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeScreen from "@/screens/HomeScreen";
+import TransactionDetailScreen from "@/screens/TransactionDetailScreen";
 import OperazioniScreen from "@/screens/OperazioniScreen";
 import CarteScreen from "@/screens/CarteScreen";
 import AltroScreen from "@/screens/AltroScreen";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
+import type { Transaction } from "@shared/schema";
+
+export type HomeStackParamList = {
+  HomeMain: undefined;
+  TransactionDetail: { transaction: Transaction };
+};
 
 export type MainTabParamList = {
   Home: undefined;
@@ -17,6 +25,16 @@ export type MainTabParamList = {
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+
+function HomeStackNavigator() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+      <HomeStack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+    </HomeStack.Navigator>
+  );
+}
 
 function TabBarIcon({ name, color, focused, badge }: { 
   name: keyof typeof Feather.glyphMap; 
@@ -62,7 +80,7 @@ export default function MainTabNavigator() {
     >
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={HomeStackNavigator}
         options={{
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="home" color={color} focused={focused} />

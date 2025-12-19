@@ -25,8 +25,10 @@ export interface IStorage {
   updateUserAccountNumber(userId: string, newAccountNumber: string): Promise<User | undefined>;
   updateUserPin(userId: string, newPin: string): Promise<User | undefined>;
   getTransactions(userId: string): Promise<Transaction[]>;
+  getTransaction(id: string): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   createMultipleTransactions(transactions: InsertTransaction[]): Promise<Transaction[]>;
+  updateTransaction(id: string, updates: { amount?: string; description?: string }): Promise<Transaction | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -90,6 +92,11 @@ export class DatabaseStorage implements IStorage {
     return result.reverse();
   }
 
+  async getTransaction(id: string): Promise<Transaction | undefined> {
+    const result = await db.select().from(transactions).where(eq(transactions.id, id));
+    return result[0];
+  }
+
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
     const result = await db.insert(transactions).values(insertTransaction).returning();
     return result[0];
@@ -99,6 +106,15 @@ export class DatabaseStorage implements IStorage {
     if (insertTransactions.length === 0) return [];
     const result = await db.insert(transactions).values(insertTransactions).returning();
     return result;
+  }
+
+  async updateTransaction(id: string, updates: { amount?: string; description?: string }): Promise<Transaction | undefined> {
+    const result = await db
+      .update(transactions)
+      .set(updates)
+      .where(eq(transactions.id, id))
+      .returning();
+    return result[0];
   }
 }
 
