@@ -157,6 +157,25 @@ export function Icon({ name, size = 24, color = "#000" }: IconProps) {
           <Path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
         </Svg>
       );
+    case "truck":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <Rect x="1" y="3" width="15" height="13" />
+          <Polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+          <Circle cx="5.5" cy="18.5" r="2.5" />
+          <Circle cx="18.5" cy="18.5" r="2.5" />
+        </Svg>
+      );
+    case "gift":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <Polyline points="20 12 20 22 4 22 4 12" />
+          <Rect x="2" y="7" width="20" height="5" />
+          <Line x1="12" y1="22" x2="12" y2="7" />
+          <Path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+          <Path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+        </Svg>
+      );
     case "coffee":
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeScreen from "@/screens/HomeScreen";
 import TransactionDetailScreen from "@/screens/TransactionDetailScreen";
+import AnalisiScreen from "@/screens/AnalisiScreen";
 import OperazioniScreen from "@/screens/OperazioniScreen";
 import CarteScreen from "@/screens/CarteScreen";
 import AltroScreen from "@/screens/AltroScreen";
@@ -15,6 +16,7 @@ import type { Transaction } from "@shared/schema";
 export type HomeStackParamList = {
   HomeMain: undefined;
   TransactionDetail: { transaction: Transaction };
+  Analisi: undefined;
 };
 
 export type MainTabParamList = {
@@ -32,6 +34,7 @@ function HomeStackNavigator() {
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
       <HomeStack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+      <HomeStack.Screen name="Analisi" component={AnalisiScreen} />
     </HomeStack.Navigator>
   );
 }

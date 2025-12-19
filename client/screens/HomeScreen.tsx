@@ -291,7 +291,7 @@ export default function HomeScreen() {
         <View style={styles.analisiSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Analisi delle spese</Text>
-            <Pressable style={styles.viewAllBtn}>
+            <Pressable style={styles.viewAllBtn} onPress={() => navigation.navigate("Analisi")}>
               <Text style={styles.viewAllText}>Vai alla sezione</Text>
               <Icon name="chevron-right" size={16} color={BankColors.primary} />
             </Pressable>
@@ -320,11 +320,6 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
-
-      <Pressable style={[styles.chatButton, { bottom: tabBarHeight + Spacing.md }]}>
-        <Icon name="message-circle" size={24} color={BankColors.white} />
-        <Text style={styles.chatButtonText}>Parla con noi</Text>
-      </Pressable>
 
       <Modal visible={showEditBalance} transparent animationType="fade">
         <View style={styles.modalOverlay}>
