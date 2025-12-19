@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import pg from "pg";
 import { 
   users, 
@@ -88,8 +88,8 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(transactions)
       .where(eq(transactions.userId, userId))
-      .orderBy(transactions.date);
-    return result.reverse();
+      .orderBy(desc(transactions.createdAt));
+    return result;
   }
 
   async getTransaction(id: string): Promise<Transaction | undefined> {
