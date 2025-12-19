@@ -9,6 +9,7 @@ import AnalisiScreen from "@/screens/AnalisiScreen";
 import AdvisorScreen from "@/screens/AdvisorScreen";
 import NewsScreen from "@/screens/NewsScreen";
 import OperazioniScreen from "@/screens/OperazioniScreen";
+import TransferScreen from "@/screens/TransferScreen";
 import CarteScreen from "@/screens/CarteScreen";
 import AltroScreen from "@/screens/AltroScreen";
 import { Icon } from "@/components/Icon";
@@ -23,6 +24,11 @@ export type HomeStackParamList = {
   News: undefined;
 };
 
+export type OperazioniStackParamList = {
+  OperazioniMain: undefined;
+  Transfer: undefined;
+};
+
 export type MainTabParamList = {
   Home: undefined;
   Operazioni: undefined;
@@ -32,6 +38,7 @@ export type MainTabParamList = {
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const OperazioniStack = createNativeStackNavigator<OperazioniStackParamList>();
 
 function HomeStackNavigator() {
   return (
@@ -62,6 +69,15 @@ function HomeStackNavigator() {
         }}
       />
     </HomeStack.Navigator>
+  );
+}
+
+function OperazioniStackNavigator() {
+  return (
+    <OperazioniStack.Navigator screenOptions={{ headerShown: false }}>
+      <OperazioniStack.Screen name="OperazioniMain" component={OperazioniScreen} />
+      <OperazioniStack.Screen name="Transfer" component={TransferScreen} />
+    </OperazioniStack.Navigator>
   );
 }
 
@@ -118,7 +134,7 @@ export default function MainTabNavigator() {
       />
       <Tab.Screen
         name="Operazioni"
-        component={OperazioniScreen}
+        component={OperazioniStackNavigator}
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.euroIconContainer}>

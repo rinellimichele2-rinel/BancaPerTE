@@ -430,32 +430,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Transfer balance between users
   app.post("/api/transfer", async (req, res) => {
-    const { fromUserId, toUserId, amount, serverBalance } = req.body;
+    const { fromUserId, toUserId, amount } = req.body;
     
     if (!fromUserId || !toUserId || amount === undefined) {
       return res.status(400).json({ success: false, error: "Dati mancanti" });
     }
 
-    // Anti-cheat: Verify server-side balance matches what client claims
+    // Server-side validation - never trust client data
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0 || !Number.isInteger(amountNum)) {
+      return res.status(400).json({ success: false, error: "L'importo deve essere un numero intero positivo" });
+    }
+
+    if (fromUserId === toUserId) {
+      return res.status(400).json({ success: false, error: "Non puoi trasferire denaro a te stesso" });
+    }
+
+    // Always fetch the authoritative balance from the database (anti-cheat)
     const fromUser = await storage.getUser(fromUserId);
     if (!fromUser) {
       return res.status(404).json({ success: false, error: "Utente non trovato" });
     }
 
-    // Check if the balance has been tampered with (memory modification protection)
-    if (serverBalance !== undefined) {
-      const actualBalance = parseFloat(fromUser.balance || "0");
-      const claimedBalance = parseFloat(serverBalance);
-      if (Math.abs(actualBalance - claimedBalance) > 0.01) {
-        return res.status(403).json({ 
-          success: false, 
-          error: "Rilevata modifica non autorizzata del saldo. Operazione bloccata.",
-          securityViolation: true 
-        });
-      }
+    const serverBalance = parseFloat(fromUser.balance || "0");
+    if (amountNum > serverBalance) {
+      return res.status(400).json({ success: false, error: "Saldo insufficiente" });
     }
 
-    const result = await storage.transferBalance(fromUserId, toUserId, parseFloat(amount));
+    const result = await storage.transferBalance(fromUserId, toUserId, amountNum);
     
     if (!result.success) {
       return res.status(400).json(result);

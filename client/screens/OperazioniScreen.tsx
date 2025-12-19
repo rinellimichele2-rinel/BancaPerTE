@@ -8,8 +8,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Icon } from "@/components/Icon";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
+import type { OperazioniStackParamList } from "@/navigation/MainTabNavigator";
 
 interface OperationItemProps {
   title: string;
@@ -43,9 +46,16 @@ const SectionHeader = ({ icon, iconColor, title }: SectionHeaderProps) => (
   </View>
 );
 
+type NavigationProp = NativeStackNavigationProp<OperazioniStackParamList>;
+
 export default function OperazioniScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const navigation = useNavigation<NavigationProp>();
+
+  const handleTransferPress = () => {
+    navigation.navigate("Transfer");
+  };
 
   return (
     <View style={styles.container}>
@@ -74,7 +84,7 @@ export default function OperazioniScreen() {
           <View style={styles.card}>
             <OperationItem title="Bonifico" />
             <OperationItem title="Prelievo cardless" />
-            <OperationItem title="Scambia denaro" />
+            <OperationItem title="Scambia denaro" onPress={handleTransferPress} />
           </View>
         </View>
 
@@ -89,7 +99,7 @@ export default function OperazioniScreen() {
 
           <SectionHeader icon="credit-card" iconColor="#4CAF50" title="BANCOMAT Pay" />
           <View style={styles.card}>
-            <OperationItem title="Scambia denaro" />
+            <OperationItem title="Scambia denaro" onPress={handleTransferPress} />
             <OperationItem title="Paga in negozio" />
             <OperationItem title="Addebiti ricorrenti" />
           </View>
