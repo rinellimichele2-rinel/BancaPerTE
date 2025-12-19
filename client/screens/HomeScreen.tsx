@@ -106,6 +106,7 @@ export default function HomeScreen() {
   });
 
   const handleHelpPress = () => {
+    if (!userId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     generateTransactionsMutation.mutate();
   };
