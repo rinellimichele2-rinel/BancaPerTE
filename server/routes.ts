@@ -88,7 +88,6 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
   }
   
   const date = new Date(now);
-  date.setDate(date.getDate() - Math.floor(Math.random() * 30));
   
   const isContabilizzato = Math.random() > 0.15;
   

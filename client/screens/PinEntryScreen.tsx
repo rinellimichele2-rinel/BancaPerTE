@@ -42,10 +42,6 @@ export default function PinEntryScreen() {
       
       if (success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Main" }],
-        });
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(true);
