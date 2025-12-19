@@ -414,6 +414,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Get all users for money transfer feature
+  app.get("/api/users", async (req, res) => {
+    const allUsers = await storage.getAllUsers();
+    // Return sanitized user data (no PIN)
+    const sanitizedUsers = allUsers.map(user => ({
+      id: user.id,
+      username: user.username,
+      fullName: user.fullName,
+      accountNumber: user.accountNumber,
+      balance: user.balance,
+    }));
+    return res.json(sanitizedUsers);
+  });
+
+  // Transfer balance between users
+  app.post("/api/transfer", async (req, res) => {
+    const { fromUserId, toUserId, amount, serverBalance } = req.body;
+    
+    if (!fromUserId || !toUserId || amount === undefined) {
+      return res.status(400).json({ success: false, error: "Dati mancanti" });
+    }
+
+    // Anti-cheat: Verify server-side balance matches what client claims
+    const fromUser = await storage.getUser(fromUserId);
+    if (!fromUser) {
+      return res.status(404).json({ success: false, error: "Utente non trovato" });
+    }
+
+    // Check if the balance has been tampered with (memory modification protection)
+    if (serverBalance !== undefined) {
+      const actualBalance = parseFloat(fromUser.balance || "0");
+      const claimedBalance = parseFloat(serverBalance);
+      if (Math.abs(actualBalance - claimedBalance) > 0.01) {
+        return res.status(403).json({ 
+          success: false, 
+          error: "Rilevata modifica non autorizzata del saldo. Operazione bloccata.",
+          securityViolation: true 
+        });
+      }
+    }
+
+    const result = await storage.transferBalance(fromUserId, toUserId, parseFloat(amount));
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    // Create transaction records for both users
+    const now = new Date();
+    const toUser = await storage.getUser(toUserId);
+    
+    // Outgoing transaction for sender
+    await storage.createTransaction({
+      userId: fromUserId,
+      description: `Trasferimento a ${toUser?.fullName || toUser?.username || 'Utente'}`,
+      amount: amount.toString(),
+      type: "expense",
+      category: "Trasferimenti",
+      accountNumber: toUser?.accountNumber || null,
+      isContabilizzato: true,
+      date: now,
+    });
+
+    // Incoming transaction for receiver
+    await storage.createTransaction({
+      userId: toUserId,
+      description: `Trasferimento da ${fromUser.fullName || fromUser.username}`,
+      amount: amount.toString(),
+      type: "income",
+      category: "Trasferimenti",
+      accountNumber: fromUser.accountNumber || null,
+      isContabilizzato: true,
+      date: now,
+    });
+
+    return res.json(result);
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

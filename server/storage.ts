@@ -21,11 +21,13 @@ export const db = drizzle(pool);
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(userId: string, newBalance: string): Promise<User | undefined>;
   updateUserName(userId: string, newName: string): Promise<User | undefined>;
   updateUserAccountNumber(userId: string, newAccountNumber: string): Promise<User | undefined>;
   updateUserPin(userId: string, newPin: string): Promise<User | undefined>;
+  transferBalance(fromUserId: string, toUserId: string, amount: number): Promise<{ success: boolean; error?: string; fromUser?: User; toUser?: User }>;
   getTransactions(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
@@ -42,6 +44,11 @@ export class DatabaseStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.username, username));
     return result[0];
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    const result = await db.select().from(users);
+    return result;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -83,6 +90,43 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return result[0];
+  }
+
+  async transferBalance(fromUserId: string, toUserId: string, amount: number): Promise<{ success: boolean; error?: string; fromUser?: User; toUser?: User }> {
+    const fromUser = await this.getUser(fromUserId);
+    const toUser = await this.getUser(toUserId);
+
+    if (!fromUser) {
+      return { success: false, error: "Utente mittente non trovato" };
+    }
+    if (!toUser) {
+      return { success: false, error: "Utente destinatario non trovato" };
+    }
+    if (fromUserId === toUserId) {
+      return { success: false, error: "Non puoi trasferire denaro a te stesso" };
+    }
+
+    const fromBalance = parseFloat(fromUser.balance || "0");
+    const toBalance = parseFloat(toUser.balance || "0");
+
+    if (amount <= 0) {
+      return { success: false, error: "L'importo deve essere maggiore di zero" };
+    }
+    if (amount > fromBalance) {
+      return { success: false, error: "Saldo insufficiente" };
+    }
+
+    const newFromBalance = (fromBalance - amount).toFixed(2);
+    const newToBalance = (toBalance + amount).toFixed(2);
+
+    const updatedFromUser = await this.updateUserBalance(fromUserId, newFromBalance);
+    const updatedToUser = await this.updateUserBalance(toUserId, newToBalance);
+
+    if (!updatedFromUser || !updatedToUser) {
+      return { success: false, error: "Errore durante il trasferimento" };
+    }
+
+    return { success: true, fromUser: updatedFromUser, toUser: updatedToUser };
   }
 
   async getTransactions(userId: string): Promise<Transaction[]> {
