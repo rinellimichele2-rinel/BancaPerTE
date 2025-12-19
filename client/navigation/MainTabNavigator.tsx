@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeScreen from "@/screens/HomeScreen";
 import TransactionDetailScreen from "@/screens/TransactionDetailScreen";
 import AnalisiScreen from "@/screens/AnalisiScreen";
+import AdvisorScreen from "@/screens/AdvisorScreen";
 import OperazioniScreen from "@/screens/OperazioniScreen";
 import CarteScreen from "@/screens/CarteScreen";
 import AltroScreen from "@/screens/AltroScreen";
@@ -17,6 +18,7 @@ export type HomeStackParamList = {
   HomeMain: undefined;
   TransactionDetail: { transaction: Transaction };
   Analisi: undefined;
+  Advisor: undefined;
 };
 
 export type MainTabParamList = {
@@ -35,6 +37,17 @@ function HomeStackNavigator() {
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
       <HomeStack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
       <HomeStack.Screen name="Analisi" component={AnalisiScreen} />
+      <HomeStack.Screen 
+        name="Advisor" 
+        component={AdvisorScreen}
+        options={{
+          headerShown: true,
+          headerTitle: "Consulente AI",
+          headerTintColor: BankColors.primary,
+          headerStyle: { backgroundColor: BankColors.white },
+          headerBackTitle: "Indietro",
+        }}
+      />
     </HomeStack.Navigator>
   );
 }

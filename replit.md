@@ -36,6 +36,7 @@ Key API capabilities:
 - User authentication (login by username, PIN verification)
 - Transaction management (create, list, generate random transactions)
 - Balance updates
+- AI Financial Advisor chatbot (powered by OpenAI via Replit AI Integrations)
 
 ### Authentication Flow
 1. User enters username on WelcomeScreen
@@ -48,8 +49,16 @@ Key API capabilities:
 Defined in `shared/schema.ts`:
 - **users**: id, username, pin, fullName, accountNumber, balance, cardLastFour, createdAt
 - **transactions**: id, userId, description, amount, type, category, accountNumber, isContabilizzato, date, createdAt
+- **conversations**: id, userId, title, createdAt (for AI advisor chat)
+- **messages**: id, conversationId, role, content, createdAt (chat messages)
 
 Schema validation uses Drizzle-Zod for type-safe inserts.
+
+### AI Financial Advisor
+- Located in `server/replit_integrations/chat/`
+- Uses OpenAI via Replit AI Integrations (no API key required)
+- Provides personalized financial advice in Italian
+- Accessible from HomeScreen via "Consulente AI" quick action
 
 ## External Dependencies
 

@@ -254,6 +254,7 @@ export default function HomeScreen() {
             <QuickActionButton icon="credit-card" label="Carta virtuale" />
             <QuickActionButton icon="file-text" label="CBILL/pagoPA" />
             <QuickActionButton icon="smartphone" label="Ricarica" />
+            <QuickActionButton icon="message-circle" label="Consulente AI" onPress={() => navigation.navigate("Advisor")} />
           </ScrollView>
         </LinearGradient>
 
