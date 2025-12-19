@@ -14,18 +14,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Icon } from "@/components/Icon";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/lib/auth-context";
-import { apiRequest } from "@/lib/query-client";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-
-const DISABLED_PRESETS_KEY = "disabled_presets";
-const CUSTOM_PRESETS_KEY = "custom_presets";
-const DELETED_PRESETS_KEY = "deleted_presets";
 
 type PresetTransaction = {
   description: string;
@@ -133,27 +128,46 @@ export default function AltroScreen() {
   const [presetCategory, setPresetCategory] = useState(TRANSACTION_CATEGORIES[0]);
 
   useEffect(() => {
-    AsyncStorage.getItem(DISABLED_PRESETS_KEY).then((data) => {
-      if (data) setDisabledPresets(JSON.parse(data));
-    });
-    AsyncStorage.getItem(CUSTOM_PRESETS_KEY).then((data) => {
-      if (data) setCustomPresets(JSON.parse(data));
-    });
-    AsyncStorage.getItem(DELETED_PRESETS_KEY).then((data) => {
-      if (data) setDeletedPresets(JSON.parse(data));
-    });
-  }, []);
+    if (!userId) return;
+    const loadSettings = async () => {
+      try {
+        const response = await fetch(new URL(`/api/users/${userId}/preset-settings`, getApiUrl()).toString());
+        if (response.ok) {
+          const data = await response.json();
+          setDeletedPresets(data.deletedPresets || []);
+          setDisabledPresets(data.disabledPresets || []);
+          setCustomPresets(data.customPresets || []);
+        }
+      } catch (error) {
+        console.error("Error loading preset settings:", error);
+      }
+    };
+    loadSettings();
+  }, [userId]);
 
   const allPresets: PresetTransaction[] = [
     ...PRESET_TRANSACTIONS.filter(p => !deletedPresets.includes(p.description)),
     ...customPresets.map(p => ({ ...p, isCustom: true }))
   ];
 
+  const savePresetSettings = async (updates: { deletedPresets?: string[]; disabledPresets?: string[]; customPresets?: PresetTransaction[] }) => {
+    if (!userId) return;
+    try {
+      await fetch(new URL(`/api/users/${userId}/preset-settings`, getApiUrl()).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+    } catch (error) {
+      console.error("Error saving preset settings:", error);
+    }
+  };
+
   const deleteDefaultPreset = async (description: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const newList = [...deletedPresets, description];
     setDeletedPresets(newList);
-    await AsyncStorage.setItem(DELETED_PRESETS_KEY, JSON.stringify(newList));
+    await savePresetSettings({ deletedPresets: newList });
   };
 
   const togglePresetDisabled = async (description: string) => {
@@ -162,7 +176,7 @@ export default function AltroScreen() {
       ? disabledPresets.filter((d) => d !== description)
       : [...disabledPresets, description];
     setDisabledPresets(newList);
-    await AsyncStorage.setItem(DISABLED_PRESETS_KEY, JSON.stringify(newList));
+    await savePresetSettings({ disabledPresets: newList });
   };
 
   const confirmDeletePreset = (description: string, isCustom?: boolean) => {
@@ -238,7 +252,7 @@ export default function AltroScreen() {
     }
 
     setCustomPresets(newList);
-    await AsyncStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(newList));
+    await savePresetSettings({ customPresets: newList });
     setShowPresetEditor(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -246,7 +260,7 @@ export default function AltroScreen() {
   const deleteCustomPreset = async (description: string) => {
     const newList = customPresets.filter(p => p.description !== description);
     setCustomPresets(newList);
-    await AsyncStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(newList));
+    await savePresetSettings({ customPresets: newList });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 

@@ -88,3 +88,15 @@ export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+// User preset settings table
+export const userPresetSettings = pgTable("user_preset_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  deletedPresets: text("deleted_presets").notNull().default("[]"),
+  disabledPresets: text("disabled_presets").notNull().default("[]"),
+  customPresets: text("custom_presets").notNull().default("[]"),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type UserPresetSettings = typeof userPresetSettings.$inferSelect;

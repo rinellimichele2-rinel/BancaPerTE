@@ -3,11 +3,13 @@ import { eq, desc } from "drizzle-orm";
 import pg from "pg";
 import { 
   users, 
-  transactions, 
+  transactions,
+  userPresetSettings,
   type User, 
   type InsertUser, 
   type Transaction, 
-  type InsertTransaction 
+  type InsertTransaction,
+  type UserPresetSettings
 } from "@shared/schema";
 
 const pool = new pg.Pool({
@@ -115,6 +117,38 @@ export class DatabaseStorage implements IStorage {
       .where(eq(transactions.id, id))
       .returning();
     return result[0];
+  }
+
+  async getPresetSettings(userId: string): Promise<UserPresetSettings | undefined> {
+    const result = await db.select().from(userPresetSettings).where(eq(userPresetSettings.userId, userId));
+    return result[0];
+  }
+
+  async savePresetSettings(userId: string, settings: { deletedPresets?: string[]; disabledPresets?: string[]; customPresets?: any[] }): Promise<UserPresetSettings> {
+    const existing = await this.getPresetSettings(userId);
+    if (existing) {
+      const result = await db
+        .update(userPresetSettings)
+        .set({
+          deletedPresets: settings.deletedPresets ? JSON.stringify(settings.deletedPresets) : existing.deletedPresets,
+          disabledPresets: settings.disabledPresets ? JSON.stringify(settings.disabledPresets) : existing.disabledPresets,
+          customPresets: settings.customPresets ? JSON.stringify(settings.customPresets) : existing.customPresets,
+        })
+        .where(eq(userPresetSettings.userId, userId))
+        .returning();
+      return result[0];
+    } else {
+      const result = await db
+        .insert(userPresetSettings)
+        .values({
+          userId,
+          deletedPresets: JSON.stringify(settings.deletedPresets || []),
+          disabledPresets: JSON.stringify(settings.disabledPresets || []),
+          customPresets: JSON.stringify(settings.customPresets || []),
+        })
+        .returning();
+      return result[0];
+    }
   }
 }
 

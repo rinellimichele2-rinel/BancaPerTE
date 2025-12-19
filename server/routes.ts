@@ -375,6 +375,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json(updated);
   });
 
+  // Get user preset settings
+  app.get("/api/users/:userId/preset-settings", async (req, res) => {
+    const { userId } = req.params;
+    const settings = await storage.getPresetSettings(userId);
+    if (!settings) {
+      return res.json({
+        deletedPresets: [],
+        disabledPresets: [],
+        customPresets: [],
+      });
+    }
+    return res.json({
+      deletedPresets: JSON.parse(settings.deletedPresets),
+      disabledPresets: JSON.parse(settings.disabledPresets),
+      customPresets: JSON.parse(settings.customPresets),
+    });
+  });
+
+  // Save user preset settings
+  app.post("/api/users/:userId/preset-settings", async (req, res) => {
+    const { userId } = req.params;
+    const { deletedPresets, disabledPresets, customPresets } = req.body;
+    const settings = await storage.savePresetSettings(userId, {
+      deletedPresets,
+      disabledPresets,
+      customPresets,
+    });
+    return res.json({
+      deletedPresets: JSON.parse(settings.deletedPresets),
+      disabledPresets: JSON.parse(settings.disabledPresets),
+      customPresets: JSON.parse(settings.customPresets),
+    });
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
