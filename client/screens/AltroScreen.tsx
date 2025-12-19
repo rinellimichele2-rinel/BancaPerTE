@@ -24,6 +24,16 @@ import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const DISABLED_PRESETS_KEY = "disabled_presets";
+const CUSTOM_PRESETS_KEY = "custom_presets";
+
+type PresetTransaction = {
+  description: string;
+  type: "expense" | "income";
+  category: string;
+  minAmount: number;
+  maxAmount: number;
+  isCustom?: boolean;
+};
 
 const TRANSACTION_CATEGORIES = [
   "Spesa e supermercati",
@@ -37,7 +47,7 @@ const TRANSACTION_CATEGORIES = [
   "Tempo libero",
 ];
 
-const PRESET_TRANSACTIONS = [
+const PRESET_TRANSACTIONS: PresetTransaction[] = [
   { description: "Bonifico Disposto Da CAMMAROTA DONATO C. S.N.C.", type: "income", category: "Bonifici ricevuti", minAmount: 300, maxAmount: 600 },
   { description: "Bonifico Disposto Da INPS", type: "income", category: "Bonifici ricevuti", minAmount: 300, maxAmount: 800 },
   { description: "Bonifico Istantaneo Disposto Da LAURENZIELLO GIOVINA", type: "income", category: "Bonifici ricevuti", minAmount: 50, maxAmount: 200 },
@@ -111,12 +121,25 @@ export default function AltroScreen() {
   const [txType, setTxType] = useState<"expense" | "income">("expense");
   const [txCategory, setTxCategory] = useState(TRANSACTION_CATEGORIES[0]);
   const [disabledPresets, setDisabledPresets] = useState<string[]>([]);
+  const [customPresets, setCustomPresets] = useState<PresetTransaction[]>([]);
+  const [showPresetEditor, setShowPresetEditor] = useState(false);
+  const [editingPreset, setEditingPreset] = useState<PresetTransaction | null>(null);
+  const [presetDesc, setPresetDesc] = useState("");
+  const [presetMinAmount, setPresetMinAmount] = useState("");
+  const [presetMaxAmount, setPresetMaxAmount] = useState("");
+  const [presetType, setPresetType] = useState<"expense" | "income">("expense");
+  const [presetCategory, setPresetCategory] = useState(TRANSACTION_CATEGORIES[0]);
 
   useEffect(() => {
     AsyncStorage.getItem(DISABLED_PRESETS_KEY).then((data) => {
       if (data) setDisabledPresets(JSON.parse(data));
     });
+    AsyncStorage.getItem(CUSTOM_PRESETS_KEY).then((data) => {
+      if (data) setCustomPresets(JSON.parse(data));
+    });
   }, []);
+
+  const allPresets: PresetTransaction[] = [...PRESET_TRANSACTIONS, ...customPresets.map(p => ({ ...p, isCustom: true }))];
 
   const togglePresetDisabled = async (description: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -127,15 +150,85 @@ export default function AltroScreen() {
     await AsyncStorage.setItem(DISABLED_PRESETS_KEY, JSON.stringify(newList));
   };
 
-  const confirmDeletePreset = (description: string) => {
-    Alert.alert(
-      "Disabilita Preset",
-      `Vuoi disabilitare "${description}" dalla generazione random?`,
-      [
-        { text: "Annulla", style: "cancel" },
-        { text: "Disabilita", style: "destructive", onPress: () => togglePresetDisabled(description) },
-      ]
-    );
+  const confirmDeletePreset = (description: string, isCustom?: boolean) => {
+    if (isCustom) {
+      Alert.alert(
+        "Gestisci Preset",
+        `Cosa vuoi fare con "${description}"?`,
+        [
+          { text: "Annulla", style: "cancel" },
+          { text: "Modifica", onPress: () => openEditPreset(description) },
+          { text: "Elimina", style: "destructive", onPress: () => deleteCustomPreset(description) },
+        ]
+      );
+    } else {
+      Alert.alert(
+        "Disabilita Preset",
+        `Vuoi disabilitare "${description}" dalla generazione random?`,
+        [
+          { text: "Annulla", style: "cancel" },
+          { text: "Disabilita", style: "destructive", onPress: () => togglePresetDisabled(description) },
+        ]
+      );
+    }
+  };
+
+  const openCreatePreset = () => {
+    setEditingPreset(null);
+    setPresetDesc("");
+    setPresetMinAmount("");
+    setPresetMaxAmount("");
+    setPresetType("expense");
+    setPresetCategory(TRANSACTION_CATEGORIES[0]);
+    setShowPresetEditor(true);
+  };
+
+  const openEditPreset = (description: string) => {
+    const preset = customPresets.find(p => p.description === description);
+    if (preset) {
+      setEditingPreset(preset);
+      setPresetDesc(preset.description);
+      setPresetMinAmount(preset.minAmount.toString());
+      setPresetMaxAmount(preset.maxAmount.toString());
+      setPresetType(preset.type);
+      setPresetCategory(preset.category);
+      setShowPresetEditor(true);
+    }
+  };
+
+  const savePreset = async () => {
+    if (!presetDesc.trim() || !presetMinAmount.trim() || !presetMaxAmount.trim()) return;
+    const min = parseInt(presetMinAmount);
+    const max = parseInt(presetMaxAmount);
+    if (isNaN(min) || isNaN(max) || min <= 0 || max < min) return;
+
+    const newPreset: PresetTransaction = {
+      description: presetDesc.trim(),
+      type: presetType,
+      category: presetCategory,
+      minAmount: min,
+      maxAmount: max,
+      isCustom: true,
+    };
+
+    let newList: PresetTransaction[];
+    if (editingPreset) {
+      newList = customPresets.map(p => p.description === editingPreset.description ? newPreset : p);
+    } else {
+      newList = [...customPresets, newPreset];
+    }
+
+    setCustomPresets(newList);
+    await AsyncStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(newList));
+    setShowPresetEditor(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const deleteCustomPreset = async (description: string) => {
+    const newList = customPresets.filter(p => p.description !== description);
+    setCustomPresets(newList);
+    await AsyncStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(newList));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const createTransactionMutation = useMutation({
@@ -424,23 +517,36 @@ export default function AltroScreen() {
                 </View>
               ) : (
                 <View style={styles.presetList}>
-                  <Text style={styles.presetTitle}>Seleziona un preset per aggiungere una transazione:</Text>
-                  <Text style={styles.presetSubtitle}>Tieni premuto per disabilitare dalla generazione random</Text>
-                  {PRESET_TRANSACTIONS.map((preset, index) => {
+                  <View style={styles.presetHeader}>
+                    <View>
+                      <Text style={styles.presetTitle}>Seleziona un preset per aggiungere una transazione:</Text>
+                      <Text style={styles.presetSubtitle}>Tieni premuto per gestire</Text>
+                    </View>
+                    <Pressable style={styles.addPresetBtn} onPress={openCreatePreset}>
+                      <Icon name="plus" size={18} color={BankColors.white} />
+                      <Text style={styles.addPresetBtnText}>Nuovo</Text>
+                    </Pressable>
+                  </View>
+                  {allPresets.map((preset, index) => {
                     const isDisabled = disabledPresets.includes(preset.description);
+                    const isCustom = preset.isCustom;
                     return (
                       <Pressable 
                         key={index}
                         style={({ pressed }) => [
                           styles.presetItem, 
                           pressed && styles.presetItemPressed,
-                          isDisabled && styles.presetItemDisabled
+                          isDisabled && styles.presetItemDisabled,
+                          isCustom && styles.presetItemCustom
                         ]}
                         onPress={() => handlePresetTransaction(preset)}
-                        onLongPress={() => confirmDeletePreset(preset.description)}
+                        onLongPress={() => confirmDeletePreset(preset.description, isCustom)}
                       >
                         <View style={styles.presetInfo}>
-                          <Text style={[styles.presetDesc, isDisabled && styles.presetDescDisabled]}>{preset.description}</Text>
+                          <View style={styles.presetDescRow}>
+                            <Text style={[styles.presetDesc, isDisabled && styles.presetDescDisabled]}>{preset.description}</Text>
+                            {isCustom ? <Text style={styles.customBadge}>Personalizzato</Text> : null}
+                          </View>
                           <Text style={[styles.presetType, preset.type === "income" ? styles.presetTypeIncome : styles.presetTypeExpense]}>
                             {preset.type === "income" ? "Entrata" : "Uscita"} - {preset.category}
                           </Text>
@@ -451,7 +557,11 @@ export default function AltroScreen() {
                             <Text style={styles.presetDisabledBadge}>Escluso da random</Text>
                           ) : null}
                         </View>
-                        {isDisabled ? (
+                        {isCustom ? (
+                          <Pressable onPress={() => openEditPreset(preset.description)}>
+                            <Icon name="edit-2" size={20} color={BankColors.cardBlue} />
+                          </Pressable>
+                        ) : isDisabled ? (
                           <Pressable onPress={() => togglePresetDisabled(preset.description)}>
                             <Icon name="rotate-ccw" size={22} color={BankColors.primary} />
                           </Pressable>
@@ -463,6 +573,78 @@ export default function AltroScreen() {
                   })}
                 </View>
               )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showPresetEditor} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.consoleContainer}>
+            <View style={styles.consoleHeader}>
+              <Text style={styles.consoleTitle}>{editingPreset ? "Modifica Preset" : "Nuovo Preset"}</Text>
+              <Pressable onPress={() => setShowPresetEditor(false)}>
+                <Icon name="x" size={24} color={BankColors.gray700} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.consoleBody} contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}>
+              <View style={styles.consoleForm}>
+                <Text style={styles.formLabel}>Descrizione</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={presetDesc}
+                  onChangeText={setPresetDesc}
+                  placeholder="Es: Supermercato Locale"
+                />
+                <Text style={styles.formLabel}>Importo Minimo (EUR)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={presetMinAmount}
+                  onChangeText={setPresetMinAmount}
+                  placeholder="Es: 10"
+                  keyboardType="numeric"
+                />
+                <Text style={styles.formLabel}>Importo Massimo (EUR)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={presetMaxAmount}
+                  onChangeText={setPresetMaxAmount}
+                  placeholder="Es: 100"
+                  keyboardType="numeric"
+                />
+                <Text style={styles.formLabel}>Tipo</Text>
+                <View style={styles.typeSelector}>
+                  <Pressable 
+                    style={[styles.typeBtn, presetType === "expense" && styles.typeBtnActiveExpense]}
+                    onPress={() => setPresetType("expense")}
+                  >
+                    <Text style={[styles.typeBtnText, presetType === "expense" && styles.typeBtnTextActive]}>Uscita</Text>
+                  </Pressable>
+                  <Pressable 
+                    style={[styles.typeBtn, presetType === "income" && styles.typeBtnActiveIncome]}
+                    onPress={() => setPresetType("income")}
+                  >
+                    <Text style={[styles.typeBtnText, presetType === "income" && styles.typeBtnTextActive]}>Entrata</Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.formLabel}>Categoria</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                  {TRANSACTION_CATEGORIES.map((cat) => (
+                    <Pressable 
+                      key={cat}
+                      style={[styles.categoryChip, presetCategory === cat && styles.categoryChipActive]}
+                      onPress={() => setPresetCategory(cat)}
+                    >
+                      <Text style={[styles.categoryChipText, presetCategory === cat && styles.categoryChipTextActive]}>
+                        {cat}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+                <Pressable style={styles.submitBtn} onPress={savePreset}>
+                  <Text style={styles.submitBtnText}>{editingPreset ? "Salva Modifiche" : "Crea Preset"}</Text>
+                </Pressable>
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -862,8 +1044,27 @@ const styles = StyleSheet.create({
   presetSubtitle: {
     fontSize: 12,
     color: BankColors.gray400,
-    marginBottom: Spacing.lg,
     fontStyle: "italic",
+  },
+  presetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: Spacing.lg,
+  },
+  addPresetBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BankColors.primary,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: 4,
+  },
+  addPresetBtnText: {
+    color: BankColors.white,
+    fontSize: 13,
+    fontWeight: "600",
   },
   presetItem: {
     flexDirection: "row",
@@ -879,8 +1080,27 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     backgroundColor: BankColors.gray100,
   },
+  presetItemCustom: {
+    borderColor: BankColors.cardBlue,
+    borderWidth: 1.5,
+  },
+  presetDescRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
+  },
   presetDescDisabled: {
     textDecorationLine: "line-through",
+  },
+  customBadge: {
+    fontSize: 10,
+    color: BankColors.white,
+    backgroundColor: BankColors.cardBlue,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    fontWeight: "600",
   },
   presetDisabledBadge: {
     fontSize: 11,
