@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,14 +9,12 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Swipeable } from "react-native-gesture-handler";
 import { Icon } from "@/components/Icon";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -153,6 +151,9 @@ export default function AltroScreen() {
   };
 
   const confirmDeletePreset = (description: string, isCustom?: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const isDisabled = disabledPresets.includes(description);
+    
     if (isCustom) {
       Alert.alert(
         "Gestisci Preset",
@@ -165,11 +166,12 @@ export default function AltroScreen() {
       );
     } else {
       Alert.alert(
-        "Disabilita Preset",
-        `Vuoi disabilitare "${description}" dalla generazione random?`,
+        "Gestisci Preset",
+        `Cosa vuoi fare con "${description}"?`,
         [
           { text: "Annulla", style: "cancel" },
-          { text: "Disabilita", style: "destructive", onPress: () => togglePresetDisabled(description) },
+          { text: isDisabled ? "Riabilita" : "Disabilita", onPress: () => togglePresetDisabled(description) },
+          { text: "Elimina", style: "destructive", onPress: () => togglePresetDisabled(description) },
         ]
       );
     }
@@ -522,7 +524,7 @@ export default function AltroScreen() {
                   <View style={styles.presetHeader}>
                     <View>
                       <Text style={styles.presetTitle}>Seleziona un preset per aggiungere una transazione:</Text>
-                      <Text style={styles.presetSubtitle}>Scorri a sinistra per eliminare/disabilitare</Text>
+                      <Text style={styles.presetSubtitle}>Tieni premuto per eliminare o disabilitare</Text>
                     </View>
                     <Pressable style={styles.addPresetBtn} onPress={openCreatePreset}>
                       <Icon name="plus" size={18} color={BankColors.white} />
@@ -532,62 +534,40 @@ export default function AltroScreen() {
                   {allPresets.map((preset, index) => {
                     const isDisabled = disabledPresets.includes(preset.description);
                     const isCustom = preset.isCustom;
-                    
-                    const renderRightActions = () => (
-                      <Pressable 
-                        style={styles.swipeDeleteBtn}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                          if (isCustom) {
-                            deleteCustomPreset(preset.description);
-                          } else {
-                            togglePresetDisabled(preset.description);
-                          }
-                        }}
-                      >
-                        <Icon name={isCustom ? "trash-2" : (isDisabled ? "rotate-ccw" : "eye-off")} size={22} color={BankColors.white} />
-                        <Text style={styles.swipeDeleteText}>{isCustom ? "Elimina" : (isDisabled ? "Riabilita" : "Disabilita")}</Text>
-                      </Pressable>
-                    );
-                    
                     return (
-                      <Swipeable 
+                      <Pressable 
                         key={index}
-                        renderRightActions={renderRightActions}
-                        overshootRight={false}
+                        style={[
+                          styles.presetItem, 
+                          isDisabled && styles.presetItemDisabled,
+                          isCustom && styles.presetItemCustom
+                        ]}
+                        onPress={() => handlePresetTransaction(preset)}
+                        onLongPress={() => confirmDeletePreset(preset.description, isCustom)}
                       >
-                        <Pressable 
-                          style={[
-                            styles.presetItem, 
-                            isDisabled && styles.presetItemDisabled,
-                            isCustom && styles.presetItemCustom
-                          ]}
-                          onPress={() => handlePresetTransaction(preset)}
-                        >
-                          <View style={styles.presetInfo}>
-                            <View style={styles.presetDescRow}>
-                              <Text style={[styles.presetDesc, isDisabled && styles.presetDescDisabled]}>{preset.description}</Text>
-                              {isCustom ? <Text style={styles.customBadge}>Personalizzato</Text> : null}
-                            </View>
-                            <Text style={[styles.presetType, preset.type === "income" ? styles.presetTypeIncome : styles.presetTypeExpense]}>
-                              {preset.type === "income" ? "Entrata" : "Uscita"} - {preset.category}
-                            </Text>
-                            <Text style={styles.presetRange}>
-                              Importo: {preset.minAmount} - {preset.maxAmount} EUR
-                            </Text>
-                            {isDisabled ? (
-                              <Text style={styles.presetDisabledBadge}>Escluso da random</Text>
-                            ) : null}
+                        <View style={styles.presetInfo}>
+                          <View style={styles.presetDescRow}>
+                            <Text style={[styles.presetDesc, isDisabled && styles.presetDescDisabled]}>{preset.description}</Text>
+                            {isCustom ? <Text style={styles.customBadge}>Personalizzato</Text> : null}
                           </View>
-                          {isCustom ? (
-                            <Pressable onPress={() => openEditPreset(preset.description)}>
-                              <Icon name="edit-2" size={20} color={BankColors.cardBlue} />
-                            </Pressable>
-                          ) : (
-                            <Icon name="plus-circle" size={24} color={BankColors.primary} />
-                          )}
-                        </Pressable>
-                      </Swipeable>
+                          <Text style={[styles.presetType, preset.type === "income" ? styles.presetTypeIncome : styles.presetTypeExpense]}>
+                            {preset.type === "income" ? "Entrata" : "Uscita"} - {preset.category}
+                          </Text>
+                          <Text style={styles.presetRange}>
+                            Importo: {preset.minAmount} - {preset.maxAmount} EUR
+                          </Text>
+                          {isDisabled ? (
+                            <Text style={styles.presetDisabledBadge}>Escluso da random</Text>
+                          ) : null}
+                        </View>
+                        {isCustom ? (
+                          <Pressable onPress={() => openEditPreset(preset.description)}>
+                            <Icon name="edit-2" size={20} color={BankColors.cardBlue} />
+                          </Pressable>
+                        ) : (
+                          <Icon name="plus-circle" size={24} color={BankColors.primary} />
+                        )}
+                      </Pressable>
                     );
                   })}
                 </View>
