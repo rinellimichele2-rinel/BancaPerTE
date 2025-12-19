@@ -18,7 +18,7 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootStackNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, userId, needsSetup } = useAuth();
 
   if (isLoading) {
     return (
@@ -30,22 +30,22 @@ export default function RootStackNavigator() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!isAuthenticated ? (
-        <>
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen 
-            name="PinEntry" 
-            component={PinEntryScreen}
-            options={{ animation: "slide_from_bottom" }}
-          />
-          <Stack.Screen 
-            name="PinSetup" 
-            component={PinSetupScreen}
-            options={{ animation: "slide_from_bottom" }}
-          />
-        </>
-      ) : (
+      {isAuthenticated ? (
         <Stack.Screen name="Main" component={MainTabNavigator} />
+      ) : userId && needsSetup ? (
+        <Stack.Screen 
+          name="PinSetup" 
+          component={PinSetupScreen}
+          options={{ animation: "slide_from_bottom" }}
+        />
+      ) : userId ? (
+        <Stack.Screen 
+          name="PinEntry" 
+          component={PinEntryScreen}
+          options={{ animation: "slide_from_bottom" }}
+        />
+      ) : (
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
       )}
     </Stack.Navigator>
   );
