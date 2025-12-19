@@ -51,8 +51,8 @@ const EXPENSE_TRANSACTIONS = [
   { description: "Autoservizi Moretti Srl Melfi", category: "Trasporti, noleggi, taxi e parcheggi", minAmount: 2, maxAmount: 5 },
   { description: "Alibaba.com Luxembourg", category: "Acquisti Online", minAmount: 10, maxAmount: 50 },
   { description: "Paypal *alipayeu", category: "Acquisti Online", minAmount: 20, maxAmount: 60 },
-  { description: "Prelievo BANCOMAT Altre Banche Italia E Sepa", category: "Prelievi", minAmount: 20, maxAmount: 150 },
-  { description: "Prelievo Sportello Banca Del Gruppo", category: "Prelievi", minAmount: 50, maxAmount: 100 },
+  { description: "Prelievo BANCOMAT Altre Banche Italia E Sepa", category: "Prelievi", minAmount: 0, maxAmount: 0, fixedAmounts: [20, 50, 100, 200, 500] },
+  { description: "Prelievo Sportello Banca Del Gruppo", category: "Prelievi", minAmount: 0, maxAmount: 0, fixedAmounts: [20, 50, 100, 200, 500, 1000] },
   { description: "Comm.prelievo Bancocard Banche Italia E Sepa", category: "Imposte, bolli e commissioni", minAmount: 2, maxAmount: 2 },
   { description: "Commissione Disposizione Di Bonifico", category: "Imposte, bolli e commissioni", minAmount: 1, maxAmount: 1 },
   { description: "Canone Mensile Totale La Mia Scelta", category: "Altre uscite", minAmount: 7, maxAmount: 8 },
@@ -72,7 +72,7 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
   const now = new Date();
   const isExpense = Math.random() > 0.30;
   
-  let transaction: { description: string; category: string; minAmount: number; maxAmount: number };
+  let transaction: { description: string; category: string; minAmount: number; maxAmount: number; fixedAmounts?: number[] };
   
   if (isExpense) {
     transaction = EXPENSE_TRANSACTIONS[Math.floor(Math.random() * EXPENSE_TRANSACTIONS.length)];
@@ -80,7 +80,12 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
     transaction = INCOME_TRANSACTIONS[Math.floor(Math.random() * INCOME_TRANSACTIONS.length)];
   }
   
-  const amount = Math.random() * (transaction.maxAmount - transaction.minAmount) + transaction.minAmount;
+  let amount: number;
+  if (transaction.fixedAmounts && transaction.fixedAmounts.length > 0) {
+    amount = transaction.fixedAmounts[Math.floor(Math.random() * transaction.fixedAmounts.length)];
+  } else {
+    amount = Math.random() * (transaction.maxAmount - transaction.minAmount) + transaction.minAmount;
+  }
   
   const date = new Date(now);
   date.setDate(date.getDate() - Math.floor(Math.random() * 30));
