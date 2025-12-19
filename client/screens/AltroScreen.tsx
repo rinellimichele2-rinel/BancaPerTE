@@ -25,6 +25,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 const DISABLED_PRESETS_KEY = "disabled_presets";
 const CUSTOM_PRESETS_KEY = "custom_presets";
+const DELETED_PRESETS_KEY = "deleted_presets";
 
 type PresetTransaction = {
   description: string;
@@ -121,6 +122,7 @@ export default function AltroScreen() {
   const [txType, setTxType] = useState<"expense" | "income">("expense");
   const [txCategory, setTxCategory] = useState(TRANSACTION_CATEGORIES[0]);
   const [disabledPresets, setDisabledPresets] = useState<string[]>([]);
+  const [deletedPresets, setDeletedPresets] = useState<string[]>([]);
   const [customPresets, setCustomPresets] = useState<PresetTransaction[]>([]);
   const [showPresetEditor, setShowPresetEditor] = useState(false);
   const [editingPreset, setEditingPreset] = useState<PresetTransaction | null>(null);
@@ -137,9 +139,22 @@ export default function AltroScreen() {
     AsyncStorage.getItem(CUSTOM_PRESETS_KEY).then((data) => {
       if (data) setCustomPresets(JSON.parse(data));
     });
+    AsyncStorage.getItem(DELETED_PRESETS_KEY).then((data) => {
+      if (data) setDeletedPresets(JSON.parse(data));
+    });
   }, []);
 
-  const allPresets: PresetTransaction[] = [...PRESET_TRANSACTIONS, ...customPresets.map(p => ({ ...p, isCustom: true }))];
+  const allPresets: PresetTransaction[] = [
+    ...PRESET_TRANSACTIONS.filter(p => !deletedPresets.includes(p.description)),
+    ...customPresets.map(p => ({ ...p, isCustom: true }))
+  ];
+
+  const deleteDefaultPreset = async (description: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const newList = [...deletedPresets, description];
+    setDeletedPresets(newList);
+    await AsyncStorage.setItem(DELETED_PRESETS_KEY, JSON.stringify(newList));
+  };
 
   const togglePresetDisabled = async (description: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -171,7 +186,7 @@ export default function AltroScreen() {
         [
           { text: "Annulla", style: "cancel" },
           { text: isDisabled ? "Riabilita" : "Disabilita", onPress: () => togglePresetDisabled(description) },
-          { text: "Elimina", style: "destructive", onPress: () => togglePresetDisabled(description) },
+          { text: "Elimina", style: "destructive", onPress: () => deleteDefaultPreset(description) },
         ]
       );
     }
