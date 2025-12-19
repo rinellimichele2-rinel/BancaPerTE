@@ -225,7 +225,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const transaction = generateRandomTransaction(userId, currentBalance);
     const created = await storage.createTransaction(transaction);
     
-    const newBalance = (currentBalance + parseFloat(transaction.amount)).toFixed(2);
+    // For expenses, subtract the amount; for income, add it
+    const amountValue = parseFloat(transaction.amount);
+    const balanceChange = transaction.type === "expense" ? -amountValue : amountValue;
+    const newBalance = (currentBalance + balanceChange).toFixed(2);
     await storage.updateUserBalance(userId, newBalance);
     
     return res.json({ transaction: created, newBalance });
