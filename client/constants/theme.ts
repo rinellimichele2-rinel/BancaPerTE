@@ -1,30 +1,63 @@
 import { Platform } from "react-native";
 
-const tintColorLight = "#007AFF";
-const tintColorDark = "#0A84FF";
+export const BankColors = {
+  primary: "#006B3F",
+  primaryDark: "#004D2C",
+  primaryLight: "#008B52",
+  gradientStart: "#006B3F",
+  gradientEnd: "#004D2C",
+  white: "#FFFFFF",
+  black: "#000000",
+  gray100: "#F5F5F5",
+  gray200: "#EEEEEE",
+  gray300: "#E0E0E0",
+  gray400: "#BDBDBD",
+  gray500: "#9E9E9E",
+  gray600: "#757575",
+  gray700: "#616161",
+  gray800: "#424242",
+  gray900: "#212121",
+  success: "#4CAF50",
+  error: "#E53935",
+  warning: "#FF9800",
+  link: "#006B3F",
+  cardBackground: "#FFFFFF",
+  divider: "#E0E0E0",
+};
+
+const tintColorLight = BankColors.primary;
+const tintColorDark = "#4CAF50";
 
 export const Colors = {
   light: {
     text: "#11181C",
+    textSecondary: "#757575",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#687076",
+    tabIconDefault: "#9E9E9E",
     tabIconSelected: tintColorLight,
-    link: "#007AFF",
-    backgroundRoot: "#FFFFFF", // Elevation 0
-    backgroundDefault: "#F2F2F2", // Elevation 1
-    backgroundSecondary: "#E6E6E6", // Elevation 2
-    backgroundTertiary: "#D9D9D9", // Elevation 3
+    link: BankColors.link,
+    backgroundRoot: "#FFFFFF",
+    backgroundDefault: "#F5F5F5",
+    backgroundSecondary: "#EEEEEE",
+    backgroundTertiary: "#E0E0E0",
+    primary: BankColors.primary,
+    success: BankColors.success,
+    error: BankColors.error,
   },
   dark: {
     text: "#ECEDEE",
+    textSecondary: "#9BA1A6",
     buttonText: "#FFFFFF",
     tabIconDefault: "#9BA1A6",
     tabIconSelected: tintColorDark,
-    link: "#0A84FF",
-    backgroundRoot: "#1F2123", // Elevation 0
-    backgroundDefault: "#2A2C2E", // Elevation 1
-    backgroundSecondary: "#353739", // Elevation 2
-    backgroundTertiary: "#404244", // Elevation 3
+    link: "#4CAF50",
+    backgroundRoot: "#1F2123",
+    backgroundDefault: "#2A2C2E",
+    backgroundSecondary: "#353739",
+    backgroundTertiary: "#404244",
+    primary: BankColors.primary,
+    success: BankColors.success,
+    error: BankColors.error,
   },
 };
 
@@ -43,63 +76,64 @@ export const Spacing = {
 };
 
 export const BorderRadius = {
-  xs: 8,
-  sm: 12,
-  md: 18,
-  lg: 24,
-  xl: 30,
-  "2xl": 40,
-  "3xl": 50,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  "2xl": 32,
+  "3xl": 40,
   full: 9999,
 };
 
 export const Typography = {
   h1: {
     fontSize: 32,
-    lineHeight: 40,
     fontWeight: "700" as const,
   },
   h2: {
     fontSize: 28,
-    lineHeight: 36,
     fontWeight: "700" as const,
   },
   h3: {
     fontSize: 24,
-    lineHeight: 32,
     fontWeight: "600" as const,
   },
   h4: {
     fontSize: 20,
-    lineHeight: 28,
     fontWeight: "600" as const,
   },
   body: {
     fontSize: 16,
-    lineHeight: 24,
     fontWeight: "400" as const,
   },
   small: {
     fontSize: 14,
-    lineHeight: 20,
+    fontWeight: "400" as const,
+  },
+  caption: {
+    fontSize: 12,
     fontWeight: "400" as const,
   },
   link: {
     fontSize: 16,
-    lineHeight: 24,
+    fontWeight: "400" as const,
+  },
+  balance: {
+    fontSize: 36,
+    fontWeight: "700" as const,
+  },
+  balanceSmall: {
+    fontSize: 24,
     fontWeight: "400" as const,
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: "system-ui",
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: "ui-serif",
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: "ui-rounded",
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: "ui-monospace",
   },
   default: {
