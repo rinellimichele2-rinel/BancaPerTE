@@ -25,7 +25,10 @@ export const chatStorage: IChatStorage = {
   },
 
   async createConversation(title: string, userId?: string) {
-    const [conversation] = await db.insert(conversations).values({ title, userId }).returning();
+    const [conversation] = await db.insert(conversations).values({ 
+      title, 
+      userId: userId || null,
+    }).returning();
     return conversation;
   },
 

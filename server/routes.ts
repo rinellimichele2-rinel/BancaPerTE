@@ -70,17 +70,22 @@ const INCOME_TRANSACTIONS = [
   { description: "Bonifico Disposto Da Gbo Italy SpA", category: "Bonifici ricevuti", minAmount: 40, maxAmount: 60 },
 ];
 
-function generateRandomTransaction(userId: string, currentBalance: number) {
+function generateRandomTransaction(userId: string, currentBalance: number, excludeDescriptions: string[] = []) {
   const now = new Date();
   const isExpense = Math.random() > 0.30;
   
-  let transaction: { description: string; category: string; minAmount: number; maxAmount: number; fixedAmounts?: number[] };
+  let transactions = isExpense ? EXPENSE_TRANSACTIONS : INCOME_TRANSACTIONS;
   
-  if (isExpense) {
-    transaction = EXPENSE_TRANSACTIONS[Math.floor(Math.random() * EXPENSE_TRANSACTIONS.length)];
-  } else {
-    transaction = INCOME_TRANSACTIONS[Math.floor(Math.random() * INCOME_TRANSACTIONS.length)];
+  if (excludeDescriptions.length > 0) {
+    transactions = transactions.filter(t => !excludeDescriptions.includes(t.description));
   }
+  
+  if (transactions.length === 0) {
+    transactions = isExpense ? EXPENSE_TRANSACTIONS : INCOME_TRANSACTIONS;
+  }
+  
+  let transaction: { description: string; category: string; minAmount: number; maxAmount: number; fixedAmounts?: number[] };
+  transaction = transactions[Math.floor(Math.random() * transactions.length)];
   
   let amount: number;
   if (transaction.fixedAmounts && transaction.fixedAmounts.length > 0) {
@@ -303,6 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/transactions/:userId/generate-random", async (req, res) => {
     const { userId } = req.params;
+    const { excludeDescriptions = [] } = req.body || {};
     
     const user = await storage.getUser(userId);
     
@@ -311,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     const currentBalance = parseFloat(user.balance || "1000");
-    const transaction = generateRandomTransaction(userId, currentBalance);
+    const transaction = generateRandomTransaction(userId, currentBalance, excludeDescriptions);
     const created = await storage.createTransaction(transaction);
     
     // For expenses, subtract the amount; for income, add it

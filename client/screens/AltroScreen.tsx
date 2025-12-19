@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Icon } from "@/components/Icon";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -20,6 +22,8 @@ import { useAuth } from "@/lib/auth-context";
 import { apiRequest } from "@/lib/query-client";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+
+const DISABLED_PRESETS_KEY = "disabled_presets";
 
 const TRANSACTION_CATEGORIES = [
   "Spesa e supermercati",
@@ -106,6 +110,33 @@ export default function AltroScreen() {
   const [txAmount, setTxAmount] = useState("");
   const [txType, setTxType] = useState<"expense" | "income">("expense");
   const [txCategory, setTxCategory] = useState(TRANSACTION_CATEGORIES[0]);
+  const [disabledPresets, setDisabledPresets] = useState<string[]>([]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(DISABLED_PRESETS_KEY).then((data) => {
+      if (data) setDisabledPresets(JSON.parse(data));
+    });
+  }, []);
+
+  const togglePresetDisabled = async (description: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const newList = disabledPresets.includes(description)
+      ? disabledPresets.filter((d) => d !== description)
+      : [...disabledPresets, description];
+    setDisabledPresets(newList);
+    await AsyncStorage.setItem(DISABLED_PRESETS_KEY, JSON.stringify(newList));
+  };
+
+  const confirmDeletePreset = (description: string) => {
+    Alert.alert(
+      "Disabilita Preset",
+      `Vuoi disabilitare "${description}" dalla generazione random?`,
+      [
+        { text: "Annulla", style: "cancel" },
+        { text: "Disabilita", style: "destructive", onPress: () => togglePresetDisabled(description) },
+      ]
+    );
+  };
 
   const createTransactionMutation = useMutation({
     mutationFn: async (data: { description: string; amount: string; type: string; category: string }) => {
@@ -129,7 +160,9 @@ export default function AltroScreen() {
 
   const generateRandomMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/transactions/${userId}/generate-random`);
+      const response = await apiRequest("POST", `/api/transactions/${userId}/generate-random`, {
+        excludeDescriptions: disabledPresets,
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -392,24 +425,42 @@ export default function AltroScreen() {
               ) : (
                 <View style={styles.presetList}>
                   <Text style={styles.presetTitle}>Seleziona un preset per aggiungere una transazione:</Text>
-                  {PRESET_TRANSACTIONS.map((preset, index) => (
-                    <Pressable 
-                      key={index}
-                      style={({ pressed }) => [styles.presetItem, pressed && styles.presetItemPressed]}
-                      onPress={() => handlePresetTransaction(preset)}
-                    >
-                      <View style={styles.presetInfo}>
-                        <Text style={styles.presetDesc}>{preset.description}</Text>
-                        <Text style={[styles.presetType, preset.type === "income" ? styles.presetTypeIncome : styles.presetTypeExpense]}>
-                          {preset.type === "income" ? "Entrata" : "Uscita"} - {preset.category}
-                        </Text>
-                        <Text style={styles.presetRange}>
-                          Importo: {preset.minAmount} - {preset.maxAmount} EUR
-                        </Text>
-                      </View>
-                      <Icon name="plus-circle" size={24} color={BankColors.primary} />
-                    </Pressable>
-                  ))}
+                  <Text style={styles.presetSubtitle}>Tieni premuto per disabilitare dalla generazione random</Text>
+                  {PRESET_TRANSACTIONS.map((preset, index) => {
+                    const isDisabled = disabledPresets.includes(preset.description);
+                    return (
+                      <Pressable 
+                        key={index}
+                        style={({ pressed }) => [
+                          styles.presetItem, 
+                          pressed && styles.presetItemPressed,
+                          isDisabled && styles.presetItemDisabled
+                        ]}
+                        onPress={() => handlePresetTransaction(preset)}
+                        onLongPress={() => confirmDeletePreset(preset.description)}
+                      >
+                        <View style={styles.presetInfo}>
+                          <Text style={[styles.presetDesc, isDisabled && styles.presetDescDisabled]}>{preset.description}</Text>
+                          <Text style={[styles.presetType, preset.type === "income" ? styles.presetTypeIncome : styles.presetTypeExpense]}>
+                            {preset.type === "income" ? "Entrata" : "Uscita"} - {preset.category}
+                          </Text>
+                          <Text style={styles.presetRange}>
+                            Importo: {preset.minAmount} - {preset.maxAmount} EUR
+                          </Text>
+                          {isDisabled ? (
+                            <Text style={styles.presetDisabledBadge}>Escluso da random</Text>
+                          ) : null}
+                        </View>
+                        {isDisabled ? (
+                          <Pressable onPress={() => togglePresetDisabled(preset.description)}>
+                            <Icon name="rotate-ccw" size={22} color={BankColors.primary} />
+                          </Pressable>
+                        ) : (
+                          <Icon name="plus-circle" size={24} color={BankColors.primary} />
+                        )}
+                      </Pressable>
+                    );
+                  })}
                 </View>
               )}
             </ScrollView>
@@ -806,7 +857,13 @@ const styles = StyleSheet.create({
   presetTitle: {
     fontSize: 14,
     color: BankColors.gray600,
+    marginBottom: Spacing.xs,
+  },
+  presetSubtitle: {
+    fontSize: 12,
+    color: BankColors.gray400,
     marginBottom: Spacing.lg,
+    fontStyle: "italic",
   },
   presetItem: {
     flexDirection: "row",
@@ -817,6 +874,19 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: BankColors.gray200,
+  },
+  presetItemDisabled: {
+    opacity: 0.6,
+    backgroundColor: BankColors.gray100,
+  },
+  presetDescDisabled: {
+    textDecorationLine: "line-through",
+  },
+  presetDisabledBadge: {
+    fontSize: 11,
+    color: BankColors.error,
+    marginTop: 4,
+    fontWeight: "600",
   },
   presetItemPressed: {
     backgroundColor: BankColors.gray100,
