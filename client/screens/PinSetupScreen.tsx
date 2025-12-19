@@ -55,10 +55,6 @@ export default function PinSetupScreen() {
           
           if (success) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "Main" }],
-            });
           } else {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             setError("Errore durante la configurazione del PIN");
