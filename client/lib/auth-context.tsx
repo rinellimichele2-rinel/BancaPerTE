@@ -83,7 +83,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.success && data.user) {
         setUser(data.user);
         setNeedsSetup(false);
+        const stored = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+        const currentData = stored ? JSON.parse(stored) : {};
         await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ 
+          ...currentData,
           userId,
           needsSetup: false
         }));

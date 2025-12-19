@@ -40,7 +40,7 @@ const INCOME_TRANSACTIONS = [
 
 function generateRandomTransaction(userId: string, currentBalance: number) {
   const now = new Date();
-  const isExpense = Math.random() > 0.4;
+  const isExpense = Math.random() > 0.45;
   
   const maxTransactionPercent = 0.15;
   const maxAmount = Math.max(currentBalance * maxTransactionPercent, 50);
@@ -49,7 +49,7 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
   let transaction: { description: string; category: string };
   
   if (isExpense) {
-    amount = -(Math.random() * Math.min(maxAmount, 200) + 5);
+    amount = Math.random() * Math.min(maxAmount, 200) + 5;
     transaction = EXPENSE_TRANSACTIONS[Math.floor(Math.random() * EXPENSE_TRANSACTIONS.length)];
   } else {
     amount = Math.random() * maxAmount + 10;
@@ -57,7 +57,7 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
   }
   
   const date = new Date(now);
-  date.setDate(date.getDate() - Math.floor(Math.random() * 7));
+  date.setDate(date.getDate() - Math.floor(Math.random() * 30));
   
   return {
     userId,

@@ -40,8 +40,9 @@ const QuickActionButton = ({
 );
 
 const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
-  const isExpense = parseFloat(transaction.amount) < 0;
-  const formattedAmount = `${isExpense ? "-" : "+"} ${Math.abs(parseFloat(transaction.amount)).toFixed(2).replace(".", ",")} \u20AC`;
+  const isExpense = transaction.type === "expense";
+  const amountValue = Math.abs(parseFloat(transaction.amount));
+  const formattedAmount = `${isExpense ? "-" : "+"} ${amountValue.toFixed(2).replace(".", ",")} \u20AC`;
   const dateStr = transaction.date ? new Date(transaction.date).toLocaleDateString("it-IT", {
     day: "2-digit",
     month: "2-digit",
@@ -262,7 +263,7 @@ export default function HomeScreen() {
           <View style={styles.expenseSummary}>
             <Text style={styles.expenseSummaryLabel}>Uscite nei prossimi 30 giorni:</Text>
             <Text style={styles.expenseSummaryAmount}>- {totalExpenses.toFixed(2).replace(".", ",")} {"\u20AC"}</Text>
-            <Text style={styles.expenseSummaryCount}>{transactions.filter(t => parseFloat(t.amount) < 0).length} operazione</Text>
+            <Text style={styles.expenseSummaryCount}>{transactions.filter(t => t.type === "expense").length} operazione</Text>
             <Pressable>
               <Text style={styles.detailLinkGreen}>Dettagli</Text>
             </Pressable>
