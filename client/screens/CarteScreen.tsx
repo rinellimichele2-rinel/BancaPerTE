@@ -1,15 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   Pressable,
   StyleSheet,
+  Modal,
+  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth-context";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 
@@ -63,7 +66,22 @@ const TransactionItem = ({ date, description, category, amount }: {
 export default function CarteScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const { user } = useAuth();
+  const { user, updateName } = useAuth();
+  const [showEditName, setShowEditName] = useState(false);
+  const [newName, setNewName] = useState("");
+
+  const handleEditName = () => {
+    setNewName(user?.fullName || "");
+    setShowEditName(true);
+  };
+
+  const handleSaveName = async () => {
+    if (newName.trim()) {
+      await updateName(newName.trim());
+      setShowEditName(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -112,13 +130,13 @@ export default function CarteScreen() {
                 <Text style={styles.cardContactless}>)))</Text>
               </View>
               <View style={styles.cardBottom}>
-                <View>
+                <Pressable onPress={handleEditName}>
                   <Text style={styles.cardLabel}>DEBIT</Text>
                   <Text style={styles.cardHolderName}>{user?.fullName || "COGNOME NOME"}</Text>
                   <View style={styles.cardActiveTag}>
                     <Text style={styles.cardActiveText}>ATTIVATA</Text>
                   </View>
-                </View>
+                </Pressable>
                 <View style={styles.cardLogos}>
                   <View style={styles.pagoBancomatLogo}>
                     <Text style={styles.pagoBancomatText}>PAGO{"\n"}BANCOMAT</Text>
@@ -204,6 +222,29 @@ export default function CarteScreen() {
           />
         </View>
       </ScrollView>
+
+      <Modal visible={showEditName} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setShowEditName(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Modifica Nome</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newName}
+              onChangeText={setNewName}
+              placeholder="Nome Cognome"
+              autoCapitalize="words"
+            />
+            <View style={styles.modalButtons}>
+              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditName(false)}>
+                <Text style={styles.modalCancelText}>Annulla</Text>
+              </Pressable>
+              <Pressable style={styles.modalSaveBtn} onPress={handleSaveName}>
+                <Text style={styles.modalSaveText}>Salva</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -523,5 +564,61 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
     color: BankColors.error,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: BankColors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    width: "85%",
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: BankColors.gray900,
+    marginBottom: Spacing.lg,
+    textAlign: "center",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: BankColors.gray300,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: 18,
+    marginBottom: Spacing.lg,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BankColors.gray200,
+    alignItems: "center",
+  },
+  modalCancelText: {
+    color: BankColors.gray700,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  modalSaveBtn: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BankColors.primary,
+    alignItems: "center",
+  },
+  modalSaveText: {
+    color: BankColors.white,
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

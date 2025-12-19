@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   Pressable,
   StyleSheet,
+  Modal,
+  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/lib/auth-context";
@@ -68,7 +71,22 @@ export default function AltroScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<NavigationProp>();
-  const { user, logout } = useAuth();
+  const { user, logout, updateName } = useAuth();
+  const [showEditName, setShowEditName] = useState(false);
+  const [newName, setNewName] = useState("");
+
+  const handleEditName = () => {
+    setNewName(user?.fullName || "");
+    setShowEditName(true);
+  };
+
+  const handleSaveName = async () => {
+    if (newName.trim()) {
+      await updateName(newName.trim());
+      setShowEditName(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -105,7 +123,7 @@ export default function AltroScreen() {
           <TopAction icon="shopping-cart" label="Carrello" />
         </View>
 
-        <Pressable style={styles.profileCard}>
+        <Pressable style={styles.profileCard} onPress={handleEditName}>
           <View style={styles.profileAvatar}>
             <Text style={styles.profileInitials}>
               {user?.fullName ? getInitials(user.fullName) : "MR"}
@@ -146,6 +164,29 @@ export default function AltroScreen() {
           <Text style={styles.logoutText}>Esci</Text>
         </Pressable>
       </ScrollView>
+
+      <Modal visible={showEditName} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setShowEditName(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Modifica Nome</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newName}
+              onChangeText={setNewName}
+              placeholder="Nome Cognome"
+              autoCapitalize="words"
+            />
+            <View style={styles.modalButtons}>
+              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditName(false)}>
+                <Text style={styles.modalCancelText}>Annulla</Text>
+              </Pressable>
+              <Pressable style={styles.modalSaveBtn} onPress={handleSaveName}>
+                <Text style={styles.modalSaveText}>Salva</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -308,6 +349,62 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     color: BankColors.error,
+    fontWeight: "500",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: BankColors.white,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.xl,
+    width: "85%",
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: BankColors.gray900,
+    marginBottom: Spacing.lg,
+    textAlign: "center",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: BankColors.gray300,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: 18,
+    marginBottom: Spacing.lg,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BankColors.gray200,
+    alignItems: "center",
+  },
+  modalCancelText: {
+    color: BankColors.gray700,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  modalSaveBtn: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BankColors.primary,
+    alignItems: "center",
+  },
+  modalSaveText: {
+    color: BankColors.white,
+    fontSize: 16,
     fontWeight: "500",
   },
 });
