@@ -105,6 +105,16 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Server date endpoint for client synchronization
+  app.get("/api/server-date", (req, res) => {
+    const now = new Date();
+    return res.json({
+      date: now.toISOString(),
+      timestamp: now.getTime(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     const { username } = req.body;
     
