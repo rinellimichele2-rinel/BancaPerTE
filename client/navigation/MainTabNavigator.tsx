@@ -1,68 +1,144 @@
 import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import { Platform, StyleSheet } from "react-native";
-import HomeStackNavigator from "@/navigation/HomeStackNavigator";
-import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
-import { useTheme } from "@/hooks/useTheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import HomeScreen from "@/screens/HomeScreen";
+import OperazioniScreen from "@/screens/OperazioniScreen";
+import CarteScreen from "@/screens/CarteScreen";
+import AltroScreen from "@/screens/AltroScreen";
+import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 
 export type MainTabParamList = {
-  HomeTab: undefined;
-  ProfileTab: undefined;
+  Home: undefined;
+  Operazioni: undefined;
+  Carte: undefined;
+  Altro: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+function TabBarIcon({ name, color, focused, badge }: { 
+  name: keyof typeof Feather.glyphMap; 
+  color: string; 
+  focused: boolean;
+  badge?: number;
+}) {
+  return (
+    <View style={styles.tabIconContainer}>
+      <Feather name={name} size={24} color={color} />
+      {badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export default function MainTabNavigator() {
-  const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
-      initialRouteName="HomeTab"
+      initialRouteName="Home"
       screenOptions={{
-        tabBarActiveTintColor: theme.tabIconSelected,
-        tabBarInactiveTintColor: theme.tabIconDefault,
+        tabBarActiveTintColor: BankColors.primary,
+        tabBarInactiveTintColor: BankColors.gray500,
         tabBarStyle: {
-          position: "absolute",
-          backgroundColor: Platform.select({
-            ios: "transparent",
-            android: theme.backgroundRoot,
-          }),
-          borderTopWidth: 0,
-          elevation: 0,
+          backgroundColor: BankColors.white,
+          borderTopWidth: 1,
+          borderTopColor: BankColors.gray200,
+          height: 60 + insets.bottom,
+          paddingTop: Spacing.sm,
+          paddingBottom: insets.bottom,
         },
-        tabBarBackground: () =>
-          Platform.OS === "ios" ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : null,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "500",
+        },
         headerShown: false,
       }}
     >
       <Tab.Screen
-        name="HomeTab"
-        component={HomeStackNavigator}
+        name="Home"
+        component={HomeScreen}
         options={{
-          title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="home" color={color} focused={focused} />
           ),
         }}
       />
       <Tab.Screen
-        name="ProfileTab"
-        component={ProfileStackNavigator}
+        name="Operazioni"
+        component={OperazioniScreen}
         options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="user" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={styles.euroIconContainer}>
+              <View style={[styles.euroCircle, { borderColor: color }]}>
+                <Text style={[styles.euroSymbol, { color }]}>E</Text>
+              </View>
+            </View>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Carte"
+        component={CarteScreen}
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="credit-card" color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Altro"
+        component={AltroScreen}
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="menu" color={color} focused={focused} badge={8} />
           ),
         }}
       />
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIconContainer: {
+    position: "relative",
+  },
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -8,
+    backgroundColor: BankColors.error,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: BankColors.white,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  euroIconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  euroCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  euroSymbol: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+});

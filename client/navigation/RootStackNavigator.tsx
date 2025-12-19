@@ -1,34 +1,54 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MainTabNavigator from "@/navigation/MainTabNavigator";
-import ModalScreen from "@/screens/ModalScreen";
-import { useScreenOptions } from "@/hooks/useScreenOptions";
+import WelcomeScreen from "@/screens/WelcomeScreen";
+import PinEntryScreen from "@/screens/PinEntryScreen";
+import { useAuth } from "@/lib/auth-context";
+import { ActivityIndicator, View, StyleSheet } from "react-native";
+import { BankColors } from "@/constants/theme";
 
 export type RootStackParamList = {
+  Welcome: undefined;
+  PinEntry: undefined;
   Main: undefined;
-  Modal: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootStackNavigator() {
-  const screenOptions = useScreenOptions();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={BankColors.primary} />
+      </View>
+    );
+  }
 
   return (
-    <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen
-        name="Main"
-        component={MainTabNavigator}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Modal"
-        component={ModalScreen}
-        options={{
-          presentation: "modal",
-          headerTitle: "Modal",
-        }}
-      />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!isAuthenticated ? (
+        <>
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+          <Stack.Screen 
+            name="PinEntry" 
+            component={PinEntryScreen}
+            options={{ animation: "slide_from_bottom" }}
+          />
+        </>
+      ) : (
+        <Stack.Screen name="Main" component={MainTabNavigator} />
+      )}
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: BankColors.white,
+  },
+});

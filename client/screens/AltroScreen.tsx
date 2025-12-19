@@ -1,0 +1,313 @@
+import React from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { Feather } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useAuth } from "@/lib/auth-context";
+import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+interface MenuItemProps {
+  icon: keyof typeof Feather.glyphMap;
+  title: string;
+  badge?: number;
+  onPress?: () => void;
+}
+
+const MenuItem = ({ icon, title, badge, onPress }: MenuItemProps) => (
+  <Pressable 
+    style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+    onPress={onPress}
+  >
+    <View style={styles.menuItemLeft}>
+      <Feather name={icon} size={22} color={BankColors.gray700} />
+      <Text style={styles.menuItemText}>{title}</Text>
+    </View>
+    <View style={styles.menuItemRight}>
+      {badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      ) : null}
+      <Feather name="chevron-right" size={20} color={BankColors.gray400} />
+    </View>
+  </Pressable>
+);
+
+interface TopActionProps {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  badge?: number;
+}
+
+const TopAction = ({ icon, label, badge }: TopActionProps) => (
+  <Pressable style={styles.topAction}>
+    <View style={styles.topActionIconContainer}>
+      <Feather name={icon} size={24} color={BankColors.gray700} />
+      {badge ? (
+        <View style={styles.topActionBadge}>
+          <Text style={styles.topActionBadgeText}>{badge}</Text>
+        </View>
+      ) : null}
+    </View>
+    <Text style={styles.topActionLabel}>{label}</Text>
+  </Pressable>
+);
+
+export default function AltroScreen() {
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+  const navigation = useNavigation<NavigationProp>();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Welcome" }],
+    });
+  };
+
+  const getInitials = (name: string) => {
+    const parts = name.split(" ");
+    if (parts.length >= 2) {
+      return parts[0][0] + parts[parts.length - 1][0];
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top + Spacing.lg }]}>
+        <Text style={styles.pageTitle}>Altro</Text>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + Spacing.xl }}
+        scrollIndicatorInsets={{ bottom: insets.bottom }}
+      >
+        <View style={styles.topActions}>
+          <TopAction icon="bell" label="Avvisi" badge={5} />
+          <View style={styles.topActionDivider} />
+          <TopAction icon="archive" label="Archivio" badge={3} />
+          <View style={styles.topActionDivider} />
+          <TopAction icon="shopping-cart" label="Carrello" />
+        </View>
+
+        <Pressable style={styles.profileCard}>
+          <View style={styles.profileAvatar}>
+            <Text style={styles.profileInitials}>
+              {user?.fullName ? getInitials(user.fullName) : "MR"}
+            </Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileLabel}>Il mio profilo</Text>
+            <Text style={styles.profileName}>{user?.fullName || "MICHELE RINELLI"}</Text>
+            <Text style={styles.profileBank}>Intesa Sanpaolo</Text>
+          </View>
+          <Feather name="chevron-right" size={24} color={BankColors.gray400} />
+        </Pressable>
+
+        <View style={styles.menuSection}>
+          <MenuItem icon="settings" title="Impostazioni e privacy" />
+          <MenuItem icon="shield" title="Sicurezza" />
+          <MenuItem icon="message-circle" title="Parla con noi" />
+        </View>
+
+        <View style={styles.menuSection}>
+          <MenuItem icon="volume-2" title="Ti suggeriamo di..." badge={1} />
+          <MenuItem icon="percent" title="Finanziamenti" />
+          <MenuItem icon="umbrella" title="Assicurazioni e Previdenza" />
+          <MenuItem icon="book" title="Catalogo prodotti" />
+        </View>
+
+        <View style={styles.menuSection}>
+          <MenuItem icon="file-text" title="Documenti" />
+          <MenuItem icon="info" title="Informazioni" />
+          <MenuItem icon="help-circle" title="FAQ e Tutorial" />
+        </View>
+
+        <Pressable 
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Feather name="log-out" size={20} color={BankColors.error} />
+          <Text style={styles.logoutText}>Esci</Text>
+        </Pressable>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BankColors.gray100,
+  },
+  header: {
+    backgroundColor: BankColors.white,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
+  },
+  pageTitle: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: BankColors.gray900,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  topActions: {
+    flexDirection: "row",
+    backgroundColor: BankColors.white,
+    paddingVertical: Spacing.lg,
+    marginBottom: Spacing.lg,
+    justifyContent: "center",
+    gap: Spacing["3xl"],
+  },
+  topAction: {
+    alignItems: "center",
+  },
+  topActionIconContainer: {
+    position: "relative",
+  },
+  topActionBadge: {
+    position: "absolute",
+    top: -6,
+    right: -10,
+    backgroundColor: BankColors.error,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  topActionBadgeText: {
+    color: BankColors.white,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  topActionLabel: {
+    fontSize: 12,
+    color: BankColors.gray700,
+    marginTop: Spacing.xs,
+  },
+  topActionDivider: {
+    width: 1,
+    backgroundColor: BankColors.gray300,
+  },
+  profileCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BankColors.white,
+    marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  profileAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: BankColors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Spacing.md,
+  },
+  profileInitials: {
+    color: BankColors.white,
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileLabel: {
+    fontSize: 12,
+    color: BankColors.gray500,
+  },
+  profileName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: BankColors.gray900,
+  },
+  profileBank: {
+    fontSize: 12,
+    color: BankColors.gray500,
+  },
+  menuSection: {
+    backgroundColor: BankColors.white,
+    marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+    overflow: "hidden",
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: BankColors.gray200,
+  },
+  menuItemPressed: {
+    backgroundColor: BankColors.gray100,
+  },
+  menuItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: BankColors.gray900,
+  },
+  menuItemRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  badge: {
+    backgroundColor: BankColors.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    color: BankColors.white,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: BankColors.white,
+    marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  logoutText: {
+    fontSize: 16,
+    color: BankColors.error,
+    fontWeight: "500",
+  },
+});
