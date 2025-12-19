@@ -356,26 +356,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ error: "Transazione non trovata" });
     }
     
-    const oldAmount = parseFloat(transaction.amount);
-    const isExpense = transaction.type === "expense";
-    
     const updates: { amount?: string; description?: string } = {};
     if (amount !== undefined) updates.amount = amount;
     if (description !== undefined) updates.description = description;
     
     const updated = await storage.updateTransaction(transactionId, updates);
     
-    if (amount !== undefined && transaction.userId) {
-      const user = await storage.getUser(transaction.userId);
-      if (user) {
-        const currentBalance = parseFloat(user.balance || "0");
-        const oldImpact = isExpense ? -oldAmount : oldAmount;
-        const newAmount = Math.round(parseFloat(amount));
-        const newImpact = isExpense ? -newAmount : newAmount;
-        const newBalance = Math.round(currentBalance - oldImpact + newImpact).toFixed(0) + ".00";
-        await storage.updateUserBalance(transaction.userId, newBalance);
-      }
-    }
+    // Security: Editing transactions does NOT modify the user's balance
+    // Balance can only be changed by admin top-ups or transfers
     
     return res.json(updated);
   });

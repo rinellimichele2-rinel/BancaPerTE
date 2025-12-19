@@ -84,3 +84,23 @@ Schema validation uses Drizzle-Zod for type-safe inserts.
 - `DATABASE_URL`: PostgreSQL connection string
 - `EXPO_PUBLIC_DOMAIN`: API server domain for client requests
 - `REPLIT_DEV_DOMAIN` / `REPLIT_DOMAINS`: Used for CORS configuration
+
+## Security Features
+
+### Anti-Cheat Protections
+- **Server-side balance validation**: All balance checks are performed on the server using database values, never trusting client data
+- **Transaction editing does NOT modify balance**: Users cannot manipulate their balance by editing transaction amounts
+- **Transfer validation**: P2P transfers validate funds server-side, prevent self-transfers, and require integer amounts
+- **Atomic transaction records**: Both sender and receiver get transaction records for audit trail
+
+### Balance Modification Rules
+- Balance can ONLY be changed by:
+  1. Admin top-ups (future feature)
+  2. P2P transfers between users
+  3. Auto-generated transactions (for demo purposes)
+- Editing existing transactions only changes the transaction record, NOT the user's balance
+
+## Future Plans (Planned for next month)
+- **Recharge username**: Special username for PayPal.me payments (separate from display name)
+- **Admin panel**: Dashboard for manual balance top-ups after PayPal payments
+- **Payment tracking**: Database table to track top-up requests and their status
