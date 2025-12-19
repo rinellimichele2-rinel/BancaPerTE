@@ -2,63 +2,73 @@ import type { Express } from "express";
 import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
 
-const TRANSACTION_DESCRIPTIONS = [
-  "Pagamento Tramite Pos",
-  "Bonifico Ricevuto",
-  "Prelievo ATM",
-  "Ricarica Telefonica",
-  "Pagamento Utenze",
-  "Acquisto Online",
-  "Ristorante",
-  "Supermercato",
-  "Farmacia",
-  "Carburante",
-  "Abbonamento",
-  "Assicurazione",
-  "Affitto",
-  "Stipendio",
-  "Rimborso",
+const EXPENSE_TRANSACTIONS = [
+  { description: "LIDL ITALIA", category: "Supermercato" },
+  { description: "COOP ALLEANZA", category: "Supermercato" },
+  { description: "EURONICS", category: "Elettronica" },
+  { description: "ESSELUNGA", category: "Supermercato" },
+  { description: "CONAD", category: "Supermercato" },
+  { description: "CARREFOUR", category: "Supermercato" },
+  { description: "MEDIAWORLD", category: "Elettronica" },
+  { description: "UNIEURO", category: "Elettronica" },
+  { description: "AMAZON EU", category: "Acquisti Online" },
+  { description: "ENI STATION", category: "Carburante" },
+  { description: "Q8 STATION", category: "Carburante" },
+  { description: "TAMOIL", category: "Carburante" },
+  { description: "RISTORANTE LA PERGOLA", category: "Ristorazione" },
+  { description: "TRATTORIA DA MARIO", category: "Ristorazione" },
+  { description: "FARMACIA COMUNALE", category: "Salute" },
+  { description: "ENEL ENERGIA", category: "Utenze" },
+  { description: "TELECOM ITALIA", category: "Utenze" },
+  { description: "VODAFONE ITALIA", category: "Utenze" },
 ];
 
-const TRANSACTION_CATEGORIES = [
-  "Pagamenti",
-  "Trasporti",
-  "Casa",
-  "Tempo libero",
-  "Salute e benessere",
-  "Altre uscite",
-  "Famiglia",
+const INCOME_TRANSACTIONS = [
+  { description: "BONIFICO DA ROSSI MARIO", category: "Bonifici" },
+  { description: "BONIFICO DA BIANCHI SRL", category: "Bonifici" },
+  { description: "INCASSO AFFITTO IMMOBILE", category: "Affitti" },
+  { description: "INCASSO CANONE LOCAZIONE", category: "Affitti" },
+  { description: "DIVIDENDI AZIONI ENEL", category: "Investimenti" },
+  { description: "DIVIDENDI AZIONI ENI", category: "Investimenti" },
+  { description: "DIVIDENDI AZIONI INTESA", category: "Investimenti" },
+  { description: "CEDOLE TITOLI DI STATO", category: "Investimenti" },
+  { description: "STIPENDIO AZIENDA SPA", category: "Stipendio" },
+  { description: "RIMBORSO SPESE", category: "Rimborsi" },
+  { description: "BONIFICO DA VERDI GIUSEPPE", category: "Bonifici" },
+  { description: "ACCREDITO PENSIONE INPS", category: "Pensione" },
 ];
 
-function generateRandomTransactions(userId: string, count: number = 5) {
-  const transactions = [];
+function generateRandomTransaction(userId: string, currentBalance: number) {
   const now = new Date();
+  const isExpense = Math.random() > 0.4;
   
-  for (let i = 0; i < count; i++) {
-    const isExpense = Math.random() > 0.3;
-    const amount = isExpense 
-      ? -(Math.random() * 100 + 1).toFixed(2)
-      : (Math.random() * 500 + 10).toFixed(2);
-    
-    const description = TRANSACTION_DESCRIPTIONS[Math.floor(Math.random() * TRANSACTION_DESCRIPTIONS.length)];
-    const category = TRANSACTION_CATEGORIES[Math.floor(Math.random() * TRANSACTION_CATEGORIES.length)];
-    
-    const date = new Date(now);
-    date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-    
-    transactions.push({
-      userId,
-      description,
-      amount: amount.toString(),
-      type: isExpense ? "expense" : "income",
-      category,
-      accountNumber: `Conto 1000/00002521`,
-      isContabilizzato: Math.random() > 0.5,
-      date,
-    });
+  const maxTransactionPercent = 0.15;
+  const maxAmount = Math.max(currentBalance * maxTransactionPercent, 50);
+  
+  let amount: number;
+  let transaction: { description: string; category: string };
+  
+  if (isExpense) {
+    amount = -(Math.random() * Math.min(maxAmount, 200) + 5);
+    transaction = EXPENSE_TRANSACTIONS[Math.floor(Math.random() * EXPENSE_TRANSACTIONS.length)];
+  } else {
+    amount = Math.random() * maxAmount + 10;
+    transaction = INCOME_TRANSACTIONS[Math.floor(Math.random() * INCOME_TRANSACTIONS.length)];
   }
   
-  return transactions;
+  const date = new Date(now);
+  date.setDate(date.getDate() - Math.floor(Math.random() * 7));
+  
+  return {
+    userId,
+    description: transaction.description,
+    amount: amount.toFixed(2),
+    type: isExpense ? "expense" : "income",
+    category: transaction.category,
+    accountNumber: null,
+    isContabilizzato: true,
+    date,
+  };
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -154,6 +164,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  app.put("/api/user/:userId/name", async (req, res) => {
+    const { userId } = req.params;
+    const { name } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: "Nome richiesto" });
+    }
+    
+    const user = await storage.updateUserName(userId, name);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    return res.json({
+      id: user.id,
+      fullName: user.fullName,
+    });
+  });
+
+  app.put("/api/user/:userId/account-number", async (req, res) => {
+    const { userId } = req.params;
+    const { accountNumber } = req.body;
+    
+    if (!accountNumber) {
+      return res.status(400).json({ error: "Numero conto richiesto" });
+    }
+    
+    const user = await storage.updateUserAccountNumber(userId, accountNumber);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    return res.json({
+      id: user.id,
+      accountNumber: user.accountNumber,
+    });
+  });
+
   app.get("/api/transactions/:userId", async (req, res) => {
     const { userId } = req.params;
     
@@ -164,7 +214,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/transactions/:userId/generate-random", async (req, res) => {
     const { userId } = req.params;
-    const { count = 5 } = req.body;
     
     const user = await storage.getUser(userId);
     
@@ -172,10 +221,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ error: "Utente non trovato" });
     }
     
-    const randomTransactions = generateRandomTransactions(userId, count);
-    const created = await storage.createMultipleTransactions(randomTransactions);
+    const currentBalance = parseFloat(user.balance || "1000");
+    const transaction = generateRandomTransaction(userId, currentBalance);
+    const created = await storage.createTransaction(transaction);
     
-    return res.json(created);
+    const newBalance = (currentBalance + parseFloat(transaction.amount)).toFixed(2);
+    await storage.updateUserBalance(userId, newBalance);
+    
+    return res.json({ transaction: created, newBalance });
   });
 
   app.post("/api/transactions", async (req, res) => {

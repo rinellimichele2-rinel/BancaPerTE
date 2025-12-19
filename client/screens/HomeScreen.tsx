@@ -83,11 +83,13 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const queryClient = useQueryClient();
-  const { user, userId, refreshUser, updateBalance } = useAuth();
+  const { user, userId, refreshUser, updateBalance, updateAccountNumber } = useAuth();
   const [showBalance, setShowBalance] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showEditBalance, setShowEditBalance] = useState(false);
   const [newBalance, setNewBalance] = useState("");
+  const [showEditAccount, setShowEditAccount] = useState(false);
+  const [newAccountNumber, setNewAccountNumber] = useState("");
 
   const { data: transactions = [], isLoading: loadingTransactions } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions", userId],
@@ -96,11 +98,12 @@ export default function HomeScreen() {
 
   const generateTransactionsMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/transactions/${userId}/generate-random`, { count: 5 });
+      const response = await apiRequest("POST", `/api/transactions/${userId}/generate-random`);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+      await refreshUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
   });
@@ -133,6 +136,19 @@ export default function HomeScreen() {
     if (!isNaN(parseFloat(value))) {
       await updateBalance(value);
       setShowEditBalance(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const handleEditAccountNumber = () => {
+    setNewAccountNumber(user?.accountNumber || "");
+    setShowEditAccount(true);
+  };
+
+  const handleSaveAccountNumber = async () => {
+    if (newAccountNumber.trim()) {
+      await updateAccountNumber(newAccountNumber.trim());
+      setShowEditAccount(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
@@ -191,7 +207,9 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          <Text style={styles.accountNumber}>Conto {user?.accountNumber || "1000/00002521"}</Text>
+          <Pressable onPress={handleEditAccountNumber}>
+            <Text style={styles.accountNumber}>Conto {user?.accountNumber || "1000/00002521"}</Text>
+          </Pressable>
 
           <Pressable style={styles.balanceRow} onPress={handleToggleBalance} onLongPress={handleEditBalance}>
             {showBalance ? (
@@ -211,7 +229,7 @@ export default function HomeScreen() {
             </Pressable>
           </Pressable>
 
-          <Pressable>
+          <Pressable onPress={handleEditBalance}>
             <Text style={styles.detailLink}>Dettaglio</Text>
           </Pressable>
 
@@ -277,6 +295,28 @@ export default function HomeScreen() {
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
               <Pressable style={styles.modalSaveBtn} onPress={handleSaveBalance}>
+                <Text style={styles.modalSaveText}>Salva</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showEditAccount} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setShowEditAccount(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Modifica Numero Conto</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newAccountNumber}
+              onChangeText={setNewAccountNumber}
+              placeholder="1000/00002521"
+            />
+            <View style={styles.modalButtons}>
+              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditAccount(false)}>
+                <Text style={styles.modalCancelText}>Annulla</Text>
+              </Pressable>
+              <Pressable style={styles.modalSaveBtn} onPress={handleSaveAccountNumber}>
                 <Text style={styles.modalSaveText}>Salva</Text>
               </Pressable>
             </View>

@@ -21,6 +21,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateBalance: (newBalance: string) => Promise<void>;
+  updateName: (newName: string) => Promise<void>;
+  updateAccountNumber: (newAccountNumber: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -114,6 +116,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateName = async (newName: string) => {
+    if (!userId) return;
+    
+    try {
+      await apiRequest("PUT", `/api/user/${userId}/name`, { name: newName });
+      await refreshUser();
+    } catch (error) {
+      console.error("Error updating name:", error);
+    }
+  };
+
+  const updateAccountNumber = async (newAccountNumber: string) => {
+    if (!userId) return;
+    
+    try {
+      await apiRequest("PUT", `/api/user/${userId}/account-number`, { accountNumber: newAccountNumber });
+      await refreshUser();
+    } catch (error) {
+      console.error("Error updating account number:", error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -126,6 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         refreshUser,
         updateBalance,
+        updateName,
+        updateAccountNumber,
       }}
     >
       {children}
