@@ -16,7 +16,9 @@ interface AuthContextType {
   userId: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string) => Promise<{ userId: string }>;
+  needsSetup: boolean;
+  login: (username: string) => Promise<{ userId: string; needsSetup: boolean }>;
+  setupPin: (pin: string) => Promise<boolean>;
   verifyPin: (pin: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -33,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserData | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [needsSetup, setNeedsSetup] = useState(false);
 
   useEffect(() => {
     loadStoredAuth();
@@ -42,9 +45,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
-        const { userId: storedUserId } = JSON.parse(stored);
+        const { userId: storedUserId, needsSetup: storedNeedsSetup } = JSON.parse(stored);
         if (storedUserId) {
           setUserId(storedUserId);
+          setNeedsSetup(storedNeedsSetup || false);
         }
       }
     } catch (error) {
@@ -54,17 +58,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (username: string): Promise<{ userId: string }> => {
+  const login = async (username: string): Promise<{ userId: string; needsSetup: boolean }> => {
     const response = await apiRequest("POST", "/api/auth/login", { username });
     const data = await response.json();
     
     await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ 
       userId: data.userId,
-      username: data.username 
+      username: data.username,
+      needsSetup: data.needsSetup
     }));
     
     setUserId(data.userId);
-    return { userId: data.userId };
+    setNeedsSetup(data.needsSetup);
+    return { userId: data.userId, needsSetup: data.needsSetup };
+  };
+
+  const setupPin = async (pin: string): Promise<boolean> => {
+    if (!userId) return false;
+    
+    try {
+      const response = await apiRequest("POST", "/api/auth/setup-pin", { userId, pin });
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        setUser(data.user);
+        setNeedsSetup(false);
+        await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ 
+          userId,
+          needsSetup: false
+        }));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("PIN setup error:", error);
+      return false;
+    }
   };
 
   const verifyPin = async (pin: string): Promise<boolean> => {
@@ -145,7 +174,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId,
         isAuthenticated: !!user,
         isLoading,
+        needsSetup,
         login,
+        setupPin,
         verifyPin,
         logout,
         refreshUser,

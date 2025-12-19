@@ -23,15 +23,16 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { login, userId } = useAuth();
+  const { login, userId, needsSetup } = useAuth();
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [welcomeName, setWelcomeName] = useState("");
+  const [isNewUser, setIsNewUser] = useState(false);
 
   const handleEnter = async () => {
     if (userId) {
-      navigation.navigate("PinEntry");
+      navigation.navigate(needsSetup ? "PinSetup" : "PinEntry");
       return;
     }
     
@@ -39,9 +40,10 @@ export default function WelcomeScreen() {
     
     setIsLoading(true);
     try {
-      await login(username.trim());
+      const result = await login(username.trim());
       setWelcomeName(username.trim());
       setShowWelcome(true);
+      setIsNewUser(result.needsSetup);
     } catch (error) {
       console.error("Login error:", error);
     } finally {
@@ -50,7 +52,7 @@ export default function WelcomeScreen() {
   };
 
   const handleContinue = () => {
-    navigation.navigate("PinEntry");
+    navigation.navigate(isNewUser ? "PinSetup" : "PinEntry");
   };
 
   return (

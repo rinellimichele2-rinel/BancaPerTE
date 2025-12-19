@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MainTabNavigator from "@/navigation/MainTabNavigator";
 import WelcomeScreen from "@/screens/WelcomeScreen";
 import PinEntryScreen from "@/screens/PinEntryScreen";
+import PinSetupScreen from "@/screens/PinSetupScreen";
 import { useAuth } from "@/lib/auth-context";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { BankColors } from "@/constants/theme";
@@ -10,6 +11,7 @@ import { BankColors } from "@/constants/theme";
 export type RootStackParamList = {
   Welcome: undefined;
   PinEntry: undefined;
+  PinSetup: undefined;
   Main: undefined;
 };
 
@@ -34,6 +36,11 @@ export default function RootStackNavigator() {
           <Stack.Screen 
             name="PinEntry" 
             component={PinEntryScreen}
+            options={{ animation: "slide_from_bottom" }}
+          />
+          <Stack.Screen 
+            name="PinSetup" 
+            component={PinSetupScreen}
             options={{ animation: "slide_from_bottom" }}
           />
         </>

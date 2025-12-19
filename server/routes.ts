@@ -80,19 +80,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     let user = await storage.getUserByUsername(username);
+    let isNewUser = false;
     
     if (!user) {
       user = await storage.createUser({
         username,
-        pin: "12345",
+        pin: "00000",
+        hasSetPin: false,
         fullName: username.toUpperCase(),
         accountNumber: `1000/${Math.floor(Math.random() * 100000).toString().padStart(8, "0")}`,
         balance: "1000.00",
         cardLastFour: Math.floor(Math.random() * 10000).toString().padStart(4, "0"),
       });
+      isNewUser = true;
     }
     
-    return res.json({ userId: user.id, username: user.username });
+    return res.json({ 
+      userId: user.id, 
+      username: user.username,
+      needsSetup: isNewUser || !user.hasSetPin
+    });
+  });
+
+  app.post("/api/auth/setup-pin", async (req, res) => {
+    const { userId, pin } = req.body;
+    
+    if (!userId || !pin) {
+      return res.status(400).json({ error: "UserId e PIN richiesti" });
+    }
+    
+    if (pin.length !== 5 || !/^\d{5}$/.test(pin)) {
+      return res.status(400).json({ error: "Il PIN deve essere di 5 cifre" });
+    }
+    
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    await storage.updateUserPin(userId, pin);
+    
+    return res.json({ 
+      success: true, 
+      user: {
+        id: user.id,
+        username: user.username,
+        fullName: user.fullName,
+        accountNumber: user.accountNumber,
+        balance: user.balance,
+        cardLastFour: user.cardLastFour,
+      }
+    });
   });
 
   app.post("/api/auth/verify-pin", async (req, res) => {
