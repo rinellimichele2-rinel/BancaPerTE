@@ -84,7 +84,7 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
   if (transaction.fixedAmounts && transaction.fixedAmounts.length > 0) {
     amount = transaction.fixedAmounts[Math.floor(Math.random() * transaction.fixedAmounts.length)];
   } else {
-    amount = Math.random() * (transaction.maxAmount - transaction.minAmount) + transaction.minAmount;
+    amount = Math.round(Math.random() * (transaction.maxAmount - transaction.minAmount) + transaction.minAmount);
   }
   
   const date = new Date(now);
@@ -95,7 +95,7 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
   return {
     userId,
     description: transaction.description,
-    amount: amount.toFixed(2),
+    amount: amount.toFixed(0) + ".00",
     type: isExpense ? "expense" : "income",
     category: transaction.category,
     accountNumber: null,
@@ -300,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // For expenses, subtract the amount; for income, add it
     const amountValue = parseFloat(transaction.amount);
     const balanceChange = transaction.type === "expense" ? -amountValue : amountValue;
-    const newBalance = (currentBalance + balanceChange).toFixed(2);
+    const newBalance = Math.round(currentBalance + balanceChange).toFixed(0) + ".00";
     await storage.updateUserBalance(userId, newBalance);
     
     return res.json({ transaction: created, newBalance });
@@ -342,9 +342,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user) {
         const currentBalance = parseFloat(user.balance || "0");
         const oldImpact = isExpense ? -oldAmount : oldAmount;
-        const newAmount = parseFloat(amount);
+        const newAmount = Math.round(parseFloat(amount));
         const newImpact = isExpense ? -newAmount : newAmount;
-        const newBalance = (currentBalance - oldImpact + newImpact).toFixed(2);
+        const newBalance = Math.round(currentBalance - oldImpact + newImpact).toFixed(0) + ".00";
         await storage.updateUserBalance(transaction.userId, newBalance);
       }
     }
