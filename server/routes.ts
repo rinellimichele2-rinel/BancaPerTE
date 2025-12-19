@@ -336,6 +336,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "Dati transazione incompleti" });
     }
     
+    // Convert date string to Date object if provided
+    if (transaction.date && typeof transaction.date === 'string') {
+      transaction.date = new Date(transaction.date);
+    }
+    
     const created = await storage.createTransaction(transaction);
     
     return res.json(created);
