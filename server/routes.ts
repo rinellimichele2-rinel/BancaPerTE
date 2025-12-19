@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
 import { registerChatRoutes } from "./replit_integrations/chat";
+import { registerNewsRoutes } from "./replit_integrations/news";
 
 const EXPENSE_TRANSACTIONS = [
   { description: "Dok Via Giosue' Carducci 32", category: "Generi alimentari e supermercato", minAmount: 3, maxAmount: 20 },
@@ -107,6 +108,9 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register AI chat routes for financial advisor
   registerChatRoutes(app);
+  
+  // Register AI-curated news feed routes
+  registerNewsRoutes(app);
 
   // Server date endpoint for client synchronization
   app.get("/api/server-date", (req, res) => {

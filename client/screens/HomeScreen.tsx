@@ -255,6 +255,7 @@ export default function HomeScreen() {
             <QuickActionButton icon="file-text" label="CBILL/pagoPA" />
             <QuickActionButton icon="smartphone" label="Ricarica" />
             <QuickActionButton icon="message-circle" label="Consulente AI" onPress={() => navigation.navigate("Advisor")} />
+            <QuickActionButton icon="rss" label="Notizie" onPress={() => navigation.navigate("News")} />
           </ScrollView>
         </LinearGradient>
 

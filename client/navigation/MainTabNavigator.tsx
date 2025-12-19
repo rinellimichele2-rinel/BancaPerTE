@@ -7,6 +7,7 @@ import HomeScreen from "@/screens/HomeScreen";
 import TransactionDetailScreen from "@/screens/TransactionDetailScreen";
 import AnalisiScreen from "@/screens/AnalisiScreen";
 import AdvisorScreen from "@/screens/AdvisorScreen";
+import NewsScreen from "@/screens/NewsScreen";
 import OperazioniScreen from "@/screens/OperazioniScreen";
 import CarteScreen from "@/screens/CarteScreen";
 import AltroScreen from "@/screens/AltroScreen";
@@ -19,6 +20,7 @@ export type HomeStackParamList = {
   TransactionDetail: { transaction: Transaction };
   Analisi: undefined;
   Advisor: undefined;
+  News: undefined;
 };
 
 export type MainTabParamList = {
@@ -43,6 +45,17 @@ function HomeStackNavigator() {
         options={{
           headerShown: true,
           headerTitle: "Consulente AI",
+          headerTintColor: BankColors.primary,
+          headerStyle: { backgroundColor: BankColors.white },
+          headerBackTitle: "Indietro",
+        }}
+      />
+      <HomeStack.Screen 
+        name="News" 
+        component={NewsScreen}
+        options={{
+          headerShown: true,
+          headerTitle: "Notizie Finanziarie",
           headerTintColor: BankColors.primary,
           headerStyle: { backgroundColor: BankColors.white },
           headerBackTitle: "Indietro",
