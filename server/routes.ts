@@ -3,58 +3,89 @@ import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
 
 const EXPENSE_TRANSACTIONS = [
-  { description: "LIDL ITALIA", category: "Supermercato" },
-  { description: "COOP ALLEANZA", category: "Supermercato" },
-  { description: "EURONICS", category: "Elettronica" },
-  { description: "ESSELUNGA", category: "Supermercato" },
-  { description: "CONAD", category: "Supermercato" },
-  { description: "CARREFOUR", category: "Supermercato" },
-  { description: "MEDIAWORLD", category: "Elettronica" },
-  { description: "UNIEURO", category: "Elettronica" },
-  { description: "AMAZON EU", category: "Acquisti Online" },
-  { description: "ENI STATION", category: "Carburante" },
-  { description: "Q8 STATION", category: "Carburante" },
-  { description: "TAMOIL", category: "Carburante" },
-  { description: "RISTORANTE LA PERGOLA", category: "Ristorazione" },
-  { description: "TRATTORIA DA MARIO", category: "Ristorazione" },
-  { description: "FARMACIA COMUNALE", category: "Salute" },
-  { description: "ENEL ENERGIA", category: "Utenze" },
-  { description: "TELECOM ITALIA", category: "Utenze" },
-  { description: "VODAFONE ITALIA", category: "Utenze" },
+  { description: "Dok Via Giosue' Carducci 32", category: "Generi alimentari e supermercato", minAmount: 3, maxAmount: 20 },
+  { description: "Coop Superstore C.da Bosche", category: "Generi alimentari e supermercato", minAmount: 5, maxAmount: 20 },
+  { description: "Coop Superstore Melfi", category: "Generi alimentari e supermercato", minAmount: 5, maxAmount: 15 },
+  { description: "Pv185ep Via Foggia Melfi 85", category: "Generi alimentari e supermercato", minAmount: 8, maxAmount: 40 },
+  { description: "Morano Srl Via Foggia", category: "Generi alimentari e supermercato", minAmount: 9, maxAmount: 25 },
+  { description: "Penny Market S.r.l.", category: "Generi alimentari e supermercato", minAmount: 20, maxAmount: 130 },
+  { description: "Lidl 1972", category: "Generi alimentari e supermercato", minAmount: 10, maxAmount: 50 },
+  { description: "Md Ripacandida S.spiano Del", category: "Generi alimentari e supermercato", minAmount: 15, maxAmount: 35 },
+  { description: "Iper Molfetta", category: "Generi alimentari e supermercato", minAmount: 1, maxAmount: 15 },
+  { description: "Despar Largo Finlandia Bari", category: "Generi alimentari e supermercato", minAmount: 10, maxAmount: 20 },
+  { description: "Supermercato Despar Via For", category: "Generi alimentari e supermercato", minAmount: 3, maxAmount: 20 },
+  { description: "Al Solito Posto Via San Lor", category: "Tabaccai e simili", minAmount: 4, maxAmount: 10 },
+  { description: "Coretti Francesco Molfetta", category: "Tabaccai e simili", minAmount: 3, maxAmount: 8 },
+  { description: "Fama S.r.l.s. Contrada Bosc", category: "Ristoranti e bar", minAmount: 4, maxAmount: 10 },
+  { description: "Pizzeria Del Borgo Via Colu", category: "Ristoranti e bar", minAmount: 8, maxAmount: 15 },
+  { description: "Metro' Pizzeria Via Roma 14", category: "Ristoranti e bar", minAmount: 10, maxAmount: 20 },
+  { description: "Red Note S.r.l.s.", category: "Ristoranti e bar", minAmount: 15, maxAmount: 30 },
+  { description: "SumUp *Room Food Rapolla", category: "Ristoranti e bar", minAmount: 10, maxAmount: 40 },
+  { description: "Chapeau Le Gourmet Gr Rac A", category: "Ristoranti e bar", minAmount: 15, maxAmount: 30 },
+  { description: "Ccoffee Shop Srl Via Olive", category: "Ristoranti e bar", minAmount: 1, maxAmount: 8 },
+  { description: "Mc Donald's C/o Centro Comm", category: "Ristoranti e bar", minAmount: 10, maxAmount: 30 },
+  { description: "Cup&go Ss407 Basentana Potenza", category: "Ristoranti e bar", minAmount: 3, maxAmount: 8 },
+  { description: "La Rustica Srls Strada Stat", category: "Ristoranti e bar", minAmount: 6, maxAmount: 15 },
+  { description: "Kikyo Sushi Via Della Mecca", category: "Ristoranti e bar", minAmount: 25, maxAmount: 50 },
+  { description: "Caffe' Del Viale Di Mo Via", category: "Ristoranti e bar", minAmount: 3, maxAmount: 10 },
+  { description: "Maglione Pizzeriasarni Cc Gran Foggia", category: "Ristoranti e bar", minAmount: 2, maxAmount: 15 },
+  { description: "Coil Barile Strada Statale", category: "Carburanti", minAmount: 10, maxAmount: 30 },
+  { description: "40653 Rapolla Pz Via Barl", category: "Carburanti", minAmount: 10, maxAmount: 20 },
+  { description: "Stazione Di Servizio F Cont", category: "Carburanti", minAmount: 20, maxAmount: 40 },
+  { description: "Eni 54761", category: "Carburanti", minAmount: 15, maxAmount: 25 },
+  { description: "Stazione Di Servizio Toi Ss", category: "Carburanti", minAmount: 15, maxAmount: 25 },
+  { description: "Pv8812", category: "Carburanti", minAmount: 10, maxAmount: 20 },
+  { description: "Eni08758", category: "Carburanti", minAmount: 10, maxAmount: 15 },
+  { description: "Pepco 220140 Melfi Melfi", category: "Casa varie", minAmount: 2, maxAmount: 10 },
+  { description: "Linea Risparmio Self Rapolla", category: "Casa varie", minAmount: 1, maxAmount: 5 },
+  { description: "Colorificio Ferramenta L Vi", category: "Manutenzione casa", minAmount: 10, maxAmount: 20 },
+  { description: "Okasa Shop Via Potenza Dc S", category: "Casa varie", minAmount: 3, maxAmount: 10 },
+  { description: "Estyle S.r.l. Viale Del Bas", category: "Cura della persona", minAmount: 10, maxAmount: 40 },
+  { description: "Ditta Vincenzo Navazio & Fi", category: "Tempo libero varie", minAmount: 50, maxAmount: 120 },
+  { description: "RH *cnfans.com London", category: "Tempo libero varie", minAmount: 7, maxAmount: 15 },
+  { description: "C.w. S.r.l.s.", category: "Tempo libero varie", minAmount: 2, maxAmount: 10 },
+  { description: "Radino Francesca Melfi", category: "Tempo libero varie", minAmount: 5, maxAmount: 10 },
+  { description: "Ovs", category: "Abbigliamento e accessori", minAmount: 5, maxAmount: 50 },
+  { description: "House Store Via Alcide De G", category: "Abbigliamento e accessori", minAmount: 3, maxAmount: 20 },
+  { description: "Lycamobile S R L Roma", category: "Cellulare", minAmount: 10, maxAmount: 15 },
+  { description: "Autoservizi Moretti Srl Melfi", category: "Trasporti, noleggi, taxi e parcheggi", minAmount: 2, maxAmount: 5 },
+  { description: "Alibaba.com Luxembourg", category: "Acquisti Online", minAmount: 10, maxAmount: 50 },
+  { description: "Paypal *alipayeu", category: "Acquisti Online", minAmount: 20, maxAmount: 60 },
+  { description: "Prelievo BANCOMAT Altre Banche Italia E Sepa", category: "Prelievi", minAmount: 20, maxAmount: 150 },
+  { description: "Prelievo Sportello Banca Del Gruppo", category: "Prelievi", minAmount: 50, maxAmount: 100 },
+  { description: "Comm.prelievo Bancocard Banche Italia E Sepa", category: "Imposte, bolli e commissioni", minAmount: 2, maxAmount: 2 },
+  { description: "Commissione Disposizione Di Bonifico", category: "Imposte, bolli e commissioni", minAmount: 1, maxAmount: 1 },
+  { description: "Canone Mensile Totale La Mia Scelta", category: "Altre uscite", minAmount: 7, maxAmount: 8 },
+  { description: "Bonifico Disposto A Favore Di Raffaele Pianta", category: "Pagamento affitti", minAmount: 250, maxAmount: 350 },
 ];
 
 const INCOME_TRANSACTIONS = [
-  { description: "BONIFICO DA ROSSI MARIO", category: "Bonifici" },
-  { description: "BONIFICO DA BIANCHI SRL", category: "Bonifici" },
-  { description: "INCASSO AFFITTO IMMOBILE", category: "Affitti" },
-  { description: "INCASSO CANONE LOCAZIONE", category: "Affitti" },
-  { description: "DIVIDENDI AZIONI ENEL", category: "Investimenti" },
-  { description: "DIVIDENDI AZIONI ENI", category: "Investimenti" },
-  { description: "DIVIDENDI AZIONI INTESA", category: "Investimenti" },
-  { description: "CEDOLE TITOLI DI STATO", category: "Investimenti" },
-  { description: "STIPENDIO AZIENDA SPA", category: "Stipendio" },
-  { description: "RIMBORSO SPESE", category: "Rimborsi" },
-  { description: "BONIFICO DA VERDI GIUSEPPE", category: "Bonifici" },
-  { description: "ACCREDITO PENSIONE INPS", category: "Pensione" },
+  { description: "Bonifico Istantaneo Disposto Da LAURENZIELLO GIOVINA", category: "Bonifici ricevuti", minAmount: 15, maxAmount: 200 },
+  { description: "Bonifico Disposto Da INPS", category: "Bonifici ricevuti", minAmount: 30, maxAmount: 650 },
+  { description: "Bonifico Disposto Da CAMMAROTA DONATO C. S.N.C.", category: "Bonifici ricevuti", minAmount: 300, maxAmount: 600 },
+  { description: "Bonifico Istantaneo Disposto Da A.P.S.E.M. CLUB PUNTO SPORT CAFFE'", category: "Bonifici ricevuti", minAmount: 50, maxAmount: 100 },
+  { description: "Bonifico Disposto Da Mangopay", category: "Bonifici ricevuti", minAmount: 30, maxAmount: 50 },
+  { description: "Bonifico Disposto Da Gbo Italy SpA", category: "Bonifici ricevuti", minAmount: 40, maxAmount: 60 },
 ];
 
 function generateRandomTransaction(userId: string, currentBalance: number) {
   const now = new Date();
   const isExpense = Math.random() > 0.30;
   
-  let amount: number;
-  let transaction: { description: string; category: string };
+  let transaction: { description: string; category: string; minAmount: number; maxAmount: number };
   
   if (isExpense) {
-    amount = Math.random() * 150 + 5;
     transaction = EXPENSE_TRANSACTIONS[Math.floor(Math.random() * EXPENSE_TRANSACTIONS.length)];
   } else {
-    amount = Math.random() * 80 + 20;
     transaction = INCOME_TRANSACTIONS[Math.floor(Math.random() * INCOME_TRANSACTIONS.length)];
   }
   
+  const amount = Math.random() * (transaction.maxAmount - transaction.minAmount) + transaction.minAmount;
+  
   const date = new Date(now);
   date.setDate(date.getDate() - Math.floor(Math.random() * 30));
+  
+  const isContabilizzato = Math.random() > 0.15;
   
   return {
     userId,
@@ -63,7 +94,7 @@ function generateRandomTransaction(userId: string, currentBalance: number) {
     type: isExpense ? "expense" : "income",
     category: transaction.category,
     accountNumber: null,
-    isContabilizzato: true,
+    isContabilizzato,
     date,
   };
 }
