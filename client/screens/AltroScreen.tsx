@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Icon } from "@/components/Icon";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/lib/auth-context";
@@ -21,7 +21,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface MenuItemProps {
-  icon: keyof typeof Feather.glyphMap;
+  icon: string;
   title: string;
   badge?: number;
   onPress?: () => void;
@@ -33,7 +33,7 @@ const MenuItem = ({ icon, title, badge, onPress }: MenuItemProps) => (
     onPress={onPress}
   >
     <View style={styles.menuItemLeft}>
-      <Feather name={icon} size={22} color={BankColors.gray700} />
+      <Icon name={icon} size={22} color={BankColors.gray700} />
       <Text style={styles.menuItemText}>{title}</Text>
     </View>
     <View style={styles.menuItemRight}>
@@ -42,13 +42,13 @@ const MenuItem = ({ icon, title, badge, onPress }: MenuItemProps) => (
           <Text style={styles.badgeText}>{badge}</Text>
         </View>
       ) : null}
-      <Feather name="chevron-right" size={20} color={BankColors.gray400} />
+      <Icon name="chevron-right" size={20} color={BankColors.gray400} />
     </View>
   </Pressable>
 );
 
 interface TopActionProps {
-  icon: keyof typeof Feather.glyphMap;
+  icon: string;
   label: string;
   badge?: number;
 }
@@ -56,7 +56,7 @@ interface TopActionProps {
 const TopAction = ({ icon, label, badge }: TopActionProps) => (
   <Pressable style={styles.topAction}>
     <View style={styles.topActionIconContainer}>
-      <Feather name={icon} size={24} color={BankColors.gray700} />
+      <Icon name={icon} size={24} color={BankColors.gray700} />
       {badge ? (
         <View style={styles.topActionBadge}>
           <Text style={styles.topActionBadgeText}>{badge}</Text>
@@ -134,7 +134,7 @@ export default function AltroScreen() {
             <Text style={styles.profileName}>{user?.fullName || "MICHELE RINELLI"}</Text>
             <Text style={styles.profileBank}>Intesa Sanpaolo</Text>
           </View>
-          <Feather name="chevron-right" size={24} color={BankColors.gray400} />
+          <Icon name="chevron-right" size={24} color={BankColors.gray400} />
         </Pressable>
 
         <View style={styles.menuSection}>
@@ -160,7 +160,7 @@ export default function AltroScreen() {
           style={styles.logoutButton}
           onPress={handleLogout}
         >
-          <Feather name="log-out" size={20} color={BankColors.error} />
+          <Icon name="log-out" size={20} color={BankColors.error} />
           <Text style={styles.logoutText}>Esci</Text>
         </Pressable>
       </ScrollView>

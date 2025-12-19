@@ -2,13 +2,13 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeScreen from "@/screens/HomeScreen";
 import TransactionDetailScreen from "@/screens/TransactionDetailScreen";
 import OperazioniScreen from "@/screens/OperazioniScreen";
 import CarteScreen from "@/screens/CarteScreen";
 import AltroScreen from "@/screens/AltroScreen";
+import { Icon } from "@/components/Icon";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { Transaction } from "@shared/schema";
 
@@ -37,14 +37,14 @@ function HomeStackNavigator() {
 }
 
 function TabBarIcon({ name, color, focused, badge }: { 
-  name: keyof typeof Feather.glyphMap; 
+  name: string; 
   color: string; 
   focused: boolean;
   badge?: number;
 }) {
   return (
     <View style={styles.tabIconContainer}>
-      <Feather name={name} size={24} color={color} />
+      <Icon name={name} size={24} color={color} />
       {badge ? (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{badge}</Text>

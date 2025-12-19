@@ -11,10 +11,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/lib/auth-context";
+import { Icon } from "@/components/Icon";
 import { BankColors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -68,7 +68,7 @@ export default function WelcomeScreen() {
           <View style={styles.logoContainer}>
             <Text style={styles.logoText}>INTESA</Text>
             <View style={styles.logoIcon}>
-              <Feather name="home" size={20} color={BankColors.white} />
+              <Icon name="home" size={20} color={BankColors.white} />
             </View>
             <Text style={styles.logoText}>SANPAOLO</Text>
           </View>
@@ -135,25 +135,25 @@ export default function WelcomeScreen() {
             <View style={styles.quickActions}>
               <Pressable style={styles.quickAction}>
                 <View style={styles.quickActionIcon}>
-                  <Feather name="smartphone" size={24} color={BankColors.white} />
+                  <Icon name="smartphone" size={24} color={BankColors.white} />
                 </View>
                 <Text style={styles.quickActionText}>Prelievo{"\n"}cardless</Text>
               </Pressable>
               <Pressable style={styles.quickAction}>
                 <View style={styles.quickActionIcon}>
-                  <Feather name="credit-card" size={24} color={BankColors.white} />
+                  <Icon name="credit-card" size={24} color={BankColors.white} />
                 </View>
                 <Text style={styles.quickActionText}>BANCOMAT{"\n"}Pay</Text>
               </Pressable>
               <Pressable style={styles.quickAction}>
                 <View style={styles.quickActionIcon}>
-                  <Feather name="map-pin" size={24} color={BankColors.white} />
+                  <Icon name="map-pin" size={24} color={BankColors.white} />
                 </View>
                 <Text style={styles.quickActionText}>Vicino a me</Text>
               </Pressable>
               <Pressable style={styles.quickAction}>
                 <View style={styles.quickActionIcon}>
-                  <Feather name="more-vertical" size={24} color={BankColors.white} />
+                  <Icon name="more-vertical" size={24} color={BankColors.white} />
                 </View>
                 <Text style={styles.quickActionText}>Altro</Text>
               </Pressable>

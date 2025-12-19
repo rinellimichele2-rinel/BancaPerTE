@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { Feather } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { apiRequest } from "@/lib/query-client";
 import { useAuth } from "@/lib/auth-context";
@@ -107,12 +107,12 @@ export default function TransactionDetailScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Feather name="chevron-left" size={24} color={BankColors.primary} />
+          <Icon name="chevron-left" size={24} color={BankColors.primary} />
           <Text style={styles.backText}>Indietro</Text>
         </Pressable>
         <Text style={styles.headerTitle}>Dettaglio operazione</Text>
         <Pressable style={styles.helpButton}>
-          <Feather name="help-circle" size={24} color={BankColors.primary} />
+          <Icon name="help-circle" size={24} color={BankColors.primary} />
           <Text style={styles.helpText}>Aiuto</Text>
         </Pressable>
       </View>
@@ -120,7 +120,7 @@ export default function TransactionDetailScreen() {
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <View style={[styles.iconCircle, isExpense ? styles.expenseIcon : styles.incomeIcon]}>
-            <Feather 
+            <Icon 
               name={getCategoryIcon()} 
               size={32} 
               color={isExpense ? BankColors.primary : BankColors.success} 
@@ -158,7 +158,7 @@ export default function TransactionDetailScreen() {
         <View style={styles.actionsContainer}>
           <Pressable style={styles.actionButton}>
             <View style={styles.actionIconCircle}>
-              <Feather name="share-2" size={24} color={BankColors.primary} />
+              <Icon name="share-2" size={24} color={BankColors.primary} />
             </View>
             <Text style={styles.actionText}>Condividi</Text>
           </Pressable>

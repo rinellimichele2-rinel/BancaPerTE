@@ -7,11 +7,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth-context";
+import { Icon } from "@/components/Icon";
 import { BankColors, Spacing, BorderRadius, Typography } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -86,7 +86,6 @@ export default function PinSetupScreen() {
 
   const handleCancel = async () => {
     await logout();
-    navigation.goBack();
   };
 
   const renderPinDots = () => {
@@ -139,7 +138,7 @@ export default function PinSetupScreen() {
                     ]}
                     onPress={handleDelete}
                   >
-                    <Feather name="delete" size={28} color={BankColors.gray800} />
+                    <Icon name="delete" size={28} color={BankColors.gray800} />
                   </Pressable>
                 );
               }

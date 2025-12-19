@@ -11,8 +11,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Icon } from "@/components/Icon";
 import { useAuth } from "@/lib/auth-context";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 
@@ -20,11 +20,11 @@ const QuickActionButton = ({
   icon, 
   label, 
 }: { 
-  icon: keyof typeof Feather.glyphMap; 
+  icon: string; 
   label: string; 
 }) => (
   <Pressable style={({ pressed }) => [styles.quickActionBtn, pressed && styles.quickActionPressed]}>
-    <Feather name={icon} size={18} color={BankColors.white} />
+    <Icon name={icon} size={18} color={BankColors.white} />
     <Text style={styles.quickActionLabel}>{label}</Text>
   </Pressable>
 );
@@ -33,13 +33,13 @@ const MonthlyExpenseItem = ({ month, amount }: { month: string; amount: string }
   <Pressable style={styles.monthlyItem}>
     <View style={styles.monthlyLeft}>
       <View style={styles.monthlyIcon}>
-        <Feather name="arrow-down" size={18} color={BankColors.error} />
+        <Icon name="arrow-down" size={18} color={BankColors.error} />
       </View>
       <Text style={styles.monthlyMonth}>{month}</Text>
     </View>
     <View style={styles.monthlyRight}>
       <Text style={styles.monthlyAmount}>{amount}</Text>
-      <Feather name="chevron-right" size={20} color={BankColors.gray400} />
+      <Icon name="chevron-right" size={20} color={BankColors.gray400} />
     </View>
   </Pressable>
 );
@@ -58,7 +58,7 @@ const TransactionItem = ({ date, description, category, amount }: {
     </View>
     <View style={styles.transactionRight}>
       <Text style={styles.transactionAmount}>{amount}</Text>
-      <Feather name="chevron-right" size={20} color={BankColors.gray400} />
+      <Icon name="chevron-right" size={20} color={BankColors.gray400} />
     </View>
   </Pressable>
 );
@@ -98,11 +98,11 @@ export default function CarteScreen() {
             <View />
             <View style={styles.headerActions}>
               <Pressable style={styles.headerAction}>
-                <Feather name="search" size={22} color={BankColors.white} />
+                <Icon name="search" size={22} color={BankColors.white} />
                 <Text style={styles.headerActionText}>Cerca</Text>
               </Pressable>
               <Pressable style={styles.headerAction}>
-                <Feather name="help-circle" size={22} color={BankColors.white} />
+                <Icon name="help-circle" size={22} color={BankColors.white} />
                 <Text style={styles.headerActionText}>Aiuto</Text>
               </Pressable>
             </View>
@@ -126,7 +126,7 @@ export default function CarteScreen() {
                 <Text style={styles.cardType}>XME Card Plus</Text>
               </View>
               <View style={styles.cardChip}>
-                <Feather name="cpu" size={24} color={BankColors.gray600} />
+                <Icon name="cpu" size={24} color={BankColors.gray600} />
                 <Text style={styles.cardContactless}>)))</Text>
               </View>
               <View style={styles.cardBottom}>
@@ -168,7 +168,7 @@ export default function CarteScreen() {
             <Text style={styles.sectionTitle}>Disponibilita</Text>
             <Pressable style={styles.viewAllBtn}>
               <Text style={styles.viewAllText}>Dettagli</Text>
-              <Feather name="chevron-right" size={16} color={BankColors.primary} />
+              <Icon name="chevron-right" size={16} color={BankColors.primary} />
             </Pressable>
           </View>
 
@@ -198,7 +198,7 @@ export default function CarteScreen() {
             <Text style={styles.sectionTitle}>Movimenti</Text>
             <Pressable style={styles.viewAllBtn}>
               <Text style={styles.viewAllText}>Visualizza tutti</Text>
-              <Feather name="chevron-right" size={16} color={BankColors.primary} />
+              <Icon name="chevron-right" size={16} color={BankColors.primary} />
             </Pressable>
           </View>
 

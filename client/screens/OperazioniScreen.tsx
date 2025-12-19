@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 
 interface OperationItemProps {
@@ -22,12 +22,12 @@ const OperationItem = ({ title, onPress }: OperationItemProps) => (
     onPress={onPress}
   >
     <Text style={styles.operationItemText}>{title}</Text>
-    <Feather name="chevron-right" size={20} color={BankColors.gray400} />
+    <Icon name="chevron-right" size={20} color={BankColors.gray400} />
   </Pressable>
 );
 
 interface SectionHeaderProps {
-  icon?: keyof typeof Feather.glyphMap;
+  icon?: string;
   iconColor?: string;
   title: string;
 }
@@ -36,7 +36,7 @@ const SectionHeader = ({ icon, iconColor, title }: SectionHeaderProps) => (
   <View style={styles.sectionHeader}>
     {icon ? (
       <View style={[styles.sectionIcon, iconColor ? { backgroundColor: iconColor } : null]}>
-        <Feather name={icon} size={18} color={BankColors.white} />
+        <Icon name={icon} size={18} color={BankColors.white} />
       </View>
     ) : null}
     <Text style={styles.sectionTitle}>{title}</Text>
@@ -52,11 +52,11 @@ export default function OperazioniScreen() {
       <View style={[styles.header, { paddingTop: insets.top + Spacing.lg }]}>
         <View style={styles.headerActions}>
           <Pressable style={styles.headerAction}>
-            <Feather name="search" size={22} color={BankColors.gray700} />
+            <Icon name="search" size={22} color={BankColors.gray700} />
             <Text style={styles.headerActionText}>Cerca</Text>
           </Pressable>
           <Pressable style={styles.headerAction}>
-            <Feather name="help-circle" size={22} color={BankColors.gray700} />
+            <Icon name="help-circle" size={22} color={BankColors.gray700} />
             <Text style={styles.headerActionText}>Aiuto</Text>
           </Pressable>
         </View>

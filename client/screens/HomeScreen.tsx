@@ -15,11 +15,11 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth-context";
 import { apiRequest } from "@/lib/query-client";
+import { Icon } from "@/components/Icon";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { Transaction } from "@shared/schema";
 import type { HomeStackParamList } from "@/navigation/MainTabNavigator";
@@ -31,7 +31,7 @@ const QuickActionButton = ({
   label, 
   onPress 
 }: { 
-  icon: keyof typeof Feather.glyphMap; 
+  icon: string; 
   label: string; 
   onPress?: () => void;
 }) => (
@@ -39,7 +39,7 @@ const QuickActionButton = ({
     style={({ pressed }) => [styles.quickActionBtn, pressed && styles.quickActionPressed]}
     onPress={onPress}
   >
-    <Feather name={icon} size={18} color={BankColors.white} />
+    <Icon name={icon} size={18} color={BankColors.white} />
     <Text style={styles.quickActionLabel}>{label}</Text>
   </Pressable>
 );
@@ -57,7 +57,7 @@ const TransactionItem = ({ transaction, onPress }: { transaction: Transaction; o
   return (
     <Pressable style={styles.transactionItem} onPress={onPress}>
       <View style={styles.transactionIcon}>
-        <Feather 
+        <Icon 
           name={isExpense ? "arrow-down-left" : "arrow-up-right"} 
           size={20} 
           color={BankColors.gray600} 
@@ -78,7 +78,7 @@ const TransactionItem = ({ transaction, onPress }: { transaction: Transaction; o
           <Text style={[styles.transactionAmount, isExpense && styles.expenseAmount]}>
             {formattedAmount}
           </Text>
-          <Feather name="chevron-right" size={20} color={BankColors.gray400} />
+          <Icon name="chevron-right" size={20} color={BankColors.gray400} />
         </View>
       </View>
     </Pressable>
@@ -192,19 +192,19 @@ export default function HomeScreen() {
         >
           <View style={styles.headerTop}>
             <Pressable style={styles.headerBackBtn}>
-              <Feather name="chevron-left" size={24} color={BankColors.white} />
+              <Icon name="chevron-left" size={24} color={BankColors.white} />
               <Text style={styles.headerBackText}>Il mio patrimonio</Text>
             </Pressable>
             <View style={styles.headerActions}>
               <Pressable style={styles.headerAction}>
-                <Feather name="search" size={22} color={BankColors.white} />
+                <Icon name="search" size={22} color={BankColors.white} />
                 <Text style={styles.headerActionText}>Cerca</Text>
               </Pressable>
               <Pressable style={styles.headerAction} onPress={handleHelpPress}>
                 {generateTransactionsMutation.isPending ? (
                   <ActivityIndicator size="small" color={BankColors.white} />
                 ) : (
-                  <Feather name="help-circle" size={22} color={BankColors.white} />
+                  <Icon name="help-circle" size={22} color={BankColors.white} />
                 )}
                 <Text style={styles.headerActionText}>Aiuto</Text>
               </Pressable>
@@ -231,7 +231,7 @@ export default function HomeScreen() {
               <Text style={styles.balanceAmount}>******* {"\u20AC"}</Text>
             )}
             <Pressable style={styles.showHideBtn} onPress={handleToggleBalance}>
-              <Feather 
+              <Icon 
                 name={showBalance ? "eye-off" : "eye"} 
                 size={20} 
                 color={BankColors.white} 
@@ -262,7 +262,7 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>Movimenti</Text>
             <Pressable style={styles.viewAllBtn}>
               <Text style={styles.viewAllText}>Visualizza tutti</Text>
-              <Feather name="chevron-right" size={16} color={BankColors.primary} />
+              <Icon name="chevron-right" size={16} color={BankColors.primary} />
             </Pressable>
           </View>
 
@@ -293,7 +293,7 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>Analisi delle spese</Text>
             <Pressable style={styles.viewAllBtn}>
               <Text style={styles.viewAllText}>Vai alla sezione</Text>
-              <Feather name="chevron-right" size={16} color={BankColors.primary} />
+              <Icon name="chevron-right" size={16} color={BankColors.primary} />
             </Pressable>
           </View>
 
@@ -304,7 +304,7 @@ export default function HomeScreen() {
                 <Text style={styles.analisiAmountNegative}>
                   - {totalExpenses.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
                 </Text>
-                <Feather name="arrow-down" size={16} color={BankColors.error} />
+                <Icon name="arrow-down" size={16} color={BankColors.error} />
               </View>
             </View>
             <View style={styles.analisiDivider} />
@@ -314,7 +314,7 @@ export default function HomeScreen() {
                 <Text style={styles.analisiAmountPositive}>
                   + {totalIncome.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
                 </Text>
-                <Feather name="arrow-up" size={16} color={BankColors.success} />
+                <Icon name="arrow-up" size={16} color={BankColors.success} />
               </View>
             </View>
           </View>
@@ -322,7 +322,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       <Pressable style={[styles.chatButton, { bottom: tabBarHeight + Spacing.md }]}>
-        <Feather name="message-circle" size={24} color={BankColors.white} />
+        <Icon name="message-circle" size={24} color={BankColors.white} />
         <Text style={styles.chatButtonText}>Parla con noi</Text>
       </Pressable>
 
