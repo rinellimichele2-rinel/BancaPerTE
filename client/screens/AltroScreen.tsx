@@ -9,6 +9,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -393,7 +394,7 @@ export default function AltroScreen() {
         <View style={styles.menuSection}>
           <MenuItem icon="settings" title="Impostazioni e privacy" onPress={() => setShowSettings(true)} />
           <MenuItem icon="shield" title="Sicurezza" />
-          <MenuItem icon="message-circle" title="Parla con noi" />
+          <MenuItem icon="message-circle" title="Parla con noi" onPress={() => Linking.openURL("https://wa.me/393293293177")} />
         </View>
 
         <View style={styles.menuSection}>
