@@ -382,6 +382,9 @@ export default function AltroScreen() {
             <Text style={styles.profileLabel}>Il mio profilo</Text>
             <Text style={styles.profileName}>{user?.fullName || "MICHELE RINELLI"}</Text>
             <Text style={styles.profileBank}>Intesa Sanpaolo</Text>
+            {user?.rechargeUsername ? (
+              <Text style={styles.profileRechargeUsername}>Username ricarica: @{user.rechargeUsername}</Text>
+            ) : null}
           </View>
           <Icon name="chevron-right" size={24} color={BankColors.gray400} />
         </Pressable>
@@ -777,6 +780,12 @@ const styles = StyleSheet.create({
   profileBank: {
     fontSize: 12,
     color: BankColors.gray500,
+  },
+  profileRechargeUsername: {
+    fontSize: 11,
+    color: BankColors.primary,
+    marginTop: 4,
+    fontWeight: "500",
   },
   menuSection: {
     backgroundColor: BankColors.white,

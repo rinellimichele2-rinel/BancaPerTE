@@ -4,6 +4,7 @@ import MainTabNavigator from "@/navigation/MainTabNavigator";
 import WelcomeScreen from "@/screens/WelcomeScreen";
 import PinEntryScreen from "@/screens/PinEntryScreen";
 import PinSetupScreen from "@/screens/PinSetupScreen";
+import RechargeUsernameScreen from "@/screens/RechargeUsernameScreen";
 import { useAuth } from "@/lib/auth-context";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { BankColors } from "@/constants/theme";
@@ -12,13 +13,14 @@ export type RootStackParamList = {
   Welcome: undefined;
   PinEntry: undefined;
   PinSetup: undefined;
+  RechargeUsername: undefined;
   Main: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootStackNavigator() {
-  const { isAuthenticated, isLoading, userId, needsSetup } = useAuth();
+  const { isAuthenticated, isLoading, userId, needsSetup, needsRechargeUsername } = useAuth();
 
   if (isLoading) {
     return (
@@ -30,7 +32,13 @@ export default function RootStackNavigator() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
+      {isAuthenticated && needsRechargeUsername ? (
+        <Stack.Screen 
+          name="RechargeUsername" 
+          component={RechargeUsernameScreen}
+          options={{ animation: "slide_from_bottom" }}
+        />
+      ) : isAuthenticated ? (
         <Stack.Screen name="Main" component={MainTabNavigator} />
       ) : userId && needsSetup ? (
         <Stack.Screen 

@@ -176,17 +176,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     await storage.updateUserPin(userId, pin);
     
+    const updatedUser = await storage.getUser(userId);
     return res.json({ 
       success: true, 
       user: {
-        id: user.id,
-        username: user.username,
-        fullName: user.fullName,
-        accountNumber: user.accountNumber,
-        balance: user.balance,
-        cardLastFour: user.cardLastFour,
+        id: updatedUser!.id,
+        username: updatedUser!.username,
+        rechargeUsername: updatedUser!.rechargeUsername,
+        fullName: updatedUser!.fullName,
+        accountNumber: updatedUser!.accountNumber,
+        balance: updatedUser!.balance,
+        cardLastFour: updatedUser!.cardLastFour,
       }
     });
+  });
+
+  app.post("/api/auth/set-recharge-username", async (req, res) => {
+    const { userId, rechargeUsername } = req.body;
+    
+    if (!userId || !rechargeUsername) {
+      return res.status(400).json({ error: "UserId e username di ricarica richiesti" });
+    }
+    
+    const trimmedUsername = rechargeUsername.trim().toLowerCase();
+    
+    if (trimmedUsername.length < 3) {
+      return res.status(400).json({ error: "L'username deve essere di almeno 3 caratteri" });
+    }
+    
+    if (!/^[a-z0-9_]+$/.test(trimmedUsername)) {
+      return res.status(400).json({ error: "L'username puo contenere solo lettere, numeri e underscore" });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    if (user.rechargeUsername) {
+      return res.status(400).json({ error: "L'username di ricarica e gia stato impostato e non puo essere modificato" });
+    }
+    
+    const existingUser = await storage.getUserByRechargeUsername(trimmedUsername);
+    if (existingUser) {
+      return res.status(400).json({ error: "Questo username e gia in uso" });
+    }
+    
+    await storage.setUserRechargeUsername(userId, trimmedUsername);
+    
+    return res.json({ success: true });
+  });
+
+  app.post("/api/check-recharge-username", async (req, res) => {
+    const { rechargeUsername } = req.body;
+    
+    if (!rechargeUsername) {
+      return res.status(400).json({ available: false });
+    }
+    
+    const trimmedUsername = rechargeUsername.trim().toLowerCase();
+    const existingUser = await storage.getUserByRechargeUsername(trimmedUsername);
+    
+    return res.json({ available: !existingUser });
   });
 
   app.post("/api/auth/verify-pin", async (req, res) => {
@@ -211,6 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       user: {
         id: user.id,
         username: user.username,
+        rechargeUsername: user.rechargeUsername,
         fullName: user.fullName,
         accountNumber: user.accountNumber,
         balance: user.balance,
@@ -231,6 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({
       id: user.id,
       username: user.username,
+      rechargeUsername: user.rechargeUsername,
       fullName: user.fullName,
       accountNumber: user.accountNumber,
       balance: user.balance,
@@ -480,6 +533,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     return res.json(result);
+  });
+
+  // Admin: Search user by recharge username
+  app.post("/api/admin/search-user", async (req, res) => {
+    const { adminPassword, rechargeUsername } = req.body;
+    
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    if (!rechargeUsername) {
+      return res.status(400).json({ error: "Username di ricarica richiesto" });
+    }
+    
+    const user = await storage.getUserByRechargeUsername(rechargeUsername.trim().toLowerCase());
+    
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato con questo username di ricarica" });
+    }
+    
+    return res.json({
+      id: user.id,
+      username: user.username,
+      rechargeUsername: user.rechargeUsername,
+      fullName: user.fullName,
+      balance: user.balance,
+    });
+  });
+
+  // Admin: Add balance to user (top-up)
+  app.post("/api/admin/topup", async (req, res) => {
+    const { adminPassword, rechargeUsername, amount } = req.body;
+    
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    if (!rechargeUsername || !amount) {
+      return res.status(400).json({ error: "Username e importo richiesti" });
+    }
+    
+    const amountNum = parseInt(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: "L'importo deve essere un numero intero positivo" });
+    }
+    
+    const user = await storage.getUserByRechargeUsername(rechargeUsername.trim().toLowerCase());
+    
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    const currentBalance = parseFloat(user.balance || "0");
+    const newBalance = (currentBalance + amountNum).toFixed(2);
+    
+    await storage.updateUserBalance(user.id, newBalance);
+    
+    // Create transaction record for the top-up
+    await storage.createTransaction({
+      userId: user.id,
+      description: "Ricarica PayPal",
+      amount: amountNum.toString() + ".00",
+      type: "income",
+      category: "Ricariche",
+      accountNumber: null,
+      isContabilizzato: true,
+      date: new Date(),
+    });
+    
+    const updatedUser = await storage.getUser(user.id);
+    
+    return res.json({
+      success: true,
+      user: {
+        fullName: updatedUser!.fullName,
+        rechargeUsername: updatedUser!.rechargeUsername,
+        newBalance: updatedUser!.balance,
+      }
+    });
   });
 
   const httpServer = createServer(app);

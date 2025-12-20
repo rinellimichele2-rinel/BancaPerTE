@@ -21,12 +21,14 @@ export const db = drizzle(pool);
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByRechargeUsername(rechargeUsername: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(userId: string, newBalance: string): Promise<User | undefined>;
   updateUserName(userId: string, newName: string): Promise<User | undefined>;
   updateUserAccountNumber(userId: string, newAccountNumber: string): Promise<User | undefined>;
   updateUserPin(userId: string, newPin: string): Promise<User | undefined>;
+  setUserRechargeUsername(userId: string, rechargeUsername: string): Promise<User | undefined>;
   transferBalance(fromUserId: string, toUserId: string, amount: number): Promise<{ success: boolean; error?: string; fromUser?: User; toUser?: User }>;
   getTransactions(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
@@ -43,6 +45,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
+  }
+
+  async getUserByRechargeUsername(rechargeUsername: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.rechargeUsername, rechargeUsername));
     return result[0];
   }
 
@@ -87,6 +94,15 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .update(users)
       .set({ pin: newPin, hasSetPin: true })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async setUserRechargeUsername(userId: string, rechargeUsername: string): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ rechargeUsername })
       .where(eq(users.id, userId))
       .returning();
     return result[0];
