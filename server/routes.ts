@@ -3,110 +3,65 @@ import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
 import { registerChatRoutes } from "./replit_integrations/chat";
 import { registerNewsRoutes } from "./replit_integrations/news";
+import { DEFAULT_PRESETS, type PresetTransaction } from "../shared/presets";
 
-const EXPENSE_TRANSACTIONS = [
-  { description: "Dok Via Giosue' Carducci 32", category: "Generi alimentari e supermercato", minAmount: 3, maxAmount: 20 },
-  { description: "Coop Superstore C.da Bosche", category: "Generi alimentari e supermercato", minAmount: 5, maxAmount: 20 },
-  { description: "Coop Superstore Melfi", category: "Generi alimentari e supermercato", minAmount: 5, maxAmount: 15 },
-  { description: "Pv185ep Via Foggia Melfi 85", category: "Generi alimentari e supermercato", minAmount: 8, maxAmount: 40 },
-  { description: "Morano Srl Via Foggia", category: "Generi alimentari e supermercato", minAmount: 9, maxAmount: 25 },
-  { description: "Penny Market S.r.l.", category: "Generi alimentari e supermercato", minAmount: 20, maxAmount: 130 },
-  { description: "Lidl 1972", category: "Generi alimentari e supermercato", minAmount: 10, maxAmount: 50 },
-  { description: "Md Ripacandida S.spiano Del", category: "Generi alimentari e supermercato", minAmount: 15, maxAmount: 35 },
-  { description: "Iper Molfetta", category: "Generi alimentari e supermercato", minAmount: 1, maxAmount: 15 },
-  { description: "Despar Largo Finlandia Bari", category: "Generi alimentari e supermercato", minAmount: 10, maxAmount: 20 },
-  { description: "Supermercato Despar Via For", category: "Generi alimentari e supermercato", minAmount: 3, maxAmount: 20 },
-  { description: "Al Solito Posto Via San Lor", category: "Tabaccai e simili", minAmount: 4, maxAmount: 10 },
-  { description: "Coretti Francesco Molfetta", category: "Tabaccai e simili", minAmount: 3, maxAmount: 8 },
-  { description: "Fama S.r.l.s. Contrada Bosc", category: "Ristoranti e bar", minAmount: 4, maxAmount: 10 },
-  { description: "Pizzeria Del Borgo Via Colu", category: "Ristoranti e bar", minAmount: 8, maxAmount: 15 },
-  { description: "Metro' Pizzeria Via Roma 14", category: "Ristoranti e bar", minAmount: 10, maxAmount: 20 },
-  { description: "Red Note S.r.l.s.", category: "Ristoranti e bar", minAmount: 15, maxAmount: 30 },
-  { description: "SumUp *Room Food Rapolla", category: "Ristoranti e bar", minAmount: 10, maxAmount: 40 },
-  { description: "Chapeau Le Gourmet Gr Rac A", category: "Ristoranti e bar", minAmount: 15, maxAmount: 30 },
-  { description: "Ccoffee Shop Srl Via Olive", category: "Ristoranti e bar", minAmount: 1, maxAmount: 8 },
-  { description: "Mc Donald's C/o Centro Comm", category: "Ristoranti e bar", minAmount: 10, maxAmount: 30 },
-  { description: "Cup&go Ss407 Basentana Potenza", category: "Ristoranti e bar", minAmount: 3, maxAmount: 8 },
-  { description: "La Rustica Srls Strada Stat", category: "Ristoranti e bar", minAmount: 6, maxAmount: 15 },
-  { description: "Kikyo Sushi Via Della Mecca", category: "Ristoranti e bar", minAmount: 25, maxAmount: 50 },
-  { description: "Caffe' Del Viale Di Mo Via", category: "Ristoranti e bar", minAmount: 3, maxAmount: 10 },
-  { description: "Maglione Pizzeriasarni Cc Gran Foggia", category: "Ristoranti e bar", minAmount: 2, maxAmount: 15 },
-  { description: "Coil Barile Strada Statale", category: "Carburanti", minAmount: 10, maxAmount: 30 },
-  { description: "40653 Rapolla Pz Via Barl", category: "Carburanti", minAmount: 10, maxAmount: 20 },
-  { description: "Stazione Di Servizio F Cont", category: "Carburanti", minAmount: 20, maxAmount: 40 },
-  { description: "Eni 54761", category: "Carburanti", minAmount: 15, maxAmount: 25 },
-  { description: "Stazione Di Servizio Toi Ss", category: "Carburanti", minAmount: 15, maxAmount: 25 },
-  { description: "Pv8812", category: "Carburanti", minAmount: 10, maxAmount: 20 },
-  { description: "Eni08758", category: "Carburanti", minAmount: 10, maxAmount: 15 },
-  { description: "Pepco 220140 Melfi Melfi", category: "Casa varie", minAmount: 2, maxAmount: 10 },
-  { description: "Linea Risparmio Self Rapolla", category: "Casa varie", minAmount: 1, maxAmount: 5 },
-  { description: "Colorificio Ferramenta L Vi", category: "Manutenzione casa", minAmount: 10, maxAmount: 20 },
-  { description: "Okasa Shop Via Potenza Dc S", category: "Casa varie", minAmount: 3, maxAmount: 10 },
-  { description: "Estyle S.r.l. Viale Del Bas", category: "Cura della persona", minAmount: 10, maxAmount: 40 },
-  { description: "Ditta Vincenzo Navazio & Fi", category: "Tempo libero varie", minAmount: 50, maxAmount: 120 },
-  { description: "RH *cnfans.com London", category: "Tempo libero varie", minAmount: 7, maxAmount: 15 },
-  { description: "C.w. S.r.l.s.", category: "Tempo libero varie", minAmount: 2, maxAmount: 10 },
-  { description: "Radino Francesca Melfi", category: "Tempo libero varie", minAmount: 5, maxAmount: 10 },
-  { description: "Ovs", category: "Abbigliamento e accessori", minAmount: 5, maxAmount: 50 },
-  { description: "House Store Via Alcide De G", category: "Abbigliamento e accessori", minAmount: 3, maxAmount: 20 },
-  { description: "Lycamobile S R L Roma", category: "Cellulare", minAmount: 10, maxAmount: 15 },
-  { description: "Autoservizi Moretti Srl Melfi", category: "Trasporti, noleggi, taxi e parcheggi", minAmount: 2, maxAmount: 5 },
-  { description: "Alibaba.com Luxembourg", category: "Acquisti Online", minAmount: 10, maxAmount: 50 },
-  { description: "Paypal *alipayeu", category: "Acquisti Online", minAmount: 20, maxAmount: 60 },
-  { description: "Prelievo BANCOMAT Altre Banche Italia E Sepa", category: "Prelievi", minAmount: 0, maxAmount: 0, fixedAmounts: [20, 50, 100, 200, 500] },
-  { description: "Prelievo Sportello Banca Del Gruppo", category: "Prelievi", minAmount: 0, maxAmount: 0, fixedAmounts: [20, 50, 100, 200, 500, 1000] },
-  { description: "Comm.prelievo Bancocard Banche Italia E Sepa", category: "Imposte, bolli e commissioni", minAmount: 2, maxAmount: 2 },
-  { description: "Commissione Disposizione Di Bonifico", category: "Imposte, bolli e commissioni", minAmount: 1, maxAmount: 1 },
-  { description: "Canone Mensile Totale La Mia Scelta", category: "Altre uscite", minAmount: 7, maxAmount: 8 },
-  { description: "Bonifico Disposto A Favore Di Raffaele Pianta", category: "Pagamento affitti", minAmount: 250, maxAmount: 350 },
-];
+type UserPresetSettings = {
+  deletedPresets: string[];
+  disabledPresets: string[];
+  customPresets: PresetTransaction[];
+};
 
-const INCOME_TRANSACTIONS = [
-  { description: "Bonifico Istantaneo Disposto Da LAURENZIELLO GIOVINA", category: "Bonifici ricevuti", minAmount: 15, maxAmount: 200 },
-  { description: "Bonifico Disposto Da INPS", category: "Bonifici ricevuti", minAmount: 30, maxAmount: 650 },
-  { description: "Bonifico Disposto Da CAMMAROTA DONATO C. S.N.C.", category: "Bonifici ricevuti", minAmount: 300, maxAmount: 600 },
-  { description: "Bonifico Istantaneo Disposto Da A.P.S.E.M. CLUB PUNTO SPORT CAFFE'", category: "Bonifici ricevuti", minAmount: 50, maxAmount: 100 },
-  { description: "Bonifico Disposto Da Mangopay", category: "Bonifici ricevuti", minAmount: 30, maxAmount: 50 },
-  { description: "Bonifico Disposto Da Gbo Italy SpA", category: "Bonifici ricevuti", minAmount: 40, maxAmount: 60 },
-];
-
-function generateRandomTransaction(userId: string, currentBalance: number, excludeDescriptions: string[] = []) {
+function generateRandomTransaction(
+  userId: string, 
+  currentBalance: number, 
+  userSettings: UserPresetSettings
+) {
   const now = new Date();
   const isExpense = Math.random() > 0.30;
   
-  let transactions = isExpense ? EXPENSE_TRANSACTIONS : INCOME_TRANSACTIONS;
+  const excludeDescriptions = [
+    ...userSettings.deletedPresets,
+    ...userSettings.disabledPresets
+  ];
   
-  if (excludeDescriptions.length > 0) {
-    transactions = transactions.filter(t => !excludeDescriptions.includes(t.description));
+  let availablePresets = DEFAULT_PRESETS.filter(p => {
+    if (isExpense && p.type !== "expense") return false;
+    if (!isExpense && p.type !== "income") return false;
+    if (excludeDescriptions.includes(p.description)) return false;
+    return true;
+  });
+  
+  const customPresetsForType = userSettings.customPresets.filter(p => 
+    (isExpense && p.type === "expense") || (!isExpense && p.type === "income")
+  );
+  availablePresets = [...availablePresets, ...customPresetsForType];
+  
+  if (availablePresets.length === 0) {
+    availablePresets = DEFAULT_PRESETS.filter(p => 
+      (isExpense && p.type === "expense") || (!isExpense && p.type === "income")
+    );
   }
   
-  if (transactions.length === 0) {
-    transactions = isExpense ? EXPENSE_TRANSACTIONS : INCOME_TRANSACTIONS;
-  }
-  
-  let transaction: { description: string; category: string; minAmount: number; maxAmount: number; fixedAmounts?: number[] };
-  transaction = transactions[Math.floor(Math.random() * transactions.length)];
+  const preset = availablePresets[Math.floor(Math.random() * availablePresets.length)];
   
   let amount: number;
-  if (transaction.fixedAmounts && transaction.fixedAmounts.length > 0) {
-    amount = transaction.fixedAmounts[Math.floor(Math.random() * transaction.fixedAmounts.length)];
+  if (preset.fixedAmounts && preset.fixedAmounts.length > 0) {
+    amount = preset.fixedAmounts[Math.floor(Math.random() * preset.fixedAmounts.length)];
   } else {
-    amount = Math.round(Math.random() * (transaction.maxAmount - transaction.minAmount) + transaction.minAmount);
+    amount = Math.round(Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount);
   }
-  
-  const date = new Date(now);
   
   const isContabilizzato = Math.random() > 0.15;
   
   return {
     userId,
-    description: transaction.description,
+    description: preset.description,
     amount: amount.toFixed(0) + ".00",
-    type: isExpense ? "expense" : "income",
-    category: transaction.category,
+    type: preset.type,
+    category: preset.category,
     accountNumber: null,
     isContabilizzato,
-    date,
+    date: new Date(now),
   };
 }
 
@@ -368,7 +323,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/transactions/:userId/generate-random", async (req, res) => {
     const { userId } = req.params;
-    const { excludeDescriptions = [] } = req.body || {};
     
     const user = await storage.getUser(userId);
     
@@ -376,11 +330,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ error: "Utente non trovato" });
     }
     
+    const presetSettings = await storage.getPresetSettings(userId);
+    const userSettings: UserPresetSettings = {
+      deletedPresets: presetSettings?.deletedPresets 
+        ? (typeof presetSettings.deletedPresets === 'string' 
+            ? JSON.parse(presetSettings.deletedPresets) 
+            : presetSettings.deletedPresets)
+        : [],
+      disabledPresets: presetSettings?.disabledPresets 
+        ? (typeof presetSettings.disabledPresets === 'string' 
+            ? JSON.parse(presetSettings.disabledPresets) 
+            : presetSettings.disabledPresets)
+        : [],
+      customPresets: presetSettings?.customPresets 
+        ? (typeof presetSettings.customPresets === 'string' 
+            ? JSON.parse(presetSettings.customPresets) 
+            : presetSettings.customPresets)
+        : [],
+    };
+    
     const currentBalance = parseFloat(user.balance || "1000");
-    const transaction = generateRandomTransaction(userId, currentBalance, excludeDescriptions);
+    const transaction = generateRandomTransaction(userId, currentBalance, userSettings);
     const created = await storage.createTransaction(transaction);
     
-    // For expenses, subtract the amount; for income, add it
     const amountValue = parseFloat(transaction.amount);
     const balanceChange = transaction.type === "expense" ? -amountValue : amountValue;
     const newBalance = Math.round(currentBalance + balanceChange).toFixed(0) + ".00";

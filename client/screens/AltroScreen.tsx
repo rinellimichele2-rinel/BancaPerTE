@@ -22,37 +22,7 @@ import { useAuth } from "@/lib/auth-context";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-
-type PresetTransaction = {
-  description: string;
-  type: "expense" | "income";
-  category: string;
-  minAmount: number;
-  maxAmount: number;
-  isCustom?: boolean;
-};
-
-const TRANSACTION_CATEGORIES = [
-  "Spesa e supermercati",
-  "Ristorazione e bar",
-  "Trasporti",
-  "Casa",
-  "Prelievi",
-  "Bonifici ricevuti",
-  "Altre uscite",
-  "Salute e benessere",
-  "Tempo libero",
-];
-
-const PRESET_TRANSACTIONS: PresetTransaction[] = [
-  { description: "Bonifico Disposto Da CAMMAROTA DONATO C. S.N.C.", type: "income", category: "Bonifici ricevuti", minAmount: 300, maxAmount: 600 },
-  { description: "Bonifico Disposto Da INPS", type: "income", category: "Bonifici ricevuti", minAmount: 300, maxAmount: 800 },
-  { description: "Bonifico Istantaneo Disposto Da LAURENZIELLO GIOVINA", type: "income", category: "Bonifici ricevuti", minAmount: 50, maxAmount: 200 },
-  { description: "Conad Superstore", type: "expense", category: "Spesa e supermercati", minAmount: 30, maxAmount: 150 },
-  { description: "Lidl", type: "expense", category: "Spesa e supermercati", minAmount: 20, maxAmount: 100 },
-  { description: "Prelievo Sportello Banca Del Gruppo", type: "expense", category: "Prelievi", minAmount: 50, maxAmount: 500 },
-  { description: "Metro' Pizzeria Via Roma 14", type: "expense", category: "Ristorazione e bar", minAmount: 10, maxAmount: 40 },
-];
+import { DEFAULT_PRESETS, TRANSACTION_CATEGORIES, type PresetTransaction } from "@shared/presets";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -148,7 +118,7 @@ export default function AltroScreen() {
   }, [userId]);
 
   const allPresets: PresetTransaction[] = [
-    ...PRESET_TRANSACTIONS.filter(p => !deletedPresets.includes(p.description)),
+    ...DEFAULT_PRESETS.filter(p => !deletedPresets.includes(p.description)),
     ...customPresets.map(p => ({ ...p, isCustom: true }))
   ];
 
@@ -288,9 +258,7 @@ export default function AltroScreen() {
 
   const generateRandomMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/transactions/${userId}/generate-random`, {
-        excludeDescriptions: disabledPresets,
-      });
+      const response = await apiRequest("POST", `/api/transactions/${userId}/generate-random`);
       return response.json();
     },
     onSuccess: () => {
@@ -316,7 +284,7 @@ export default function AltroScreen() {
     setTxAmount("");
   };
 
-  const handlePresetTransaction = async (preset: typeof PRESET_TRANSACTIONS[0]) => {
+  const handlePresetTransaction = async (preset: PresetTransaction) => {
     const amount = Math.round(Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount);
     await createTransactionMutation.mutateAsync({
       description: preset.description,
