@@ -85,7 +85,7 @@ export default function AltroScreen() {
   const [consoleTab, setConsoleTab] = useState<"form" | "preset">("form");
   const [txDescription, setTxDescription] = useState("");
   const [txAmount, setTxAmount] = useState("");
-  const [txType, setTxType] = useState<"expense" | "income">("expense");
+  const [txType, setTxType] = useState<"expense" | "income">("income");
   const [txCategory, setTxCategory] = useState(TRANSACTION_CATEGORIES[0]);
   const [disabledPresets, setDisabledPresets] = useState<string[]>([]);
   const [deletedPresets, setDeletedPresets] = useState<string[]>([]);
@@ -283,19 +283,18 @@ export default function AltroScreen() {
     const amount = Math.floor(parseFloat(txAmount.replace(",", ".")));
     if (isNaN(amount) || amount <= 0) return;
     
+    // Manual form is always income (certification of entries)
     try {
       await createTransactionMutation.mutateAsync({
         description: txDescription.trim(),
         amount: amount.toFixed(0) + ".00",
-        type: txType,
+        type: "income",
         category: txCategory,
       });
       setTxDescription("");
       setTxAmount("");
     } catch (error: any) {
-      if (error?.message?.includes("Saldo gia al massimo")) {
-        Alert.alert("Saldo al massimo", "Il saldo e gia al massimo pagato. Non puoi aggiungere altre entrate simulate.");
-      }
+      // Error is already handled by mutation onSuccess for 403
     }
   };
 
@@ -444,13 +443,35 @@ export default function AltroScreen() {
               </Pressable>
             </View>
 
+            <View style={styles.certificationHeader}>
+              <View style={styles.certRow}>
+                <Icon name="shield" size={18} color={BankColors.primary} />
+                <Text style={styles.certLabel}>Saldo Certificato:</Text>
+                <Text style={styles.certValue}>
+                  {parseFloat(user?.purchasedBalance || "0").toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </Text>
+              </View>
+              <View style={styles.certRow}>
+                <Icon name="trending-up" size={18} color={BankColors.cardBlue} />
+                <Text style={styles.certLabel}>Margine di recupero:</Text>
+                <Text style={[styles.certValue, styles.certValueRecovery]}>
+                  {(() => {
+                    const currentBalance = parseFloat(user?.balance || "0");
+                    const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
+                    const recovery = Math.max(0, Math.floor(purchasedBalance - currentBalance));
+                    return `€${recovery.toLocaleString('it-IT')}`;
+                  })()}
+                </Text>
+              </View>
+            </View>
+
             <View style={styles.consoleTabs}>
               <Pressable 
                 style={[styles.consoleTab, consoleTab === "form" && styles.consoleTabActive]}
                 onPress={() => setConsoleTab("form")}
               >
                 <Text style={[styles.consoleTabText, consoleTab === "form" && styles.consoleTabTextActive]}>
-                  Modulo Manuale
+                  Certifica Entrata
                 </Text>
               </Pressable>
               <Pressable 
@@ -458,58 +479,49 @@ export default function AltroScreen() {
                 onPress={() => setConsoleTab("preset")}
               >
                 <Text style={[styles.consoleTabText, consoleTab === "preset" && styles.consoleTabTextActive]}>
-                  Preset Rapidi
+                  Uscite Random
                 </Text>
               </Pressable>
-            </View>
-
-            <View style={styles.recoveryBar}>
-              <Icon name="info" size={16} color={BankColors.cardBlue} />
-              <Text style={styles.recoveryBarText}>
-                Disponibilita per entrate simulate: {(() => {
-                  const currentBalance = parseFloat(user?.balance || "0");
-                  const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
-                  const recovery = Math.max(0, Math.floor(purchasedBalance - currentBalance));
-                  return `€${recovery.toLocaleString('it-IT')}`;
-                })()}
-              </Text>
             </View>
 
             <ScrollView style={styles.consoleBody} contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}>
               {consoleTab === "form" ? (
                 <View style={styles.consoleForm}>
-                  <Text style={styles.formLabel}>Descrizione</Text>
+                  <Text style={styles.incomeFormHint}>
+                    Inserisci un'entrata per recuperare il saldo fino al massimo certificato.
+                  </Text>
+                  
+                  <Text style={styles.formLabel}>Descrizione Entrata</Text>
                   <TextInput
                     style={styles.formInput}
                     value={txDescription}
                     onChangeText={setTxDescription}
-                    placeholder="Es: Bonifico da Mario Rossi"
+                    placeholder="Es: Bonifico Affitto, Crypto, Stipendio"
                   />
 
-                  <Text style={styles.formLabel}>Importo (EUR)</Text>
+                  <Text style={styles.formLabel}>Importo (EUR) - Max: {(() => {
+                    const currentBalance = parseFloat(user?.balance || "0");
+                    const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
+                    const recovery = Math.max(0, Math.floor(purchasedBalance - currentBalance));
+                    return recovery.toLocaleString('it-IT');
+                  })()}</Text>
                   <TextInput
                     style={styles.formInput}
                     value={txAmount}
-                    onChangeText={setTxAmount}
+                    onChangeText={(text) => {
+                      const currentBalance = parseFloat(user?.balance || "0");
+                      const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
+                      const maxRecovery = Math.max(0, Math.floor(purchasedBalance - currentBalance));
+                      const numValue = parseInt(text.replace(/[^0-9]/g, ''), 10);
+                      if (!isNaN(numValue) && numValue > maxRecovery) {
+                        setTxAmount(maxRecovery.toString());
+                      } else {
+                        setTxAmount(text.replace(/[^0-9]/g, ''));
+                      }
+                    }}
                     placeholder="Es: 100"
                     keyboardType="numeric"
                   />
-
-                  <Text style={styles.formLabel}>Tipo</Text>
-                  <View style={styles.typeSelector}>
-                    <Pressable 
-                      style={[styles.typeBtn, txType === "expense" && styles.typeBtnActiveExpense]}
-                      onPress={() => setTxType("expense")}
-                    >
-                      <Text style={[styles.typeBtnText, txType === "expense" && styles.typeBtnTextActive]}>Uscita</Text>
-                    </Pressable>
-                    <Pressable 
-                      style={[styles.typeBtn, txType === "income" && styles.typeBtnActiveIncome]}
-                      onPress={() => setTxType("income")}
-                    >
-                      <Text style={[styles.typeBtnText, txType === "income" && styles.typeBtnTextActive]}>Entrata</Text>
-                    </Pressable>
-                  </View>
 
                   <Text style={styles.formLabel}>Categoria</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
@@ -527,39 +539,64 @@ export default function AltroScreen() {
                   </ScrollView>
 
                   <Pressable 
-                    style={[styles.submitBtn, createTransactionMutation.isPending && styles.submitBtnDisabled]}
+                    style={[styles.submitBtn, createTransactionMutation.isPending && styles.submitBtnDisabled, (() => {
+                      const currentBalance = parseFloat(user?.balance || "0");
+                      const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
+                      return purchasedBalance <= currentBalance ? styles.submitBtnDisabled : {};
+                    })()]}
                     onPress={handleAddTransaction}
-                    disabled={createTransactionMutation.isPending}
+                    disabled={createTransactionMutation.isPending || (() => {
+                      const currentBalance = parseFloat(user?.balance || "0");
+                      const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
+                      return purchasedBalance <= currentBalance;
+                    })()}
                   >
                     {createTransactionMutation.isPending ? (
                       <ActivityIndicator color={BankColors.white} />
                     ) : (
-                      <Text style={styles.submitBtnText}>Aggiungi Transazione</Text>
+                      <Text style={styles.submitBtnText}>Certifica Entrata</Text>
                     )}
                   </Pressable>
-
-                  <View style={styles.divider} />
-
-                  <Pressable 
-                    style={[styles.randomBtn, generateRandomMutation.isPending && styles.submitBtnDisabled]}
-                    onPress={() => generateRandomMutation.mutate()}
-                    disabled={generateRandomMutation.isPending}
-                  >
-                    {generateRandomMutation.isPending ? (
-                      <ActivityIndicator color={BankColors.white} />
-                    ) : (
-                      <>
-                        <Icon name="shuffle" size={20} color={BankColors.white} />
-                        <Text style={styles.randomBtnText}>Genera Transazione Random</Text>
-                      </>
-                    )}
-                  </Pressable>
+                  
+                  {(() => {
+                    const currentBalance = parseFloat(user?.balance || "0");
+                    const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
+                    if (purchasedBalance <= currentBalance) {
+                      return (
+                        <Text style={styles.noRecoveryHint}>
+                          Il saldo attuale e gia al massimo certificato. Genera uscite per creare margine di recupero.
+                        </Text>
+                      );
+                    }
+                    return null;
+                  })()}
                 </View>
               ) : (
                 <View style={styles.presetList}>
+                  <View style={styles.randomSection}>
+                    <Text style={styles.randomSectionTitle}>Genera una spesa casuale</Text>
+                    <Text style={styles.randomSectionSubtitle}>Simula uscite quotidiane come Conad, Amazon, benzina...</Text>
+                    <Pressable 
+                      style={[styles.randomBtn, generateRandomMutation.isPending && styles.submitBtnDisabled]}
+                      onPress={() => generateRandomMutation.mutate()}
+                      disabled={generateRandomMutation.isPending}
+                    >
+                      {generateRandomMutation.isPending ? (
+                        <ActivityIndicator color={BankColors.white} />
+                      ) : (
+                        <>
+                          <Icon name="shuffle" size={20} color={BankColors.white} />
+                          <Text style={styles.randomBtnText}>Genera Uscita Random</Text>
+                        </>
+                      )}
+                    </Pressable>
+                  </View>
+                  
+                  <View style={styles.presetDivider} />
+                  
                   <View style={styles.presetHeader}>
                     <View>
-                      <Text style={styles.presetTitle}>Seleziona un preset per aggiungere una transazione:</Text>
+                      <Text style={styles.presetTitle}>Preset uscite disponibili:</Text>
                       <Text style={styles.presetSubtitle}>Tieni premuto per eliminare o disabilitare</Text>
                     </View>
                     <Pressable style={styles.addPresetBtn} onPress={openCreatePreset}>
@@ -567,7 +604,7 @@ export default function AltroScreen() {
                       <Text style={styles.addPresetBtnText}>Nuovo</Text>
                     </Pressable>
                   </View>
-                  {allPresets.map((preset, index) => {
+                  {allPresets.filter(p => p.type === "expense").map((preset, index) => {
                     const isDisabled = disabledPresets.includes(preset.description);
                     const isCustom = preset.isCustom;
                     return (
@@ -586,8 +623,8 @@ export default function AltroScreen() {
                             <Text style={[styles.presetDesc, isDisabled && styles.presetDescDisabled]}>{preset.description}</Text>
                             {isCustom ? <Text style={styles.customBadge}>Personalizzato</Text> : null}
                           </View>
-                          <Text style={[styles.presetType, preset.type === "income" ? styles.presetTypeIncome : styles.presetTypeExpense]}>
-                            {preset.type === "income" ? "Entrata" : "Uscita"} - {preset.category}
+                          <Text style={[styles.presetType, styles.presetTypeExpense]}>
+                            Uscita - {preset.category}
                           </Text>
                           <Text style={styles.presetRange}>
                             Importo: {preset.minAmount} - {preset.maxAmount} EUR
@@ -601,7 +638,7 @@ export default function AltroScreen() {
                             <Icon name="edit-2" size={20} color={BankColors.cardBlue} />
                           </Pressable>
                         ) : (
-                          <Icon name="plus-circle" size={24} color={BankColors.primary} />
+                          <Icon name="minus-circle" size={24} color={BankColors.error} />
                         )}
                       </Pressable>
                     );
@@ -992,6 +1029,73 @@ const styles = StyleSheet.create({
   },
   consoleTabTextActive: {
     color: BankColors.primary,
+  },
+  certificationHeader: {
+    backgroundColor: BankColors.primary + "10",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: BankColors.primary + "20",
+  },
+  certRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  certLabel: {
+    fontSize: 14,
+    color: BankColors.gray600,
+    fontWeight: "500",
+  },
+  certValue: {
+    fontSize: 16,
+    color: BankColors.primary,
+    fontWeight: "700",
+    marginLeft: "auto",
+  },
+  certValueRecovery: {
+    color: BankColors.cardBlue,
+  },
+  incomeFormHint: {
+    fontSize: 14,
+    color: BankColors.gray600,
+    textAlign: "center",
+    marginBottom: Spacing.lg,
+    lineHeight: 20,
+  },
+  noRecoveryHint: {
+    fontSize: 13,
+    color: BankColors.error,
+    textAlign: "center",
+    marginTop: Spacing.lg,
+    lineHeight: 18,
+  },
+  randomSection: {
+    padding: Spacing.lg,
+    alignItems: "center",
+    backgroundColor: BankColors.error + "08",
+    borderRadius: BorderRadius.lg,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
+  },
+  randomSectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: BankColors.gray900,
+    marginBottom: Spacing.xs,
+  },
+  randomSectionSubtitle: {
+    fontSize: 13,
+    color: BankColors.gray500,
+    textAlign: "center",
+    marginBottom: Spacing.md,
+  },
+  presetDivider: {
+    height: 1,
+    backgroundColor: BankColors.gray200,
+    marginVertical: Spacing.lg,
+    marginHorizontal: Spacing.lg,
   },
   recoveryBar: {
     flexDirection: "row",

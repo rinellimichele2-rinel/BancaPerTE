@@ -33,35 +33,28 @@ function generateRandomTransaction(
 ): GenerateTransactionResult {
   const now = new Date();
   
-  const recoveryAvailability = Math.max(0, purchasedBalance - currentBalance);
-  
-  const isExpense = Math.random() > 0.30;
-  
-  if (!isExpense && recoveryAvailability <= 0) {
-    return null;
-  }
+  // Random button ONLY generates expenses (uscite)
+  // Income is handled separately via manual form
+  const isExpense = true;
   
   const excludeDescriptions = [
     ...userSettings.deletedPresets,
     ...userSettings.disabledPresets
   ];
   
+  // Only get expense presets
   let availablePresets = DEFAULT_PRESETS.filter(p => {
-    if (isExpense && p.type !== "expense") return false;
-    if (!isExpense && p.type !== "income") return false;
+    if (p.type !== "expense") return false;
     if (excludeDescriptions.includes(p.description)) return false;
     return true;
   });
   
-  const customPresetsForType = userSettings.customPresets.filter(p => 
-    (isExpense && p.type === "expense") || (!isExpense && p.type === "income")
-  );
-  availablePresets = [...availablePresets, ...customPresetsForType];
+  // Add custom expense presets
+  const customExpensePresets = userSettings.customPresets.filter(p => p.type === "expense");
+  availablePresets = [...availablePresets, ...customExpensePresets];
   
   if (availablePresets.length === 0) {
-    availablePresets = DEFAULT_PRESETS.filter(p => 
-      (isExpense && p.type === "expense") || (!isExpense && p.type === "income")
-    );
+    availablePresets = DEFAULT_PRESETS.filter(p => p.type === "expense");
   }
   
   const preset = availablePresets[Math.floor(Math.random() * availablePresets.length)];
@@ -73,18 +66,8 @@ function generateRandomTransaction(
     amount = Math.round(Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount);
   }
   
-  let wasCapped = false;
-  let cappedMessage: string | undefined;
-  
-  if (!isExpense && amount > recoveryAvailability) {
-    amount = Math.floor(recoveryAvailability);
-    wasCapped = true;
-    cappedMessage = "Saldo riportato al massimo pagato";
-  }
-  
-  if (!isExpense && amount <= 0) {
-    return null;
-  }
+  const wasCapped = false;
+  const cappedMessage: string | undefined = undefined;
   
   const isContabilizzato = Math.random() > 0.15;
   
