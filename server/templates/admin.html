@@ -147,6 +147,11 @@
       <h1>Banca Mobile Admin</h1>
       <p class="subtitle">Pannello ricariche utenti</p>
       
+      <div id="qr-section" style="text-align: center; margin-bottom: 20px; padding: 16px; background: #f5f5f5; border-radius: 10px;">
+        <p style="font-size: 12px; color: #666; margin-bottom: 8px;">Scansiona per aprire questa pagina</p>
+        <img id="qr-code" alt="QR Code Admin" style="width: 150px; height: 150px;" />
+      </div>
+      
       <div id="login-section">
         <div class="form-group">
           <label for="admin-password">Password Admin</label>
@@ -298,6 +303,11 @@
     document.getElementById('recharge-username').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') searchUser();
     });
+
+    // Generate QR code for this page
+    const currentUrl = window.location.href;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl)}`;
+    document.getElementById('qr-code').src = qrCodeUrl;
   </script>
 </body>
 </html>
