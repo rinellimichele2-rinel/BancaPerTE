@@ -18,11 +18,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   needsSetup: boolean;
-  needsRechargeUsername: boolean;
   login: (username: string) => Promise<{ userId: string; needsSetup: boolean }>;
   setupPin: (pin: string) => Promise<boolean>;
   verifyPin: (pin: string) => Promise<boolean>;
-  setRechargeUsername: (rechargeUsername: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateBalance: (newBalance: string) => Promise<void>;
@@ -39,7 +37,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
-  const [needsRechargeUsername, setNeedsRechargeUsername] = useState(false);
 
   useEffect(() => {
     loadStoredAuth();
@@ -87,10 +84,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.success && data.user) {
         setUser(data.user);
         setNeedsSetup(false);
-        // Check if user needs to set recharge username
-        if (!data.user.rechargeUsername) {
-          setNeedsRechargeUsername(true);
-        }
         const stored = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
         const currentData = stored ? JSON.parse(stored) : {};
         await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ 
@@ -103,25 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return false;
     } catch (error) {
       console.error("PIN setup error:", error);
-      return false;
-    }
-  };
-
-  const setRechargeUsernameFunc = async (rechargeUsername: string): Promise<boolean> => {
-    if (!userId) return false;
-    
-    try {
-      const response = await apiRequest("POST", "/api/auth/set-recharge-username", { userId, rechargeUsername });
-      const data = await response.json();
-      
-      if (data.success) {
-        setNeedsRechargeUsername(false);
-        await refreshUser();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Recharge username setup error:", error);
       return false;
     }
   };
@@ -205,11 +179,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         needsSetup,
-        needsRechargeUsername,
         login,
         setupPin,
         verifyPin,
-        setRechargeUsername: setRechargeUsernameFunc,
         logout,
         refreshUser,
         updateBalance,

@@ -120,6 +120,7 @@ export default function AltroScreen() {
   const [deletedPresets, setDeletedPresets] = useState<string[]>([]);
   const [customPresets, setCustomPresets] = useState<PresetTransaction[]>([]);
   const [showPresetEditor, setShowPresetEditor] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [editingPreset, setEditingPreset] = useState<PresetTransaction | null>(null);
   const [presetDesc, setPresetDesc] = useState("");
   const [presetMinAmount, setPresetMinAmount] = useState("");
@@ -390,7 +391,7 @@ export default function AltroScreen() {
         </Pressable>
 
         <View style={styles.menuSection}>
-          <MenuItem icon="settings" title="Impostazioni e privacy" />
+          <MenuItem icon="settings" title="Impostazioni e privacy" onPress={() => setShowSettings(true)} />
           <MenuItem icon="shield" title="Sicurezza" />
           <MenuItem icon="message-circle" title="Parla con noi" />
         </View>
@@ -677,6 +678,30 @@ export default function AltroScreen() {
                 </Pressable>
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showSettings} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowSettings(false)} />
+          <View style={styles.settingsModalContent} onStartShouldSetResponder={() => true}>
+            <View style={styles.settingsHeader}>
+              <Text style={styles.settingsTitle}>Impostazioni e privacy</Text>
+              <Pressable onPress={() => setShowSettings(false)}>
+                <Icon name="x" size={24} color={BankColors.gray700} />
+              </Pressable>
+            </View>
+            <View style={styles.settingsSection}>
+              <Text style={styles.settingsSectionTitle}>Username di ricarica</Text>
+              <View style={styles.settingsUsernameBox}>
+                <Icon name="at-sign" size={20} color={BankColors.primary} />
+                <Text style={styles.settingsUsername}>{user?.rechargeUsername || "Non disponibile"}</Text>
+              </View>
+              <Text style={styles.settingsHint}>
+                Questo username viene usato per le ricariche PayPal. Comunicalo quando effettui un pagamento.
+              </Text>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1185,5 +1210,52 @@ const styles = StyleSheet.create({
   presetRange: {
     fontSize: 12,
     color: BankColors.gray500,
+  },
+  settingsModalContent: {
+    backgroundColor: BankColors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    marginHorizontal: Spacing.lg,
+    width: "90%",
+    maxWidth: 400,
+  },
+  settingsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.xl,
+  },
+  settingsTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: BankColors.gray900,
+  },
+  settingsSection: {
+    marginBottom: Spacing.lg,
+  },
+  settingsSectionTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: BankColors.gray700,
+    marginBottom: Spacing.sm,
+  },
+  settingsUsernameBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BankColors.gray100,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+  },
+  settingsUsername: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: BankColors.primary,
+  },
+  settingsHint: {
+    fontSize: 12,
+    color: BankColors.gray500,
+    marginTop: Spacing.sm,
+    lineHeight: 18,
   },
 });

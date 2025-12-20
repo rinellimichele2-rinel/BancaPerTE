@@ -138,6 +138,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let isNewUser = false;
     
     if (!user) {
+      const rechargeUsername = username
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '')
+        .substring(0, 15) + '_' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      
       user = await storage.createUser({
         username,
         pin: "00000",
@@ -146,6 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accountNumber: `1000/${Math.floor(Math.random() * 100000).toString().padStart(8, "0")}`,
         balance: "1000.00",
         cardLastFour: Math.floor(Math.random() * 10000).toString().padStart(4, "0"),
+        rechargeUsername,
       });
       isNewUser = true;
     }
