@@ -467,10 +467,10 @@ export default function AltroScreen() {
               <Icon name="info" size={16} color={BankColors.cardBlue} />
               <Text style={styles.recoveryBarText}>
                 Disponibilita per entrate simulate: {(() => {
-                  const currentBalance = Math.floor(parseFloat(user?.balance || "0"));
-                  const purchasedBalance = Math.floor(parseFloat(user?.purchasedBalance || "0"));
-                  const recovery = Math.max(0, purchasedBalance - currentBalance);
-                  return `€${recovery}`;
+                  const currentBalance = parseFloat(user?.balance || "0");
+                  const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
+                  const recovery = Math.max(0, Math.floor(purchasedBalance - currentBalance));
+                  return `€${recovery.toLocaleString('it-IT')}`;
                 })()}
               </Text>
             </View>

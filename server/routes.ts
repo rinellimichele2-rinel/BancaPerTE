@@ -432,23 +432,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const currentBalance = parseFloat(user.balance || "0");
     const purchasedBalance = parseFloat(user.purchasedBalance || "0");
-    const recoveryAvailability = Math.max(0, Math.floor(purchasedBalance) - Math.floor(currentBalance));
+    // Use exact decimal subtraction - no flooring until final comparison
+    const recoveryAvailability = Math.max(0, purchasedBalance - currentBalance);
     
-    let amount = Math.floor(parseFloat(transaction.amount));
+    let amount = Math.abs(parseFloat(transaction.amount));
     let wasCapped = false;
     
+    // Only cap income transactions - expenses are always allowed
     if (transaction.type === "income") {
+      // Allow income only if there's recovery room (purchasedBalance > currentBalance)
       if (recoveryAvailability <= 0) {
-        return res.status(400).json({ 
-          error: "Saldo gia al massimo pagato",
+        return res.status(403).json({ 
+          error: "Saldo gia al massimo pagato. Non puoi aggiungere entrate simulate.",
           recoveryAvailability: 0
         });
       }
+      // Cap the income amount to available recovery
       if (amount > recoveryAvailability) {
-        amount = recoveryAvailability;
+        amount = Math.floor(recoveryAvailability);
         wasCapped = true;
       }
     }
+    
+    // Floor the amount for whole euros
+    amount = Math.floor(amount);
     
     if (transaction.date && typeof transaction.date === 'string') {
       transaction.date = new Date(transaction.date);
@@ -467,7 +474,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       transaction: created, 
       newBalance,
       wasCapped,
-      cappedMessage: wasCapped ? "Saldo riportato al massimo pagato" : undefined
+      cappedMessage: wasCapped ? "Saldo riportato al massimo pagato" : undefined,
+      recoveryAvailability: Math.max(0, purchasedBalance - parseFloat(newBalance))
     });
   });
 
