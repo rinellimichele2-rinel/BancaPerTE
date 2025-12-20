@@ -8,6 +8,7 @@ export const users = pgTable("users", {
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
+  rechargeUsername: text("recharge_username").unique(),
   pin: text("pin").notNull(),
   hasSetPin: boolean("has_set_pin").notNull().default(false),
   fullName: text("full_name").notNull(),
@@ -34,6 +35,7 @@ export const transactions = pgTable("transactions", {
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  rechargeUsername: true,
   pin: true,
   hasSetPin: true,
   fullName: true,
