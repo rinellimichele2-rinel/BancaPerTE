@@ -25,6 +25,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(userId: string, newBalance: string): Promise<User | undefined>;
+  updateUserBalanceWithPurchased(userId: string, newBalance: string, newPurchasedBalance: string): Promise<User | undefined>;
   updateUserName(userId: string, newName: string): Promise<User | undefined>;
   updateUserAccountNumber(userId: string, newAccountNumber: string): Promise<User | undefined>;
   updateUserPin(userId: string, newPin: string): Promise<User | undefined>;
@@ -67,6 +68,15 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .update(users)
       .set({ balance: newBalance })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async updateUserBalanceWithPurchased(userId: string, newBalance: string, newPurchasedBalance: string): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ balance: newBalance, purchasedBalance: newPurchasedBalance })
       .where(eq(users.id, userId))
       .returning();
     return result[0];

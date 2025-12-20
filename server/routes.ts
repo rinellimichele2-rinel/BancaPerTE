@@ -11,13 +11,35 @@ type UserPresetSettings = {
   customPresets: PresetTransaction[];
 };
 
+type GenerateTransactionResult = {
+  userId: string;
+  description: string;
+  amount: string;
+  type: string;
+  category: string;
+  accountNumber: null;
+  isContabilizzato: boolean;
+  isSimulated: boolean;
+  date: Date;
+  wasCapped?: boolean;
+  cappedMessage?: string;
+} | null;
+
 function generateRandomTransaction(
   userId: string, 
-  currentBalance: number, 
+  currentBalance: number,
+  purchasedBalance: number,
   userSettings: UserPresetSettings
-) {
+): GenerateTransactionResult {
   const now = new Date();
+  
+  const recoveryAvailability = Math.max(0, purchasedBalance - currentBalance);
+  
   const isExpense = Math.random() > 0.30;
+  
+  if (!isExpense && recoveryAvailability <= 0) {
+    return null;
+  }
   
   const excludeDescriptions = [
     ...userSettings.deletedPresets,
@@ -51,6 +73,19 @@ function generateRandomTransaction(
     amount = Math.round(Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount);
   }
   
+  let wasCapped = false;
+  let cappedMessage: string | undefined;
+  
+  if (!isExpense && amount > recoveryAvailability) {
+    amount = Math.floor(recoveryAvailability);
+    wasCapped = true;
+    cappedMessage = "Saldo riportato al massimo pagato";
+  }
+  
+  if (!isExpense && amount <= 0) {
+    return null;
+  }
+  
   const isContabilizzato = Math.random() > 0.15;
   
   return {
@@ -61,7 +96,10 @@ function generateRandomTransaction(
     category: preset.category,
     accountNumber: null,
     isContabilizzato,
+    isSimulated: true,
     date: new Date(now),
+    wasCapped,
+    cappedMessage,
   };
 }
 
@@ -148,6 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: updatedUser!.fullName,
         accountNumber: updatedUser!.accountNumber,
         balance: updatedUser!.balance,
+        purchasedBalance: updatedUser!.purchasedBalance,
         cardLastFour: updatedUser!.cardLastFour,
       }
     });
@@ -228,6 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: user.fullName,
         accountNumber: user.accountNumber,
         balance: user.balance,
+        purchasedBalance: user.purchasedBalance,
         cardLastFour: user.cardLastFour,
       }
     });
@@ -249,6 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fullName: user.fullName,
       accountNumber: user.accountNumber,
       balance: user.balance,
+      purchasedBalance: user.purchasedBalance,
       cardLastFour: user.cardLastFour,
     });
   });
@@ -349,16 +390,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : [],
     };
     
-    const currentBalance = parseFloat(user.balance || "1000");
-    const transaction = generateRandomTransaction(userId, currentBalance, userSettings);
-    const created = await storage.createTransaction(transaction);
+    const currentBalance = parseFloat(user.balance || "0");
+    const purchasedBalance = parseFloat(user.purchasedBalance || "0");
+    const transaction = generateRandomTransaction(userId, currentBalance, purchasedBalance, userSettings);
+    
+    if (!transaction) {
+      return res.json({ 
+        transaction: null, 
+        newBalance: user.balance,
+        message: "Saldo gia al massimo pagato" 
+      });
+    }
+    
+    const { wasCapped, cappedMessage, ...transactionData } = transaction;
+    const created = await storage.createTransaction(transactionData);
     
     const amountValue = parseFloat(transaction.amount);
     const balanceChange = transaction.type === "expense" ? -amountValue : amountValue;
     const newBalance = Math.round(currentBalance + balanceChange).toFixed(0) + ".00";
     await storage.updateUserBalance(userId, newBalance);
     
-    return res.json({ transaction: created, newBalance });
+    return res.json({ 
+      transaction: created, 
+      newBalance,
+      wasCapped,
+      cappedMessage 
+    });
   });
 
   app.post("/api/transactions", async (req, res) => {
@@ -368,14 +425,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "Dati transazione incompleti" });
     }
     
-    // Convert date string to Date object if provided
+    const user = await storage.getUser(transaction.userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    const currentBalance = parseFloat(user.balance || "0");
+    const purchasedBalance = parseFloat(user.purchasedBalance || "0");
+    const recoveryAvailability = Math.max(0, Math.floor(purchasedBalance) - Math.floor(currentBalance));
+    
+    let amount = Math.floor(parseFloat(transaction.amount));
+    let wasCapped = false;
+    
+    if (transaction.type === "income") {
+      if (recoveryAvailability <= 0) {
+        return res.status(400).json({ 
+          error: "Saldo gia al massimo pagato",
+          recoveryAvailability: 0
+        });
+      }
+      if (amount > recoveryAvailability) {
+        amount = recoveryAvailability;
+        wasCapped = true;
+      }
+    }
+    
     if (transaction.date && typeof transaction.date === 'string') {
       transaction.date = new Date(transaction.date);
     }
     
+    transaction.amount = amount.toFixed(0) + ".00";
+    transaction.isSimulated = true;
+    
     const created = await storage.createTransaction(transaction);
     
-    return res.json(created);
+    const balanceChange = transaction.type === "expense" ? -amount : amount;
+    const newBalance = Math.floor(currentBalance + balanceChange).toFixed(0) + ".00";
+    await storage.updateUserBalance(user.id, newBalance);
+    
+    return res.json({ 
+      transaction: created, 
+      newBalance,
+      wasCapped,
+      cappedMessage: wasCapped ? "Saldo riportato al massimo pagato" : undefined
+    });
   });
 
   app.put("/api/transactions/:transactionId", async (req, res) => {
@@ -487,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const now = new Date();
     const toUser = await storage.getUser(toUserId);
     
-    // Outgoing transaction for sender
+    // Outgoing transaction for sender (real, not simulated)
     await storage.createTransaction({
       userId: fromUserId,
       description: `Trasferimento a ${toUser?.fullName || toUser?.username || 'Utente'}`,
@@ -496,10 +589,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       category: "Trasferimenti",
       accountNumber: toUser?.accountNumber || null,
       isContabilizzato: true,
+      isSimulated: false,
       date: now,
     });
 
-    // Incoming transaction for receiver
+    // Incoming transaction for receiver (real, not simulated)
     await storage.createTransaction({
       userId: toUserId,
       description: `Trasferimento da ${fromUser.fullName || fromUser.username}`,
@@ -508,6 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       category: "Trasferimenti",
       accountNumber: fromUser.accountNumber || null,
       isContabilizzato: true,
+      isSimulated: false,
       date: now,
     });
 
@@ -567,11 +662,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     const currentBalance = parseFloat(user.balance || "0");
+    const currentPurchasedBalance = parseFloat(user.purchasedBalance || "0");
     const newBalance = (currentBalance + amountNum).toFixed(2);
+    const newPurchasedBalance = (currentPurchasedBalance + amountNum).toFixed(2);
     
-    await storage.updateUserBalance(user.id, newBalance);
+    await storage.updateUserBalanceWithPurchased(user.id, newBalance, newPurchasedBalance);
     
-    // Create transaction record for the top-up
     await storage.createTransaction({
       userId: user.id,
       description: "Ricarica PayPal",
@@ -580,6 +676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       category: "Ricariche",
       accountNumber: null,
       isContabilizzato: true,
+      isSimulated: false,
       date: new Date(),
     });
     
@@ -591,6 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: updatedUser!.fullName,
         rechargeUsername: updatedUser!.rechargeUsername,
         newBalance: updatedUser!.balance,
+        purchasedBalance: updatedUser!.purchasedBalance,
       }
     });
   });

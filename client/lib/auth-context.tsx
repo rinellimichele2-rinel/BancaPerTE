@@ -9,6 +9,7 @@ interface UserData {
   fullName: string;
   accountNumber: string;
   balance: string;
+  purchasedBalance: string;
   cardLastFour: string;
 }
 

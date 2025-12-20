@@ -249,10 +249,13 @@ export default function AltroScreen() {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
       refreshUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (data.wasCapped) {
+        Alert.alert("Saldo riportato al massimo", data.cappedMessage || "L'importo e stato limitato per raggiungere il saldo massimo pagato.");
+      }
     },
   });
 
@@ -261,37 +264,56 @@ export default function AltroScreen() {
       const response = await apiRequest("POST", `/api/transactions/${userId}/generate-random`);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
       refreshUser();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (data.transaction) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (data.wasCapped) {
+          Alert.alert("Saldo riportato al massimo", data.cappedMessage || "L'importo e stato limitato per raggiungere il saldo massimo pagato.");
+        }
+      } else if (data.message) {
+        Alert.alert("Info", data.message);
+      }
     },
   });
 
   const handleAddTransaction = async () => {
     if (!txDescription.trim() || !txAmount.trim()) return;
-    const amount = Math.round(parseFloat(txAmount.replace(",", ".")));
+    const amount = Math.floor(parseFloat(txAmount.replace(",", ".")));
     if (isNaN(amount) || amount <= 0) return;
     
-    await createTransactionMutation.mutateAsync({
-      description: txDescription.trim(),
-      amount: amount.toFixed(0) + ".00",
-      type: txType,
-      category: txCategory,
-    });
-    
-    setTxDescription("");
-    setTxAmount("");
+    try {
+      await createTransactionMutation.mutateAsync({
+        description: txDescription.trim(),
+        amount: amount.toFixed(0) + ".00",
+        type: txType,
+        category: txCategory,
+      });
+      setTxDescription("");
+      setTxAmount("");
+    } catch (error: any) {
+      if (error?.message?.includes("Saldo gia al massimo")) {
+        Alert.alert("Saldo al massimo", "Il saldo e gia al massimo pagato. Non puoi aggiungere altre entrate simulate.");
+      }
+    }
   };
 
   const handlePresetTransaction = async (preset: PresetTransaction) => {
-    const amount = Math.round(Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount);
-    await createTransactionMutation.mutateAsync({
-      description: preset.description,
-      amount: amount.toFixed(0) + ".00",
-      type: preset.type,
-      category: preset.category,
-    });
+    const amount = Math.floor(Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount);
+    
+    try {
+      await createTransactionMutation.mutateAsync({
+        description: preset.description,
+        amount: amount.toFixed(0) + ".00",
+        type: preset.type,
+        category: preset.category,
+      });
+    } catch (error: any) {
+      if (error?.message?.includes("Saldo gia al massimo")) {
+        Alert.alert("Saldo al massimo", "Il saldo e gia al massimo pagato. Non puoi aggiungere altre entrate simulate.");
+      }
+    }
   };
 
   const handleEditName = () => {
@@ -439,6 +461,18 @@ export default function AltroScreen() {
                   Preset Rapidi
                 </Text>
               </Pressable>
+            </View>
+
+            <View style={styles.recoveryBar}>
+              <Icon name="info" size={16} color={BankColors.cardBlue} />
+              <Text style={styles.recoveryBarText}>
+                Disponibilita per entrate simulate: {(() => {
+                  const currentBalance = Math.floor(parseFloat(user?.balance || "0"));
+                  const purchasedBalance = Math.floor(parseFloat(user?.purchasedBalance || "0"));
+                  const recovery = Math.max(0, purchasedBalance - currentBalance);
+                  return `€${recovery}`;
+                })()}
+              </Text>
             </View>
 
             <ScrollView style={styles.consoleBody} contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}>
@@ -958,6 +992,21 @@ const styles = StyleSheet.create({
   },
   consoleTabTextActive: {
     color: BankColors.primary,
+  },
+  recoveryBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BankColors.cardBlue + "15",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: BankColors.cardBlue + "30",
+  },
+  recoveryBarText: {
+    fontSize: 13,
+    color: BankColors.cardBlue,
+    fontWeight: "500",
   },
   consoleBody: {
     flex: 1,
