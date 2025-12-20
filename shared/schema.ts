@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   accountNumber: text("account_number").notNull(),
   balance: decimal("balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  purchasedBalance: decimal("purchased_balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
   cardLastFour: text("card_last_four").notNull().default("3796"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -29,6 +30,7 @@ export const transactions = pgTable("transactions", {
   category: text("category").notNull(),
   accountNumber: text("account_number"),
   isContabilizzato: boolean("is_contabilizzato").notNull().default(false),
+  isSimulated: boolean("is_simulated").notNull().default(true),
   date: timestamp("date").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -41,6 +43,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   fullName: true,
   accountNumber: true,
   balance: true,
+  purchasedBalance: true,
   cardLastFour: true,
 });
 
@@ -52,6 +55,7 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   category: true,
   accountNumber: true,
   isContabilizzato: true,
+  isSimulated: true,
   date: true,
 });
 
