@@ -122,7 +122,7 @@ export default function CarteScreen() {
           <View style={styles.cardDisplay}>
             <View style={styles.cardVisual}>
               <View style={styles.cardHeader}>
-                <Text style={styles.cardBankName}>INTESA SANPAOLO</Text>
+                <Text style={styles.cardBankName}>EQUISCASH</Text>
                 <Text style={styles.cardType}>XME Card Plus</Text>
               </View>
               <View style={styles.cardChip}>
@@ -188,8 +188,8 @@ export default function CarteScreen() {
         <View style={styles.usciteSection}>
           <Text style={styles.sectionTitle}>Uscite</Text>
           <View style={styles.usciteCard}>
-            <MonthlyExpenseItem month="Dicembre" amount="- 1.563,58 \u20AC" />
-            <MonthlyExpenseItem month="Novembre" amount="- 1.523,90 \u20AC" />
+            <MonthlyExpenseItem month="Dicembre" amount="- 1.563,58 €" />
+            <MonthlyExpenseItem month="Novembre" amount="- 1.523,90 €" />
           </View>
         </View>
 
@@ -206,19 +206,19 @@ export default function CarteScreen() {
             date="18.12.2025" 
             description="AL SOLITO POSTO" 
             category="ALTRE" 
-            amount="- 5,00 \u20AC" 
+            amount="- 5,00 €" 
           />
           <TransactionItem 
             date="18.12.2025" 
             description="DOK" 
             category="ALTRE" 
-            amount="- 16,06 \u20AC" 
+            amount="- 16,06 €" 
           />
           <TransactionItem 
             date="18.12.2025" 
             description="AL SOLITO POSTO" 
             category="ALTRE" 
-            amount="- 4,10 \u20AC" 
+            amount="- 4,10 €" 
           />
         </View>
       </ScrollView>
