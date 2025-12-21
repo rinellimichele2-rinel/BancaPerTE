@@ -262,7 +262,7 @@ export default function HomeScreen() {
         <View style={styles.movimentiSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Movimenti</Text>
-            <Pressable style={styles.viewAllBtn}>
+            <Pressable style={styles.viewAllBtn} onPress={() => navigation.navigate("TransactionHistory")}>
               <Text style={styles.viewAllText}>Visualizza tutti</Text>
               <Icon name="chevron-right" size={16} color={BankColors.primary} />
             </Pressable>
@@ -280,7 +280,7 @@ export default function HomeScreen() {
           {loadingTransactions ? (
             <ActivityIndicator style={styles.loader} color={BankColors.primary} />
           ) : (
-            transactions.slice(0, 5).map((transaction) => (
+            transactions.slice(0, 6).map((transaction) => (
               <TransactionItem 
                 key={transaction.id} 
                 transaction={transaction} 
