@@ -65,14 +65,14 @@ export default function TransactionHistoryScreen() {
 
   const filteredTransactions = useMemo(() => {
     const now = new Date();
-    const threeDaysAgo = new Date(now);
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    threeDaysAgo.setHours(0, 0, 0, 0);
+    const twoDaysAgo = new Date(now);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    twoDaysAgo.setHours(0, 0, 0, 0);
 
     return transactions.filter(t => {
       if (!t.date) return false;
       const txDate = new Date(t.date);
-      return txDate >= threeDaysAgo;
+      return txDate >= twoDaysAgo;
     });
   }, [transactions]);
 
