@@ -97,6 +97,7 @@ export default function HomeScreen() {
   const [newBalance, setNewBalance] = useState("");
   const [showEditAccount, setShowEditAccount] = useState(false);
   const [newAccountNumber, setNewAccountNumber] = useState("");
+  const [showWeeklyHistory, setShowWeeklyHistory] = useState(false);
 
   const { data: transactions = [], isLoading: loadingTransactions } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions", userId],
@@ -175,6 +176,26 @@ export default function HomeScreen() {
   const totalIncome = transactions
     .filter(t => t.type === "income")
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+  // Filter transactions from last 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const weeklyTransactions = transactions.filter(t => {
+    if (!t.date) return false;
+    const txDate = new Date(t.date);
+    return txDate >= sevenDaysAgo;
+  });
+
+  const formatTransactionDate = (dateStr: string | Date) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) return "Oggi";
+    if (date.toDateString() === yesterday.toDateString()) return "Ieri";
+    return date.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+  };
 
   return (
     <View style={styles.container}>
@@ -262,7 +283,7 @@ export default function HomeScreen() {
         <View style={styles.movimentiSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Movimenti</Text>
-            <Pressable style={styles.viewAllBtn}>
+            <Pressable style={styles.viewAllBtn} onPress={() => setShowWeeklyHistory(true)}>
               <Text style={styles.viewAllText}>Visualizza tutti</Text>
               <Icon name="chevron-right" size={16} color={BankColors.primary} />
             </Pressable>
@@ -272,7 +293,7 @@ export default function HomeScreen() {
             <Text style={styles.expenseSummaryLabel}>Uscite nei prossimi 30 giorni:</Text>
             <Text style={styles.expenseSummaryAmount}>- {totalExpenses.toFixed(2).replace(".", ",")} {"\u20AC"}</Text>
             <Text style={styles.expenseSummaryCount}>{transactions.filter(t => t.type === "expense").length} operazione</Text>
-            <Pressable>
+            <Pressable onPress={() => setShowWeeklyHistory(true)}>
               <Text style={styles.detailLinkGreen}>Dettagli</Text>
             </Pressable>
           </View>
@@ -369,6 +390,66 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showWeeklyHistory} animationType="slide">
+        <View style={styles.weeklyModalContainer}>
+          <View style={styles.weeklyModalHeader}>
+            <Pressable onPress={() => setShowWeeklyHistory(false)} style={styles.weeklyCloseBtn}>
+              <Icon name="x" size={24} color={BankColors.gray800} />
+            </Pressable>
+            <Text style={styles.weeklyModalTitle}>Movimenti Settimanali</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <ScrollView style={styles.weeklyScrollView} contentContainerStyle={styles.weeklyScrollContent}>
+            <Text style={styles.weeklyLabel}>TRANSAZIONI ULTIMI 7 GIORNI</Text>
+            
+            {weeklyTransactions.length === 0 ? (
+              <View style={styles.weeklyEmptyState}>
+                <Icon name="inbox" size={48} color={BankColors.gray400} />
+                <Text style={styles.weeklyEmptyText}>Nessuna transazione questa settimana</Text>
+              </View>
+            ) : (
+              weeklyTransactions.map((transaction) => {
+                const isExpense = transaction.type === "expense";
+                const amountValue = Math.abs(parseFloat(transaction.amount));
+                const formattedAmount = `${isExpense ? "-" : "+"} ${amountValue.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} \u20AC`;
+                
+                return (
+                  <Pressable 
+                    key={transaction.id} 
+                    style={styles.weeklyTransRow}
+                    onPress={() => {
+                      setShowWeeklyHistory(false);
+                      navigation.navigate("TransactionDetail", { transaction });
+                    }}
+                  >
+                    <View style={styles.weeklyIconCircle}>
+                      <Icon 
+                        name={isExpense ? "arrow-down-left" : "arrow-up-right"} 
+                        size={20} 
+                        color={isExpense ? BankColors.gray600 : BankColors.primary} 
+                      />
+                    </View>
+                    <View style={styles.weeklyTransInfo}>
+                      <Text style={styles.weeklyTransName}>{transaction.description}</Text>
+                      <Text style={styles.weeklyTransDate}>
+                        {transaction.date ? formatTransactionDate(transaction.date) : ""}
+                      </Text>
+                    </View>
+                    <Text style={[
+                      styles.weeklyTransAmount,
+                      { color: isExpense ? BankColors.gray800 : BankColors.primary }
+                    ]}>
+                      {formattedAmount}
+                    </Text>
+                  </Pressable>
+                );
+              })
+            )}
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -708,5 +789,80 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: BankColors.gray300,
     marginVertical: Spacing.sm,
+  },
+  weeklyModalContainer: {
+    flex: 1,
+    backgroundColor: BankColors.white,
+  },
+  weeklyModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: BankColors.gray200,
+  },
+  weeklyCloseBtn: {
+    padding: Spacing.xs,
+  },
+  weeklyModalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: BankColors.gray800,
+  },
+  weeklyScrollView: {
+    flex: 1,
+  },
+  weeklyScrollContent: {
+    padding: Spacing.lg,
+  },
+  weeklyLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: BankColors.gray500,
+    marginBottom: Spacing.lg,
+    letterSpacing: 1,
+  },
+  weeklyEmptyState: {
+    alignItems: "center",
+    paddingVertical: Spacing.xxl,
+  },
+  weeklyEmptyText: {
+    marginTop: Spacing.md,
+    fontSize: 15,
+    color: BankColors.gray500,
+  },
+  weeklyTransRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: BankColors.gray100,
+  },
+  weeklyIconCircle: {
+    width: 40,
+    height: 40,
+    backgroundColor: BankColors.gray100,
+    borderRadius: BorderRadius.sm,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: Spacing.md,
+  },
+  weeklyTransInfo: {
+    flex: 1,
+  },
+  weeklyTransName: {
+    fontWeight: "600",
+    fontSize: 15,
+    color: BankColors.gray800,
+  },
+  weeklyTransDate: {
+    color: BankColors.gray500,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  weeklyTransAmount: {
+    fontWeight: "600",
+    fontSize: 15,
   },
 });
