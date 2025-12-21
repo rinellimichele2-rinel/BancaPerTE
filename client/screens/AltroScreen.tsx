@@ -372,7 +372,7 @@ export default function AltroScreen() {
           <View style={styles.profileInfo}>
             <Text style={styles.profileLabel}>Il mio profilo</Text>
             <Text style={styles.profileName}>{user?.fullName || "MICHELE RINELLI"}</Text>
-            <Text style={styles.profileBank}>Intesa Sanpaolo</Text>
+            <Text style={styles.profileBank}>EquisCash</Text>
             {user?.rechargeUsername ? (
               <Text style={styles.profileRechargeUsername}>Username ricarica: @{user.rechargeUsername}</Text>
             ) : null}

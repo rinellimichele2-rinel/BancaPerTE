@@ -1,10 +1,12 @@
-# Banca Mobile
+# EquisCash (Banca Mobile)
 
 ## Overview
 
-Banca Mobile is a mobile banking application built with React Native and Expo, targeting Android and iOS platforms with Italian language interface. The app provides banking functionality including authentication, account balance viewing, transaction history, and common banking operations like transfers and payments.
+EquisCash is a mobile banking application built with React Native and Expo, targeting Android and iOS platforms with Italian language interface. The app provides banking functionality including authentication, account balance viewing, transaction history, and common banking operations like transfers and payments.
 
 The application follows a client-server architecture with an Express.js backend and PostgreSQL database for data persistence. It's designed to simulate a realistic banking experience with features like PIN-based authentication, transaction generation, and account management.
+
+**Branding Note**: The home screen maintains a similar design aesthetic to professional banking apps for authenticity, while all other screens display the "EquisCash" branding. The AI advisor is named "Assistente EquisCash".
 
 ## User Preferences
 

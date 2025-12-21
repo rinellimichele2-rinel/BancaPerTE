@@ -24,7 +24,7 @@ const FINANCIAL_NEWS_TOPICS = [
   { category: "Mercati", icon: "trending-up", topics: ["Borsa Italiana", "FTSE MIB", "mercati azionari europei", "Wall Street"] },
   { category: "Economia", icon: "globe", topics: ["PIL Italia", "inflazione", "BCE tassi interesse", "economia europea"] },
   { category: "Risparmio", icon: "piggy-bank", topics: ["conti deposito", "buoni fruttiferi", "investimenti sicuri", "rendimenti"] },
-  { category: "Banche", icon: "building", topics: ["Intesa Sanpaolo", "banche italiane", "mutui", "prestiti"] },
+  { category: "Banche", icon: "building", topics: ["banche italiane", "mutui", "prestiti", "fintech"] },
   { category: "Crypto", icon: "cpu", topics: ["Bitcoin", "criptovalute", "blockchain", "ETF crypto"] },
   { category: "Immobiliare", icon: "home", topics: ["mercato immobiliare", "mutui casa", "affitti", "prezzi case"] },
   { category: "Lavoro", icon: "briefcase", topics: ["occupazione Italia", "pensioni", "INPS", "stipendi"] },
@@ -113,7 +113,7 @@ function getDefaultNews(): NewsArticle[] {
     {
       id: "default-1",
       title: "FTSE MIB chiude in rialzo: banche protagoniste",
-      summary: "La Borsa di Milano chiude positiva trainata dal comparto bancario. Intesa Sanpaolo tra i titoli migliori della giornata.",
+      summary: "La Borsa di Milano chiude positiva trainata dal comparto bancario. I titoli del settore tra i migliori della giornata.",
       category: "Mercati",
       relevanceScore: 85,
       source: "Il Sole 24 Ore",

@@ -7,8 +7,8 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-const FINANCIAL_ADVISOR_SYSTEM_PROMPT = `Sei un consulente finanziario AI personale della banca Intesa Sanpaolo. 
-Il tuo nome è "Assistente Intesa".
+const FINANCIAL_ADVISOR_SYSTEM_PROMPT = `Sei un consulente finanziario AI personale di EquisCash. 
+Il tuo nome è "Assistente EquisCash".
 
 Le tue competenze includono:
 - Analisi delle spese e suggerimenti per risparmiare

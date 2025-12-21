@@ -168,7 +168,7 @@ export default function AdvisorScreen() {
             <View style={styles.advisorIcon}>
               <Icon name="message-circle" size={48} color={BankColors.primary} />
             </View>
-            <Text style={styles.welcomeTitle}>Assistente Intesa</Text>
+            <Text style={styles.welcomeTitle}>Assistente EquisCash</Text>
             <Text style={styles.welcomeSubtitle}>
               Il tuo consulente finanziario personale, sempre disponibile per aiutarti.
             </Text>
@@ -241,7 +241,7 @@ export default function AdvisorScreen() {
                     {msg.role === "assistant" ? (
                       <View style={styles.assistantHeader}>
                         <Icon name="message-circle" size={16} color={BankColors.primary} />
-                        <Text style={styles.assistantLabel}>Assistente Intesa</Text>
+                        <Text style={styles.assistantLabel}>Assistente EquisCash</Text>
                       </View>
                     ) : null}
                     <Text
