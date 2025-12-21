@@ -5,7 +5,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeScreen from "@/screens/HomeScreen";
 import TransactionDetailScreen from "@/screens/TransactionDetailScreen";
-import TransactionHistoryScreen from "@/screens/TransactionHistoryScreen";
 import AnalisiScreen from "@/screens/AnalisiScreen";
 import AdvisorScreen from "@/screens/AdvisorScreen";
 import NewsScreen from "@/screens/NewsScreen";
@@ -20,7 +19,6 @@ import type { Transaction } from "@shared/schema";
 export type HomeStackParamList = {
   HomeMain: undefined;
   TransactionDetail: { transaction: Transaction };
-  TransactionHistory: undefined;
   Analisi: undefined;
   Advisor: undefined;
   News: undefined;
@@ -47,7 +45,6 @@ function HomeStackNavigator() {
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
       <HomeStack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
-      <HomeStack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
       <HomeStack.Screen name="Analisi" component={AnalisiScreen} />
       <HomeStack.Screen 
         name="Advisor" 
