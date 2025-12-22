@@ -972,6 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const sanitizedUsers = allUsers.map(user => ({
       id: user.id,
       username: user.username,
+      rechargeUsername: user.rechargeUsername,
       fullName: user.fullName,
       accountNumber: user.accountNumber,
       balance: user.balance,

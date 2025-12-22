@@ -501,7 +501,7 @@
             <div class="activation-item" style="${user.isBlocked ? 'border-left: 3px solid #c62828;' : ''}">
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="flex: 1;">
-                  <p style="margin-bottom: 4px;"><strong style="color: #208037;">@${user.username}</strong>${blockedBadge}</p>
+                  <p style="margin-bottom: 4px;"><strong style="color: #208037;">@${user.rechargeUsername || user.username}</strong>${blockedBadge}</p>
                   <p style="font-size: 13px; color: #333; margin-bottom: 4px;">Nome: <strong>${user.fullName || 'Non impostato'}</strong></p>
                   <p style="font-size: 12px; color: #208037; margin-bottom: 2px;">Saldo Certificato: <strong>${formatBalance(certifiedBalance)}</strong></p>
                   <p style="font-size: 11px; color: #666;">Saldo Visibile: ${formatBalance(user.balance)} | Ricaricato: ${formatBalance(user.totalRecharged || 0)}</p>
@@ -510,7 +510,7 @@
               </div>
               <div style="display: flex; gap: 6px; margin-top: 8px;">
                 <button class="preset-btn" style="flex: 1; padding: 8px; font-size: 12px;" onclick="openUserModal('${user.id}')">Gestisci</button>
-                <button class="preset-btn" style="flex: 1; padding: 8px; font-size: 12px;" onclick="showUserTransfers('${user.id}', '${user.username}')">Cronologia Scambi</button>
+                <button class="preset-btn" style="flex: 1; padding: 8px; font-size: 12px;" onclick="showUserTransfers('${user.id}', '${user.rechargeUsername || user.username}')">Cronologia Scambi</button>
               </div>
             </div>
           `;
@@ -527,7 +527,7 @@
       
       const certifiedBalance = selectedUserForEdit.realPurchasedBalance || 0;
       document.getElementById('modal-user-info').innerHTML = `
-        <p><strong>Username:</strong> @${selectedUserForEdit.username}</p>
+        <p><strong>Username:</strong> @${selectedUserForEdit.rechargeUsername || selectedUserForEdit.username}</p>
         <p><strong>Nome:</strong> ${selectedUserForEdit.fullName || 'Non impostato'}</p>
         <p style="color: #208037;"><strong>Saldo Certificato:</strong> ${formatBalance(certifiedBalance)}</p>
         <p><strong>Saldo Visibile:</strong> ${formatBalance(selectedUserForEdit.balance)}</p>
@@ -554,8 +554,8 @@
       selectedUserForEdit = null;
     }
 
-    async function showUserTransfers(userId, username) {
-      document.getElementById('transfers-username').textContent = '@' + username;
+    async function showUserTransfers(userId, rechargeUsername) {
+      document.getElementById('transfers-username').textContent = '@' + rechargeUsername;
       document.getElementById('transfers-list').innerHTML = '<p style="color: #666; font-size: 13px;">Caricamento...</p>';
       document.getElementById('transfers-modal').classList.remove('hidden');
       document.getElementById('user-detail-modal').classList.add('hidden');
