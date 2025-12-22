@@ -931,6 +931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       accountNumber: user.accountNumber,
       balance: user.balance,
       purchasedBalance: user.purchasedBalance,
+      realPurchasedBalance: user.realPurchasedBalance,
       totalRecharged: user.totalRecharged,
       isBlocked: user.isBlocked,
       blockedReason: user.blockedReason,
@@ -1002,7 +1003,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({ success: true, message: "Utente eliminato con successo" });
   });
 
-  // Admin: Set user balance (for anti-cheat corrections)
+  // Admin: Get user transactions
+  app.get("/api/admin/user-transactions/:userId", async (req, res) => {
+    const adminPassword = req.headers["x-admin-password"] as string;
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    const { userId } = req.params;
+    const transactions = await storage.getTransactions(userId);
+    
+    // Sort by date descending (newest first)
+    transactions.sort((a, b) => {
+      const dateA = new Date(a.date || a.createdAt || 0);
+      const dateB = new Date(b.date || b.createdAt || 0);
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    return res.json(transactions);
+  });
+
+  // Admin: Set certified balance (realPurchasedBalance) - updates all three balance fields
   app.post("/api/admin/set-balance", async (req, res) => {
     const { adminPassword, userId, newBalance } = req.body;
     
@@ -1020,12 +1042,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "Il saldo deve essere un numero positivo" });
     }
     
-    const user = await storage.setUserBalance(userId, balanceNum.toFixed(2));
-    if (!user) {
+    // Verify user exists before updating
+    const existingUser = await storage.getUser(userId);
+    if (!existingUser) {
       return res.status(404).json({ error: "Utente non trovato" });
     }
     
-    return res.json({ success: true, user: { id: user.id, username: user.username, balance: user.balance } });
+    // Update all three balances to maintain consistency (Saldo Certificato)
+    const balanceStr = balanceNum.toFixed(2);
+    const updatedUser = await storage.updateUserAllBalances(userId, balanceStr, balanceStr, balanceStr);
+    
+    if (!updatedUser) {
+      return res.status(500).json({ error: "Errore durante l'aggiornamento del saldo" });
+    }
+    
+    return res.json({ 
+      success: true, 
+      user: { 
+        id: updatedUser.id, 
+        username: updatedUser.username, 
+        balance: updatedUser.balance,
+        realPurchasedBalance: updatedUser.realPurchasedBalance 
+      } 
+    });
   });
 
   // Admin: Get transfer history (real transactions only)
