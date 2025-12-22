@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
 import { Icon } from "@/components/Icon";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
@@ -31,15 +31,57 @@ export default function TransferScreen() {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   
+  const [searchUsername, setSearchUsername] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserInfo | null>(null);
   const [amount, setAmount] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
-  const { data: users = [], isLoading } = useQuery<UserInfo[]>({
-    queryKey: ["/api/users"],
-  });
+  const handleSearch = async () => {
+    if (!searchUsername.trim()) {
+      setSearchError("Inserisci uno username da cercare");
+      return;
+    }
 
-  const otherUsers = users.filter((u) => u.id !== user?.id);
+    const usernameToSearch = searchUsername.trim().replace(/^@/, "");
+    
+    if (usernameToSearch.toLowerCase() === user?.username.toLowerCase()) {
+      setSearchError("Non puoi inviare denaro a te stesso");
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+    setSelectedUser(null);
+
+    try {
+      const response = await fetch(
+        new URL(`/api/users/search/${encodeURIComponent(usernameToSearch)}`, getApiUrl()).toString()
+      );
+      
+      if (response.ok) {
+        const foundUser = await response.json();
+        setSelectedUser(foundUser);
+        setSearchError(null);
+      } else if (response.status === 404) {
+        setSearchError("Utente non trovato. Verifica lo username e riprova.");
+      } else {
+        setSearchError("Errore durante la ricerca");
+      }
+    } catch (error) {
+      setSearchError("Errore di connessione. Riprova.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchUsername("");
+    setSelectedUser(null);
+    setSearchError(null);
+    setAmount("");
+  };
 
   const handleTransfer = async () => {
     if (!selectedUser || !amount || !user) return;
@@ -130,50 +172,80 @@ export default function TransferScreen() {
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
-        <Text style={styles.sectionTitle}>Seleziona destinatario</Text>
-
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={BankColors.primary} />
-            <Text style={styles.loadingText}>Caricamento utenti...</Text>
+        <Text style={styles.sectionTitle}>Cerca destinatario</Text>
+        
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Icon name="at-sign" size={20} color={BankColors.gray500} />
+            <TextInput
+              style={styles.searchInput}
+              value={searchUsername}
+              onChangeText={(text) => {
+                setSearchUsername(text);
+                setSearchError(null);
+              }}
+              placeholder="Inserisci username"
+              placeholderTextColor={BankColors.gray400}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onSubmitEditing={handleSearch}
+              returnKeyType="search"
+            />
+            {searchUsername.length > 0 ? (
+              <Pressable onPress={clearSearch} style={styles.clearButton}>
+                <Icon name="x" size={18} color={BankColors.gray500} />
+              </Pressable>
+            ) : null}
           </View>
-        ) : otherUsers.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Icon name="users" size={48} color={BankColors.gray400} />
-            <Text style={styles.emptyText}>Nessun altro utente registrato</Text>
-            <Text style={styles.emptySubtext}>
-              Invita altri utenti a registrarsi per scambiare denaro
+          <Pressable 
+            style={[styles.searchButton, isSearching && styles.searchButtonDisabled]}
+            onPress={handleSearch}
+            disabled={isSearching}
+          >
+            {isSearching ? (
+              <ActivityIndicator color={BankColors.white} size="small" />
+            ) : (
+              <Icon name="search" size={20} color={BankColors.white} />
+            )}
+          </Pressable>
+        </View>
+
+        {searchError ? (
+          <View style={styles.errorContainer}>
+            <Icon name="alert-circle" size={20} color={BankColors.error} />
+            <Text style={styles.errorText}>{searchError}</Text>
+          </View>
+        ) : null}
+
+        {selectedUser ? (
+          <View style={styles.usersList}>
+            <View style={styles.foundUserLabel}>
+              <Icon name="check-circle" size={16} color={BankColors.primary} />
+              <Text style={styles.foundUserText}>Utente trovato</Text>
+            </View>
+            <View style={[styles.userCard, styles.userCardSelected]}>
+              <View style={styles.userAvatar}>
+                <Text style={styles.userAvatarText}>
+                  {selectedUser.username.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>@{selectedUser.username}</Text>
+                <Text style={styles.userAccount}>
+                  {selectedUser.accountNumber || "ID non disponibile"}
+                </Text>
+              </View>
+              <Icon name="check-circle" size={24} color={BankColors.primary} />
+            </View>
+          </View>
+        ) : !searchError && !isSearching ? (
+          <View style={styles.hintContainer}>
+            <Icon name="info" size={20} color={BankColors.gray400} />
+            <Text style={styles.hintText}>
+              Inserisci lo username esatto del destinatario per inviare denaro
             </Text>
           </View>
-        ) : (
-          <View style={styles.usersList}>
-            {otherUsers.map((u) => (
-              <Pressable
-                key={u.id}
-                style={[
-                  styles.userCard,
-                  selectedUser?.id === u.id && styles.userCardSelected,
-                ]}
-                onPress={() => setSelectedUser(u)}
-              >
-                <View style={styles.userAvatar}>
-                  <Text style={styles.userAvatarText}>
-                    {u.username.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>@{u.username}</Text>
-                  <Text style={styles.userAccount}>
-                    {u.accountNumber || "ID non disponibile"}
-                  </Text>
-                </View>
-                {selectedUser?.id === u.id ? (
-                  <Icon name="check-circle" size={24} color={BankColors.primary} />
-                ) : null}
-              </Pressable>
-            ))}
-          </View>
-        )}
+        ) : null}
 
         {selectedUser ? (
           <View style={styles.transferForm}>
@@ -266,32 +338,79 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
-  loadingContainer: {
-    padding: Spacing.xl * 2,
+  searchContainer: {
+    flexDirection: "row",
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: BankColors.white,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
   },
-  loadingText: {
-    marginTop: Spacing.md,
-    color: BankColors.gray500,
-  },
-  emptyContainer: {
-    padding: Spacing.xl * 2,
-    alignItems: "center",
-  },
-  emptyText: {
+  searchInput: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: "600",
-    color: BankColors.gray700,
-    marginTop: Spacing.md,
+    color: BankColors.gray900,
+    paddingVertical: Spacing.md,
   },
-  emptySubtext: {
+  clearButton: {
+    padding: Spacing.xs,
+  },
+  searchButton: {
+    backgroundColor: BankColors.primary,
+    borderRadius: BorderRadius.md,
+    width: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchButtonDisabled: {
+    opacity: 0.7,
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+  },
+  errorText: {
+    fontSize: 14,
+    color: BankColors.error,
+    flex: 1,
+  },
+  hintContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  hintText: {
     fontSize: 14,
     color: BankColors.gray500,
-    textAlign: "center",
-    marginTop: Spacing.xs,
+    flex: 1,
+    lineHeight: 20,
+  },
+  foundUserLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  foundUserText: {
+    fontSize: 14,
+    color: BankColors.primary,
+    fontWeight: "500",
   },
   usersList: {
     paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
   },
   userCard: {
     backgroundColor: BankColors.white,

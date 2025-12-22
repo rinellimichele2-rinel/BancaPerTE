@@ -540,6 +540,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json(sanitizedUsers);
   });
 
+  // Search user by username (for transfers)
+  app.get("/api/users/search/:username", async (req, res) => {
+    const { username } = req.params;
+    
+    if (!username || username.trim().length === 0) {
+      return res.status(400).json({ error: "Username richiesto" });
+    }
+    
+    const user = await storage.getUserByUsername(username.trim());
+    
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    // Check if user is blocked
+    if (user.isBlocked) {
+      return res.status(403).json({ error: "Questo utente non può ricevere trasferimenti" });
+    }
+    
+    // Return sanitized user data (no PIN, no sensitive info)
+    return res.json({
+      id: user.id,
+      username: user.username,
+      fullName: user.fullName,
+      accountNumber: user.accountNumber,
+    });
+  });
+
   // Transfer balance between users
   app.post("/api/transfer", async (req, res) => {
     const { fromUserId, toUserId, amount } = req.body;
