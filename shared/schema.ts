@@ -100,7 +100,7 @@ export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
-// User preset settings table
+// User preset settings table (for deleted/disabled defaults)
 export const userPresetSettings = pgTable("user_preset_settings", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -111,6 +111,27 @@ export const userPresetSettings = pgTable("user_preset_settings", {
 });
 
 export type UserPresetSettings = typeof userPresetSettings.$inferSelect;
+
+// User custom presets table (normalized, persistent)
+export const userCustomPresets = pgTable("user_custom_presets", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  description: text("description").notNull(),
+  type: text("type").notNull().default("expense"),
+  category: text("category").notNull(),
+  minAmount: integer("min_amount").notNull(),
+  maxAmount: integer("max_amount").notNull(),
+  isEnabled: boolean("is_enabled").notNull().default(true),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertCustomPresetSchema = createInsertSchema(userCustomPresets).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type UserCustomPreset = typeof userCustomPresets.$inferSelect;
+export type InsertCustomPreset = z.infer<typeof insertCustomPresetSchema>;
 
 // App settings table for admin configuration
 export const appSettings = pgTable("app_settings", {
