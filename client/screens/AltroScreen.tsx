@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -609,10 +611,14 @@ export default function AltroScreen() {
                       <Text style={styles.presetTitle}>Preset uscite disponibili</Text>
                       <Text style={styles.presetSubtitle}>Tieni premuto per eliminare</Text>
                     </View>
-                    <Pressable style={styles.addPresetBtn} onPress={openCreatePreset}>
+                    <TouchableOpacity 
+                      style={styles.addPresetBtn} 
+                      onPress={openCreatePreset}
+                      activeOpacity={0.7}
+                    >
                       <Icon name="plus" size={18} color={BankColors.white} />
                       <Text style={styles.addPresetBtnText}>Nuovo</Text>
-                    </Pressable>
+                    </TouchableOpacity>
                   </View>
                   
                   {allPresets.filter(p => p.type === "expense").length === 0 ? (
@@ -1295,7 +1301,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     gap: 4,
-  },
+    zIndex: 10,
+    cursor: "pointer",
+  } as any,
   addPresetBtnText: {
     color: BankColors.white,
     fontSize: 13,
