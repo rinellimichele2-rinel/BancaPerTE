@@ -5,6 +5,7 @@ import {
   users, 
   transactions,
   userPresetSettings,
+  userCustomPresets,
   appSettings,
   referralActivations,
   type User, 
@@ -12,6 +13,8 @@ import {
   type Transaction, 
   type InsertTransaction,
   type UserPresetSettings,
+  type UserCustomPreset,
+  type InsertCustomPreset,
   type AppSettings,
   type ReferralActivation
 } from "@shared/schema";
@@ -342,6 +345,104 @@ export class DatabaseStorage implements IStorage {
     } else {
       const result = await db.select().from(users).orderBy(desc(users.createdAt));
       return result;
+    }
+  }
+
+  // Custom Presets CRUD
+  async getCustomPresets(userId: string): Promise<UserCustomPreset[]> {
+    const result = await db
+      .select()
+      .from(userCustomPresets)
+      .where(eq(userCustomPresets.userId, userId))
+      .orderBy(desc(userCustomPresets.createdAt));
+    return result;
+  }
+
+  async getCustomPreset(id: number): Promise<UserCustomPreset | undefined> {
+    const result = await db.select().from(userCustomPresets).where(eq(userCustomPresets.id, id));
+    return result[0];
+  }
+
+  async createCustomPreset(preset: InsertCustomPreset): Promise<UserCustomPreset> {
+    const result = await db.insert(userCustomPresets).values(preset).returning();
+    return result[0];
+  }
+
+  async updateCustomPreset(id: number, updates: Partial<InsertCustomPreset>): Promise<UserCustomPreset | undefined> {
+    const result = await db
+      .update(userCustomPresets)
+      .set(updates)
+      .where(eq(userCustomPresets.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteCustomPreset(id: number): Promise<boolean> {
+    const result = await db.delete(userCustomPresets).where(eq(userCustomPresets.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async triggerPresetTransaction(userId: string, presetId: number): Promise<{ success: boolean; error?: string; transaction?: Transaction; user?: User }> {
+    const preset = await this.getCustomPreset(presetId);
+    if (!preset) {
+      return { success: false, error: "Preset non trovato" };
+    }
+    if (preset.userId !== userId) {
+      return { success: false, error: "Preset non autorizzato" };
+    }
+
+    const user = await this.getUser(userId);
+    if (!user) {
+      return { success: false, error: "Utente non trovato" };
+    }
+
+    // Calculate random amount within range
+    const amount = Math.floor(Math.random() * (preset.maxAmount - preset.minAmount + 1)) + preset.minAmount;
+    
+    const currentBalance = parseFloat(user.balance || "0");
+    const currentPurchased = parseFloat(user.purchasedBalance || "0");
+
+    if (preset.type === "expense") {
+      if (amount > currentBalance) {
+        return { success: false, error: "Saldo insufficiente" };
+      }
+      
+      const newBalance = (currentBalance - amount).toFixed(2);
+      const newPurchased = Math.max(0, currentPurchased - amount).toFixed(2);
+
+      // Update balance atomically
+      const updatedUser = await this.updateUserBalanceWithPurchased(userId, newBalance, newPurchased);
+
+      // Create transaction record
+      const transaction = await this.createTransaction({
+        userId,
+        description: preset.description,
+        amount: (-amount).toString(),
+        type: "expense",
+        category: preset.category,
+        isContabilizzato: true,
+        isSimulated: true,
+      });
+
+      return { success: true, transaction, user: updatedUser };
+    } else {
+      // Income - add to balance
+      const newBalance = (currentBalance + amount).toFixed(2);
+      const newPurchased = (currentPurchased + amount).toFixed(2);
+
+      const updatedUser = await this.updateUserBalanceWithPurchased(userId, newBalance, newPurchased);
+
+      const transaction = await this.createTransaction({
+        userId,
+        description: preset.description,
+        amount: amount.toString(),
+        type: "income",
+        category: preset.category,
+        isContabilizzato: true,
+        isSimulated: true,
+      });
+
+      return { success: true, transaction, user: updatedUser };
     }
   }
 }
