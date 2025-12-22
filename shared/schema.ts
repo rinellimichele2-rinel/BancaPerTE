@@ -15,6 +15,9 @@ export const users = pgTable("users", {
   accountNumber: text("account_number").notNull(),
   balance: decimal("balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
   purchasedBalance: decimal("purchased_balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  totalRecharged: decimal("total_recharged", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  referredBy: varchar("referred_by"),
+  referralActivated: boolean("referral_activated").notNull().default(false),
   cardLastFour: text("card_last_four").notNull().default("3796"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -106,3 +109,24 @@ export const userPresetSettings = pgTable("user_preset_settings", {
 });
 
 export type UserPresetSettings = typeof userPresetSettings.$inferSelect;
+
+// App settings table for admin configuration
+export const appSettings = pgTable("app_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type AppSettings = typeof appSettings.$inferSelect;
+
+// Referral activations tracking
+export const referralActivations = pgTable("referral_activations", {
+  id: serial("id").primaryKey(),
+  referrerId: varchar("referrer_id").notNull().references(() => users.id),
+  referredId: varchar("referred_id").notNull().references(() => users.id),
+  bonusAmount: decimal("bonus_amount", { precision: 12, scale: 2 }).notNull(),
+  activatedAt: timestamp("activated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type ReferralActivation = typeof referralActivations.$inferSelect;
