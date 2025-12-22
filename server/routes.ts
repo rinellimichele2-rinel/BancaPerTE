@@ -526,6 +526,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Custom presets API - database-backed persistent storage
+  app.get("/api/users/:userId/custom-presets", async (req, res) => {
+    const { userId } = req.params;
+    const presets = await storage.getCustomPresets(userId);
+    return res.json(presets);
+  });
+
+  app.post("/api/users/:userId/custom-presets", async (req, res) => {
+    const { userId } = req.params;
+    const { description, type, category, minAmount, maxAmount } = req.body;
+
+    if (!description || !category || minAmount === undefined || maxAmount === undefined) {
+      return res.status(400).json({ error: "Dati mancanti" });
+    }
+
+    const preset = await storage.createCustomPreset({
+      userId,
+      description,
+      type: type || "expense",
+      category,
+      minAmount: parseInt(minAmount),
+      maxAmount: parseInt(maxAmount),
+      isEnabled: true,
+    });
+
+    return res.json(preset);
+  });
+
+  app.put("/api/users/:userId/custom-presets/:presetId", async (req, res) => {
+    const { userId, presetId } = req.params;
+    const { description, type, category, minAmount, maxAmount, isEnabled } = req.body;
+
+    const existing = await storage.getCustomPreset(parseInt(presetId));
+    if (!existing) {
+      return res.status(404).json({ error: "Preset non trovato" });
+    }
+    if (existing.userId !== userId) {
+      return res.status(403).json({ error: "Non autorizzato" });
+    }
+
+    const updated = await storage.updateCustomPreset(parseInt(presetId), {
+      description,
+      type,
+      category,
+      minAmount: minAmount !== undefined ? parseInt(minAmount) : undefined,
+      maxAmount: maxAmount !== undefined ? parseInt(maxAmount) : undefined,
+      isEnabled,
+    });
+
+    return res.json(updated);
+  });
+
+  app.delete("/api/users/:userId/custom-presets/:presetId", async (req, res) => {
+    const { userId, presetId } = req.params;
+
+    const existing = await storage.getCustomPreset(parseInt(presetId));
+    if (!existing) {
+      return res.status(404).json({ error: "Preset non trovato" });
+    }
+    if (existing.userId !== userId) {
+      return res.status(403).json({ error: "Non autorizzato" });
+    }
+
+    await storage.deleteCustomPreset(parseInt(presetId));
+    return res.json({ success: true });
+  });
+
+  app.post("/api/users/:userId/custom-presets/:presetId/trigger", async (req, res) => {
+    const { userId, presetId } = req.params;
+
+    const result = await storage.triggerPresetTransaction(userId, parseInt(presetId));
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    return res.json({
+      success: true,
+      transaction: result.transaction,
+      user: result.user,
+    });
+  });
+
   // Get all users for money transfer feature
   app.get("/api/users", async (req, res) => {
     const allUsers = await storage.getAllUsers();
