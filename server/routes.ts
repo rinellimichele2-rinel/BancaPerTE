@@ -258,10 +258,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: user.username,
         rechargeUsername: user.rechargeUsername,
         fullName: user.fullName,
+        displayName: user.displayName,
         accountNumber: user.accountNumber,
         balance: user.balance,
         purchasedBalance: user.purchasedBalance,
         realPurchasedBalance: user.realPurchasedBalance,
+        customMonthlyExpenses: user.customMonthlyExpenses,
+        customMonthlyIncome: user.customMonthlyIncome,
         cardLastFour: user.cardLastFour,
       }
     });
@@ -281,10 +284,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       username: user.username,
       rechargeUsername: user.rechargeUsername,
       fullName: user.fullName,
+      displayName: user.displayName,
       accountNumber: user.accountNumber,
       balance: user.balance,
       purchasedBalance: user.purchasedBalance,
       realPurchasedBalance: user.realPurchasedBalance,
+      customMonthlyExpenses: user.customMonthlyExpenses,
+      customMonthlyIncome: user.customMonthlyIncome,
       cardLastFour: user.cardLastFour,
     });
   });
@@ -346,6 +352,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({
       id: user.id,
       accountNumber: user.accountNumber,
+    });
+  });
+
+  app.put("/api/user/:userId/display-name", async (req, res) => {
+    const { userId } = req.params;
+    const { displayName } = req.body;
+    
+    const user = await storage.updateUserDisplayName(userId, displayName || null);
+    
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    return res.json({
+      id: user.id,
+      displayName: user.displayName,
+    });
+  });
+
+  app.put("/api/user/:userId/monthly-values", async (req, res) => {
+    const { userId } = req.params;
+    const { customMonthlyExpenses, customMonthlyIncome } = req.body;
+    
+    const user = await storage.updateUserMonthlyValues(
+      userId, 
+      customMonthlyExpenses || null, 
+      customMonthlyIncome || null
+    );
+    
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    return res.json({
+      id: user.id,
+      customMonthlyExpenses: user.customMonthlyExpenses,
+      customMonthlyIncome: user.customMonthlyIncome,
     });
   });
 

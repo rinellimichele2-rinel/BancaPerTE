@@ -38,6 +38,8 @@ export interface IStorage {
   updateUserAllBalances(userId: string, newBalance: string, newPurchasedBalance: string, newRealPurchasedBalance: string): Promise<User | undefined>;
   updateUserName(userId: string, newName: string): Promise<User | undefined>;
   updateUserAccountNumber(userId: string, newAccountNumber: string): Promise<User | undefined>;
+  updateUserDisplayName(userId: string, displayName: string | null): Promise<User | undefined>;
+  updateUserMonthlyValues(userId: string, expenses: string | null, income: string | null): Promise<User | undefined>;
   updateUserPin(userId: string, newPin: string): Promise<User | undefined>;
   setUserRechargeUsername(userId: string, rechargeUsername: string): Promise<User | undefined>;
   transferBalance(fromUserId: string, toUserId: string, amount: number): Promise<{ success: boolean; error?: string; fromUser?: User; toUser?: User }>;
@@ -115,6 +117,24 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .update(users)
       .set({ accountNumber: newAccountNumber })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async updateUserDisplayName(userId: string, displayName: string | null): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ displayName })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async updateUserMonthlyValues(userId: string, expenses: string | null, income: string | null): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ customMonthlyExpenses: expenses, customMonthlyIncome: income })
       .where(eq(users.id, userId))
       .returning();
     return result[0];
