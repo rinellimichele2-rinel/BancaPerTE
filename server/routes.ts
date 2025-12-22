@@ -261,6 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accountNumber: user.accountNumber,
         balance: user.balance,
         purchasedBalance: user.purchasedBalance,
+        realPurchasedBalance: user.realPurchasedBalance,
         cardLastFour: user.cardLastFour,
       }
     });
@@ -283,6 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       accountNumber: user.accountNumber,
       balance: user.balance,
       purchasedBalance: user.purchasedBalance,
+      realPurchasedBalance: user.realPurchasedBalance,
       cardLastFour: user.cardLastFour,
     });
   });

@@ -463,7 +463,7 @@ export default function AltroScreen() {
                 <Icon name="shield" size={18} color={BankColors.primary} />
                 <Text style={styles.certLabel}>Saldo Certificato:</Text>
                 <Text style={styles.certValue}>
-                  {parseFloat(user?.purchasedBalance || "0").toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  {parseFloat(user?.realPurchasedBalance || "0").toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </Text>
               </View>
               <View style={styles.certRow}>
@@ -472,8 +472,8 @@ export default function AltroScreen() {
                 <Text style={[styles.certValue, styles.certValueRecovery]}>
                   {(() => {
                     const currentBalance = parseFloat(user?.balance || "0");
-                    const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
-                    const recovery = Math.max(0, Math.floor(purchasedBalance - currentBalance));
+                    const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
+                    const recovery = Math.max(0, Math.floor(certifiedBalance - currentBalance));
                     return `€${recovery.toLocaleString('it-IT')}`;
                   })()}
                 </Text>
@@ -517,8 +517,8 @@ export default function AltroScreen() {
 
                   <Text style={styles.formLabel}>Importo (EUR) - Max: {(() => {
                     const currentBalance = parseFloat(user?.balance || "0");
-                    const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
-                    const recovery = Math.max(0, Math.floor(purchasedBalance - currentBalance));
+                    const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
+                    const recovery = Math.max(0, Math.floor(certifiedBalance - currentBalance));
                     return recovery.toLocaleString('it-IT');
                   })()}</Text>
                   <TextInput
@@ -526,8 +526,8 @@ export default function AltroScreen() {
                     value={txAmount}
                     onChangeText={(text) => {
                       const currentBalance = parseFloat(user?.balance || "0");
-                      const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
-                      const maxRecovery = Math.max(0, Math.floor(purchasedBalance - currentBalance));
+                      const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
+                      const maxRecovery = Math.max(0, Math.floor(certifiedBalance - currentBalance));
                       const numValue = parseInt(text.replace(/[^0-9]/g, ''), 10);
                       if (!isNaN(numValue) && numValue > maxRecovery) {
                         setTxAmount(maxRecovery.toString());
@@ -558,14 +558,14 @@ export default function AltroScreen() {
                   <Pressable 
                     style={[styles.submitBtn, createTransactionMutation.isPending && styles.submitBtnDisabled, (() => {
                       const currentBalance = parseFloat(user?.balance || "0");
-                      const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
-                      return purchasedBalance <= currentBalance ? styles.submitBtnDisabled : {};
+                      const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
+                      return certifiedBalance <= currentBalance ? styles.submitBtnDisabled : {};
                     })()]}
                     onPress={handleAddTransaction}
                     disabled={createTransactionMutation.isPending || (() => {
                       const currentBalance = parseFloat(user?.balance || "0");
-                      const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
-                      return purchasedBalance <= currentBalance;
+                      const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
+                      return certifiedBalance <= currentBalance;
                     })()}
                   >
                     {createTransactionMutation.isPending ? (
@@ -577,8 +577,8 @@ export default function AltroScreen() {
                   
                   {(() => {
                     const currentBalance = parseFloat(user?.balance || "0");
-                    const purchasedBalance = parseFloat(user?.purchasedBalance || "0");
-                    if (purchasedBalance <= currentBalance) {
+                    const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
+                    if (certifiedBalance <= currentBalance) {
                       return (
                         <Text style={styles.noRecoveryHint}>
                           Il saldo attuale e gia al massimo certificato. Genera uscite per creare margine di recupero.

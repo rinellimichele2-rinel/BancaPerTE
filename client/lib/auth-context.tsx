@@ -10,6 +10,7 @@ interface UserData {
   accountNumber: string;
   balance: string;
   purchasedBalance: string;
+  realPurchasedBalance: string;
   cardLastFour: string;
 }
 
