@@ -58,7 +58,7 @@ export default function TransferScreen() {
 
     Alert.alert(
       "Conferma Trasferimento",
-      `Vuoi trasferire ${amountNum.toFixed(0)} EUR a ${selectedUser.fullName || selectedUser.username}?`,
+      `Vuoi trasferire ${amountNum.toFixed(0)} EUR a @${selectedUser.username}?\n\nCodice ID: ${selectedUser.accountNumber || "N/A"}`,
       [
         { text: "Annulla", style: "cancel" },
         {
@@ -80,7 +80,7 @@ export default function TransferScreen() {
                 
                 Alert.alert(
                   "Trasferimento Completato",
-                  `Hai trasferito ${amountNum.toFixed(0)} EUR a ${selectedUser.fullName || selectedUser.username}`,
+                  `Hai trasferito ${amountNum.toFixed(0)} EUR a @${selectedUser.username}`,
                   [{ text: "OK", onPress: () => navigation.goBack() }]
                 );
               } else {
@@ -158,13 +158,13 @@ export default function TransferScreen() {
               >
                 <View style={styles.userAvatar}>
                   <Text style={styles.userAvatarText}>
-                    {(u.fullName || u.username).charAt(0).toUpperCase()}
+                    {u.username.charAt(0).toUpperCase()}
                   </Text>
                 </View>
                 <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{u.fullName || u.username}</Text>
+                  <Text style={styles.userName}>@{u.username}</Text>
                   <Text style={styles.userAccount}>
-                    {u.accountNumber || "Nessun conto"}
+                    {u.accountNumber || "ID non disponibile"}
                   </Text>
                 </View>
                 {selectedUser?.id === u.id ? (
