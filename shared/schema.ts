@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   accountNumber: text("account_number").notNull(),
   balance: decimal("balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
   purchasedBalance: decimal("purchased_balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  realPurchasedBalance: decimal("real_purchased_balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
   totalRecharged: decimal("total_recharged", { precision: 12, scale: 2 }).notNull().default("0.00"),
   referredBy: varchar("referred_by"),
   referralActivated: boolean("referral_activated").notNull().default(false),

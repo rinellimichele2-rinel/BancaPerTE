@@ -35,6 +35,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(userId: string, newBalance: string): Promise<User | undefined>;
   updateUserBalanceWithPurchased(userId: string, newBalance: string, newPurchasedBalance: string): Promise<User | undefined>;
+  updateUserAllBalances(userId: string, newBalance: string, newPurchasedBalance: string, newRealPurchasedBalance: string): Promise<User | undefined>;
   updateUserName(userId: string, newName: string): Promise<User | undefined>;
   updateUserAccountNumber(userId: string, newAccountNumber: string): Promise<User | undefined>;
   updateUserPin(userId: string, newPin: string): Promise<User | undefined>;
@@ -92,6 +93,15 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async updateUserAllBalances(userId: string, newBalance: string, newPurchasedBalance: string, newRealPurchasedBalance: string): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ balance: newBalance, purchasedBalance: newPurchasedBalance, realPurchasedBalance: newRealPurchasedBalance })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
   async updateUserName(userId: string, newName: string): Promise<User | undefined> {
     const result = await db
       .update(users)
@@ -144,6 +154,10 @@ export class DatabaseStorage implements IStorage {
 
     const fromBalance = parseFloat(fromUser.balance || "0");
     const toBalance = parseFloat(toUser.balance || "0");
+    const fromPurchasedBalance = parseFloat(fromUser.purchasedBalance || "0");
+    const toPurchasedBalance = parseFloat(toUser.purchasedBalance || "0");
+    const fromRealPurchased = parseFloat(fromUser.realPurchasedBalance || "0");
+    const toRealPurchased = parseFloat(toUser.realPurchasedBalance || "0");
 
     if (amount <= 0) {
       return { success: false, error: "L'importo deve essere maggiore di zero" };
@@ -152,11 +166,16 @@ export class DatabaseStorage implements IStorage {
       return { success: false, error: "Saldo insufficiente" };
     }
 
+    // P2P transfers permanently deduct from ALL balances (cannot be recovered with fake income)
     const newFromBalance = (fromBalance - amount).toFixed(2);
     const newToBalance = (toBalance + amount).toFixed(2);
+    const newFromPurchased = Math.max(0, fromPurchasedBalance - amount).toFixed(2);
+    const newToPurchased = (toPurchasedBalance + amount).toFixed(2);
+    const newFromRealPurchased = Math.max(0, fromRealPurchased - amount).toFixed(2);
+    const newToRealPurchased = (toRealPurchased + amount).toFixed(2);
 
-    const updatedFromUser = await this.updateUserBalance(fromUserId, newFromBalance);
-    const updatedToUser = await this.updateUserBalance(toUserId, newToBalance);
+    const updatedFromUser = await this.updateUserAllBalances(fromUserId, newFromBalance, newFromPurchased, newFromRealPurchased);
+    const updatedToUser = await this.updateUserAllBalances(toUserId, newToBalance, newToPurchased, newToRealPurchased);
 
     if (!updatedFromUser || !updatedToUser) {
       return { success: false, error: "Errore durante il trasferimento" };
@@ -429,6 +448,7 @@ export class DatabaseStorage implements IStorage {
     
     const currentBalance = parseFloat(user.balance || "0");
     const currentPurchased = parseFloat(user.purchasedBalance || "0");
+    const realPurchased = parseFloat(user.realPurchasedBalance || "0");
 
     if (preset.type === "expense") {
       if (amount > currentBalance) {
@@ -454,16 +474,24 @@ export class DatabaseStorage implements IStorage {
 
       return { success: true, transaction, user: updatedUser };
     } else {
-      // Income - add to balance
-      const newBalance = (currentBalance + amount).toFixed(2);
-      const newPurchased = (currentPurchased + amount).toFixed(2);
+      // Income - add to balance (capped at realPurchasedBalance)
+      const recoveryAvailable = Math.max(0, realPurchased - currentBalance);
+      if (recoveryAvailable <= 0) {
+        return { success: false, error: "Saldo già al massimo. Non puoi aggiungere altre entrate." };
+      }
+      
+      // Cap the income amount to available recovery
+      const cappedAmount = Math.min(amount, recoveryAvailable);
+      
+      const newBalance = (currentBalance + cappedAmount).toFixed(2);
+      const newPurchased = (currentPurchased + cappedAmount).toFixed(2);
 
       const updatedUser = await this.updateUserBalanceWithPurchased(userId, newBalance, newPurchased);
 
       const transaction = await this.createTransaction({
         userId,
         description: preset.description,
-        amount: amount.toString(),
+        amount: cappedAmount.toString(),
         type: "income",
         category: preset.category,
         isContabilizzato: true,

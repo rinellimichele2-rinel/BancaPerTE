@@ -428,22 +428,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const currentBalance = parseFloat(user.balance || "0");
     const purchasedBalance = parseFloat(user.purchasedBalance || "0");
-    // Use exact decimal subtraction - no flooring until final comparison
-    const recoveryAvailability = Math.max(0, purchasedBalance - currentBalance);
+    const realPurchasedBalance = parseFloat(user.realPurchasedBalance || "0");
+    
+    // Recovery is capped by realPurchasedBalance (permanent admin top-ups)
+    // P2P transfers permanently reduce this, fake income cannot exceed it
+    const recoveryAvailability = Math.max(0, realPurchasedBalance - currentBalance);
     
     let amount = Math.abs(parseFloat(transaction.amount));
     let wasCapped = false;
     
     // Only cap income transactions - expenses are always allowed
     if (transaction.type === "income") {
-      // Allow income only if there's recovery room (purchasedBalance > currentBalance)
+      // Allow income only if there's recovery room (realPurchasedBalance > currentBalance)
       if (recoveryAvailability <= 0) {
         return res.status(403).json({ 
-          error: "Saldo gia al massimo pagato. Non puoi aggiungere entrate simulate.",
+          error: "Saldo già al massimo. Non puoi aggiungere altre entrate.",
           recoveryAvailability: 0
         });
       }
-      // Cap the income amount to available recovery
+      // Cap the income amount to available recovery (can't exceed realPurchasedBalance)
       if (amount > recoveryAvailability) {
         amount = Math.floor(recoveryAvailability);
         wasCapped = true;
@@ -464,14 +467,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const balanceChange = transaction.type === "expense" ? -amount : amount;
     const newBalance = Math.floor(currentBalance + balanceChange).toFixed(0) + ".00";
-    await storage.updateUserBalance(user.id, newBalance);
+    
+    // Income transactions increase BOTH balance AND purchasedBalance (for justification)
+    // Expenses decrease BOTH balance AND purchasedBalance
+    const newPurchasedBalance = Math.max(0, purchasedBalance + balanceChange).toFixed(2);
+    await storage.updateUserBalanceWithPurchased(user.id, newBalance, newPurchasedBalance);
     
     return res.json({ 
       transaction: created, 
       newBalance,
       wasCapped,
-      cappedMessage: wasCapped ? "Saldo riportato al massimo pagato" : undefined,
-      recoveryAvailability: Math.max(0, purchasedBalance - parseFloat(newBalance))
+      cappedMessage: wasCapped ? "Importo limitato al saldo reale disponibile" : undefined,
+      recoveryAvailability: Math.max(0, realPurchasedBalance - parseFloat(newBalance))
     });
   });
 
@@ -781,11 +788,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const currentBalance = parseFloat(user.balance || "0");
     const currentPurchasedBalance = parseFloat(user.purchasedBalance || "0");
+    const currentRealPurchased = parseFloat(user.realPurchasedBalance || "0");
     const previousTotalRecharged = parseFloat(user.totalRecharged || "0");
     const newBalance = (currentBalance + amountNum).toFixed(2);
     const newPurchasedBalance = (currentPurchasedBalance + amountNum).toFixed(2);
+    const newRealPurchased = (currentRealPurchased + amountNum).toFixed(2);
     
-    await storage.updateUserBalanceWithPurchased(user.id, newBalance, newPurchasedBalance);
+    await storage.updateUserAllBalances(user.id, newBalance, newPurchasedBalance, newRealPurchased);
     await storage.updateUserTotalRecharged(user.id, amountNum);
     
     await storage.createTransaction({
@@ -812,13 +821,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const bonusStr = await storage.getAppSetting("referral_bonus");
         const bonusAmount = bonusStr ? parseInt(bonusStr) : 200;
         
-        // Award bonus to referrer
+        // Award bonus to referrer (real money, increases all balances)
         const referrerBalance = parseFloat(referrer.balance || "0");
         const referrerPurchased = parseFloat(referrer.purchasedBalance || "0");
+        const referrerRealPurchased = parseFloat(referrer.realPurchasedBalance || "0");
         const newReferrerBalance = (referrerBalance + bonusAmount).toFixed(2);
         const newReferrerPurchased = (referrerPurchased + bonusAmount).toFixed(2);
+        const newReferrerRealPurchased = (referrerRealPurchased + bonusAmount).toFixed(2);
         
-        await storage.updateUserBalanceWithPurchased(referrer.id, newReferrerBalance, newReferrerPurchased);
+        await storage.updateUserAllBalances(referrer.id, newReferrerBalance, newReferrerPurchased, newReferrerRealPurchased);
         
         // Create bonus transaction for referrer
         await storage.createTransaction({
