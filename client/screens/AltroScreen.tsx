@@ -680,6 +680,57 @@ export default function AltroScreen() {
                       </Pressable>
                     );
                   })}
+                  
+                  {/* Income Presets Section */}
+                  {allPresets.filter(p => p.type === "income").length > 0 ? (
+                    <>
+                      <View style={styles.presetDivider} />
+                      <View style={styles.presetHeader}>
+                        <View style={styles.presetHeaderLeft}>
+                          <Text style={styles.presetTitle}>Preset entrate (Giustificazione)</Text>
+                          <Text style={styles.presetSubtitle}>Recupera il margine con entrate finte</Text>
+                        </View>
+                      </View>
+                      
+                      {allPresets.filter(p => p.type === "income").map((preset, index) => {
+                        const isCustom = preset.isCustom;
+                        return (
+                          <Pressable 
+                            key={`income-${preset.dbId || index}`}
+                            style={[
+                              styles.presetItem, 
+                              isCustom && styles.presetItemCustom,
+                              styles.presetItemIncome
+                            ]}
+                            onPress={() => {
+                              if (isCustom && preset.dbId) {
+                                triggerPresetMutation.mutate(preset.dbId);
+                              }
+                            }}
+                            onLongPress={() => isCustom ? confirmDeletePreset(preset) : null}
+                          >
+                            <View style={styles.presetInfo}>
+                              <View style={styles.presetDescRow}>
+                                <Text style={styles.presetDesc}>{preset.description}</Text>
+                                {isCustom ? <Text style={styles.customBadge}>Personalizzato</Text> : null}
+                              </View>
+                              <Text style={[styles.presetType, styles.presetTypeIncome]}>
+                                Entrata - {preset.category}
+                              </Text>
+                              <Text style={styles.presetRange}>
+                                Importo: {preset.minAmount} - {preset.maxAmount} EUR
+                              </Text>
+                            </View>
+                            {isCustom && preset.dbId ? (
+                              <Pressable onPress={() => openEditPresetById(preset.dbId!)}>
+                                <Icon name="edit-2" size={20} color={BankColors.cardBlue} />
+                              </Pressable>
+                            ) : null}
+                          </Pressable>
+                        );
+                      })}
+                    </>
+                  ) : null}
                 </View>
               )}
             </ScrollView>
@@ -1338,6 +1389,10 @@ const styles = StyleSheet.create({
   presetItemCustom: {
     borderColor: BankColors.cardBlue,
     borderWidth: 1.5,
+  },
+  presetItemIncome: {
+    borderLeftColor: BankColors.primary,
+    borderLeftWidth: 4,
   },
   presetDescRow: {
     flexDirection: "row",
