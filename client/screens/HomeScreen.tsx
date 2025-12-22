@@ -92,7 +92,7 @@ export default function HomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const queryClient = useQueryClient();
-  const { user, userId, refreshUser, updateBalance, updateAccountNumber } = useAuth();
+  const { user, userId, refreshUser, updateBalance, updateAccountNumber, updateDisplayName, updateMonthlyValues } = useAuth();
   const [showBalance, setShowBalance] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showEditBalance, setShowEditBalance] = useState(false);
@@ -100,6 +100,12 @@ export default function HomeScreen() {
   const [showEditAccount, setShowEditAccount] = useState(false);
   const [newAccountNumber, setNewAccountNumber] = useState("");
   const [showWeeklyHistory, setShowWeeklyHistory] = useState(false);
+  const [showEditDisplayName, setShowEditDisplayName] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [showEditExpenses, setShowEditExpenses] = useState(false);
+  const [newExpenses, setNewExpenses] = useState("");
+  const [showEditIncome, setShowEditIncome] = useState(false);
+  const [newIncome, setNewIncome] = useState("");
 
   const { data: transactions = [], isLoading: loadingTransactions } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions", userId],
@@ -178,6 +184,49 @@ export default function HomeScreen() {
     }
   };
 
+  const handleEditDisplayName = () => {
+    setNewDisplayName(user?.displayName || user?.username || "");
+    setShowEditDisplayName(true);
+  };
+
+  const handleSaveDisplayName = async () => {
+    await updateDisplayName(newDisplayName.trim());
+    setShowEditDisplayName(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleEditExpenses = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const currentExpenses = user?.customMonthlyExpenses || totalExpenses.toFixed(2);
+    setNewExpenses(currentExpenses.toString());
+    setShowEditExpenses(true);
+  };
+
+  const handleSaveExpenses = async () => {
+    const value = newExpenses.replace(",", ".");
+    if (!isNaN(parseFloat(value))) {
+      await updateMonthlyValues(value, user?.customMonthlyIncome || null);
+      setShowEditExpenses(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const handleEditIncome = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const currentIncome = user?.customMonthlyIncome || totalIncome.toFixed(2);
+    setNewIncome(currentIncome.toString());
+    setShowEditIncome(true);
+  };
+
+  const handleSaveIncome = async () => {
+    const value = newIncome.replace(",", ".");
+    if (!isNaN(parseFloat(value))) {
+      await updateMonthlyValues(user?.customMonthlyExpenses || null, value);
+      setShowEditIncome(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
   const formatBalance = (balance: string) => {
     const num = parseFloat(balance);
     const [integer, decimal] = num.toFixed(2).split(".");
@@ -250,9 +299,11 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.greetingContainer}>
-            <Text style={styles.greeting}>Ciao {user?.username || "Utente"}</Text>
-            <Pressable>
-              <Text style={styles.personalizeLink}>Personalizza</Text>
+            <Pressable onPress={handleEditDisplayName}>
+              <Text style={styles.greeting}>Ciao {user?.displayName || user?.username || "Utente"}</Text>
+            </Pressable>
+            <Pressable onPress={handleEditDisplayName}>
+              <Text style={styles.personalizeLink}>Modifica</Text>
             </Pressable>
           </View>
 
@@ -338,25 +389,25 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.analisiCard}>
-            <View style={styles.analisiRow}>
+            <Pressable style={styles.analisiRow} onLongPress={handleEditExpenses}>
               <Text style={styles.analisiLabel}>Uscite del mese</Text>
               <View style={styles.analisiAmountRow}>
                 <Text style={styles.analisiAmountNegative}>
-                  - {totalExpenses.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
+                  - {(user?.customMonthlyExpenses ? parseFloat(user.customMonthlyExpenses) : totalExpenses).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
                 </Text>
                 <Icon name="arrow-down" size={16} color={BankColors.error} />
               </View>
-            </View>
+            </Pressable>
             <View style={styles.analisiDivider} />
-            <View style={styles.analisiRow}>
+            <Pressable style={styles.analisiRow} onLongPress={handleEditIncome}>
               <Text style={styles.analisiLabel}>Entrate del mese</Text>
               <View style={styles.analisiAmountRow}>
                 <Text style={styles.analisiAmountPositive}>
-                  + {totalIncome.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
+                  + {(user?.customMonthlyIncome ? parseFloat(user.customMonthlyIncome) : totalIncome).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
                 </Text>
                 <Icon name="arrow-up" size={16} color={BankColors.success} />
               </View>
-            </View>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
@@ -403,6 +454,82 @@ export default function HomeScreen() {
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
               <Pressable style={styles.modalSaveBtn} onPress={handleSaveAccountNumber}>
+                <Text style={styles.modalSaveText}>Salva</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showEditDisplayName} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditDisplayName(false)} />
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Modifica Nome</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newDisplayName}
+              onChangeText={setNewDisplayName}
+              placeholder="Il tuo nome"
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditDisplayName(false)}>
+                <Text style={styles.modalCancelText}>Annulla</Text>
+              </Pressable>
+              <Pressable style={styles.modalSaveBtn} onPress={handleSaveDisplayName}>
+                <Text style={styles.modalSaveText}>Salva</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showEditExpenses} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditExpenses(false)} />
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Modifica Uscite del Mese</Text>
+            <Text style={styles.modalSubtitle}>Questa modifica e solo estetica</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newExpenses}
+              onChangeText={setNewExpenses}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditExpenses(false)}>
+                <Text style={styles.modalCancelText}>Annulla</Text>
+              </Pressable>
+              <Pressable style={styles.modalSaveBtn} onPress={handleSaveExpenses}>
+                <Text style={styles.modalSaveText}>Salva</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showEditIncome} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditIncome(false)} />
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Modifica Entrate del Mese</Text>
+            <Text style={styles.modalSubtitle}>Questa modifica e solo estetica</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newIncome}
+              onChangeText={setNewIncome}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditIncome(false)}>
+                <Text style={styles.modalCancelText}>Annulla</Text>
+              </Pressable>
+              <Pressable style={styles.modalSaveBtn} onPress={handleSaveIncome}>
                 <Text style={styles.modalSaveText}>Salva</Text>
               </Pressable>
             </View>
@@ -731,6 +858,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: Spacing.lg,
     textAlign: "center",
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: BankColors.gray500,
+    marginBottom: Spacing.md,
+    textAlign: "center",
+    marginTop: -Spacing.sm,
   },
   modalInput: {
     borderWidth: 1,
