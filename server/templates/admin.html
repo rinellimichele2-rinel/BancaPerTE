@@ -275,6 +275,7 @@
               <input type="text" id="block-reason" placeholder="es. Saldo sospetto">
             </div>
             <button id="block-btn" onclick="toggleBlockUser()" style="background: #c62828;">Blocca Utente</button>
+            <button onclick="deleteUser()" style="margin-top: 8px; background: #b71c1c;">Elimina Utente</button>
             <button onclick="closeUserModal()" style="margin-top: 8px; background: #666;">Chiudi</button>
           </div>
         </div>
@@ -608,6 +609,36 @@
           loadAdminUsers();
         } else {
           showMessage(data.error || 'Errore durante l\'operazione', 'error');
+        }
+      } catch (error) {
+        showMessage('Errore di connessione', 'error');
+      }
+    }
+
+    async function deleteUser() {
+      if (!selectedUserForEdit) return;
+      
+      if (!confirm(`Sei sicuro di voler eliminare definitivamente l'utente @${selectedUserForEdit.username}? Questa azione non può essere annullata e rimuoverà tutti i dati dell'utente.`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/admin/delete-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminPassword,
+            userId: selectedUserForEdit.id
+          })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          showMessage(`@${selectedUserForEdit.username} eliminato con successo`, 'success');
+          closeUserModal();
+          loadAdminUsers();
+        } else {
+          showMessage(data.error || 'Errore durante l\'eliminazione', 'error');
         }
       } catch (error) {
         showMessage('Errore di connessione', 'error');

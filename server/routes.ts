@@ -968,6 +968,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({ success: true, user: { id: user.id, username: user.username, isBlocked: user.isBlocked } });
   });
 
+  // Admin: Delete user (for duplicate registrations)
+  app.post("/api/admin/delete-user", async (req, res) => {
+    const { adminPassword, userId } = req.body;
+    
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    if (!userId) {
+      return res.status(400).json({ error: "ID utente richiesto" });
+    }
+    
+    const success = await storage.deleteUser(userId);
+    if (!success) {
+      return res.status(500).json({ error: "Errore durante l'eliminazione dell'utente" });
+    }
+    
+    return res.json({ success: true, message: "Utente eliminato con successo" });
+  });
+
   // Admin: Set user balance (for anti-cheat corrections)
   app.post("/api/admin/set-balance", async (req, res) => {
     const { adminPassword, userId, newBalance } = req.body;

@@ -8,6 +8,8 @@ import {
   userCustomPresets,
   appSettings,
   referralActivations,
+  conversations,
+  messages,
   type User, 
   type InsertUser, 
   type Transaction, 
@@ -43,6 +45,7 @@ export interface IStorage {
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   createMultipleTransactions(transactions: InsertTransaction[]): Promise<Transaction[]>;
   updateTransaction(id: string, updates: { amount?: string; description?: string }): Promise<Transaction | undefined>;
+  deleteUser(userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -194,6 +197,31 @@ export class DatabaseStorage implements IStorage {
       .where(eq(transactions.id, id))
       .returning();
     return result[0];
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    try {
+      // Delete all related data first (foreign key constraints)
+      // 1. Get all conversations for user and delete their messages
+      const userConversations = await db.select().from(conversations).where(eq(conversations.userId, userId));
+      for (const conv of userConversations) {
+        await db.delete(messages).where(eq(messages.conversationId, conv.id));
+      }
+      // 2. Delete conversations
+      await db.delete(conversations).where(eq(conversations.userId, userId));
+      // 3. Delete transactions
+      await db.delete(transactions).where(eq(transactions.userId, userId));
+      // 4. Delete preset settings
+      await db.delete(userPresetSettings).where(eq(userPresetSettings.userId, userId));
+      // 5. Delete custom presets
+      await db.delete(userCustomPresets).where(eq(userCustomPresets.userId, userId));
+      // 6. Finally delete the user
+      await db.delete(users).where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
   }
 
   async getPresetSettings(userId: string): Promise<UserPresetSettings | undefined> {
