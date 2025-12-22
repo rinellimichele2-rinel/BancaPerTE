@@ -102,7 +102,19 @@ Schema validation uses Drizzle-Zod for type-safe inserts.
   3. Auto-generated transactions (for demo purposes)
 - Editing existing transactions only changes the transaction record, NOT the user's balance
 
+## Admin Panel Features (v2.0)
+The admin panel at `/admin` now includes:
+- **Ricariche**: Search users by @username and add balance
+- **Utenti**: View all users with sorting (by balance or registration date), block/unblock users, edit balances directly
+- **Scambi**: View all real (non-simulated) P2P transfers between users
+- **Referral**: Manage referral bonus settings and view activation history
+
+### User Management Capabilities
+- Block/unblock users with optional reason
+- Direct balance editing for anti-cheat corrections
+- Sort users by balance (highest first) or registration date (newest first)
+- View total recharged amount per user
+
 ## Future Plans (Planned for next month)
 - **Recharge username**: Special username for PayPal.me payments (separate from display name)
-- **Admin panel**: Dashboard for manual balance top-ups after PayPal payments
 - **Payment tracking**: Database table to track top-up requests and their status
