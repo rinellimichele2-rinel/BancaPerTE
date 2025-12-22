@@ -7,10 +7,13 @@ interface UserData {
   username: string;
   rechargeUsername: string | null;
   fullName: string;
+  displayName: string | null;
   accountNumber: string;
   balance: string;
   purchasedBalance: string;
   realPurchasedBalance: string;
+  customMonthlyExpenses: string | null;
+  customMonthlyIncome: string | null;
   cardLastFour: string;
 }
 
@@ -28,6 +31,8 @@ interface AuthContextType {
   updateBalance: (newBalance: string) => Promise<void>;
   updateName: (newName: string) => Promise<void>;
   updateAccountNumber: (newAccountNumber: string) => Promise<void>;
+  updateDisplayName: (displayName: string) => Promise<void>;
+  updateMonthlyValues: (expenses: string | null, income: string | null) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -173,6 +178,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateDisplayName = async (displayName: string) => {
+    if (!userId) return;
+    
+    try {
+      await apiRequest("PUT", `/api/user/${userId}/display-name`, { displayName });
+      await refreshUser();
+    } catch (error) {
+      console.error("Error updating display name:", error);
+    }
+  };
+
+  const updateMonthlyValues = async (expenses: string | null, income: string | null) => {
+    if (!userId) return;
+    
+    try {
+      await apiRequest("PUT", `/api/user/${userId}/monthly-values`, { 
+        customMonthlyExpenses: expenses, 
+        customMonthlyIncome: income 
+      });
+      await refreshUser();
+    } catch (error) {
+      console.error("Error updating monthly values:", error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -189,6 +219,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateBalance,
         updateName,
         updateAccountNumber,
+        updateDisplayName,
+        updateMonthlyValues,
       }}
     >
       {children}
