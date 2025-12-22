@@ -138,7 +138,7 @@ export default function HomeScreen() {
 
   const handleOpenPayPal = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const paypalUrl = "https://paypal.me/rinntech2/1";
+    const paypalUrl = "https://paypal.me/Rintech/1";
     try {
       const supported = await Linking.canOpenURL(paypalUrl);
       if (supported) {
