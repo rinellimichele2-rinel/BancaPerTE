@@ -127,6 +127,10 @@ export default function AltroScreen() {
       setShowPresetEditor(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
+    onError: (error: Error) => {
+      Alert.alert("Errore", "Impossibile creare il preset. Riprova.");
+      console.error("Create preset error:", error);
+    },
   });
 
   // Update preset mutation
@@ -139,6 +143,10 @@ export default function AltroScreen() {
       refetchPresets();
       setShowPresetEditor(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    onError: (error: Error) => {
+      Alert.alert("Errore", "Impossibile aggiornare il preset. Riprova.");
+      console.error("Update preset error:", error);
     },
   });
 
@@ -231,10 +239,32 @@ export default function AltroScreen() {
   };
 
   const savePreset = async () => {
-    if (!presetDesc.trim() || !presetMinAmount.trim() || !presetMaxAmount.trim()) return;
-    const min = parseInt(presetMinAmount);
-    const max = parseInt(presetMaxAmount);
-    if (isNaN(min) || isNaN(max) || min <= 0 || max < min) return;
+    if (!presetDesc.trim()) {
+      Alert.alert("Errore", "Inserisci una descrizione per il preset");
+      return;
+    }
+    if (!presetMinAmount.trim() || !presetMaxAmount.trim()) {
+      Alert.alert("Errore", "Inserisci gli importi minimo e massimo");
+      return;
+    }
+    
+    const cleanMin = presetMinAmount.replace(/[^0-9]/g, "");
+    const cleanMax = presetMaxAmount.replace(/[^0-9]/g, "");
+    const min = parseInt(cleanMin);
+    const max = parseInt(cleanMax);
+    
+    if (isNaN(min) || min <= 0) {
+      Alert.alert("Errore", "L'importo minimo deve essere un numero maggiore di zero");
+      return;
+    }
+    if (isNaN(max) || max <= 0) {
+      Alert.alert("Errore", "L'importo massimo deve essere un numero maggiore di zero");
+      return;
+    }
+    if (max < min) {
+      Alert.alert("Errore", "L'importo massimo deve essere maggiore o uguale al minimo");
+      return;
+    }
 
     const presetData = {
       description: presetDesc.trim(),
