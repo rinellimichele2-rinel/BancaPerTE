@@ -104,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/login", async (req, res) => {
-    const { username } = req.body;
+    const { username, referralCode } = req.body;
     
     if (!username) {
       return res.status(400).json({ error: "Username richiesto" });
@@ -131,6 +131,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rechargeUsername,
       });
       isNewUser = true;
+      
+      // Apply referral code if provided and valid
+      if (referralCode && referralCode.trim()) {
+        const referrer = await storage.getUserByReferralCode(referralCode.trim());
+        if (referrer && referrer.id !== user.id) {
+          await storage.updateUserReferredBy(user.id, referrer.id);
+        }
+      }
     }
     
     return res.json({ 
@@ -654,10 +662,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const currentBalance = parseFloat(user.balance || "0");
     const currentPurchasedBalance = parseFloat(user.purchasedBalance || "0");
+    const previousTotalRecharged = parseFloat(user.totalRecharged || "0");
     const newBalance = (currentBalance + amountNum).toFixed(2);
     const newPurchasedBalance = (currentPurchasedBalance + amountNum).toFixed(2);
     
     await storage.updateUserBalanceWithPurchased(user.id, newBalance, newPurchasedBalance);
+    await storage.updateUserTotalRecharged(user.id, amountNum);
     
     await storage.createTransaction({
       userId: user.id,
@@ -671,6 +681,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       date: new Date(),
     });
     
+    // Check if user just crossed €2 threshold and has a referrer
+    const newTotalRecharged = previousTotalRecharged + amountNum;
+    let referralBonusAwarded = false;
+    let referrerName = "";
+    
+    if (previousTotalRecharged < 2 && newTotalRecharged >= 2 && user.referredBy && !user.referralActivated) {
+      const referrer = await storage.getUser(user.referredBy);
+      if (referrer) {
+        // Get bonus amount from settings (default 200)
+        const bonusStr = await storage.getAppSetting("referral_bonus");
+        const bonusAmount = bonusStr ? parseInt(bonusStr) : 200;
+        
+        // Award bonus to referrer
+        const referrerBalance = parseFloat(referrer.balance || "0");
+        const referrerPurchased = parseFloat(referrer.purchasedBalance || "0");
+        const newReferrerBalance = (referrerBalance + bonusAmount).toFixed(2);
+        const newReferrerPurchased = (referrerPurchased + bonusAmount).toFixed(2);
+        
+        await storage.updateUserBalanceWithPurchased(referrer.id, newReferrerBalance, newReferrerPurchased);
+        
+        // Create bonus transaction for referrer
+        await storage.createTransaction({
+          userId: referrer.id,
+          description: `Bonus Referral da ${user.username}`,
+          amount: bonusAmount.toString() + ".00",
+          type: "income",
+          category: "Bonus",
+          accountNumber: null,
+          isContabilizzato: true,
+          isSimulated: false,
+          date: new Date(),
+        });
+        
+        // Record the activation
+        await storage.createReferralActivation(referrer.id, user.id, bonusAmount);
+        await storage.activateReferral(user.id);
+        
+        referralBonusAwarded = true;
+        referrerName = referrer.fullName || referrer.username;
+      }
+    }
+    
     const updatedUser = await storage.getUser(user.id);
     
     return res.json({
@@ -680,8 +732,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rechargeUsername: updatedUser!.rechargeUsername,
         newBalance: updatedUser!.balance,
         purchasedBalance: updatedUser!.purchasedBalance,
-      }
+        totalRecharged: updatedUser!.totalRecharged,
+      },
+      referralBonusAwarded,
+      referrerName: referralBonusAwarded ? referrerName : undefined,
     });
+  });
+
+  // Admin: Get referral bonus setting
+  app.get("/api/admin/referral-settings", async (req, res) => {
+    const adminPassword = req.headers["x-admin-password"] as string;
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    const bonusStr = await storage.getAppSetting("referral_bonus");
+    return res.json({ referralBonus: bonusStr ? parseInt(bonusStr) : 200 });
+  });
+
+  // Admin: Update referral bonus setting
+  app.post("/api/admin/referral-settings", async (req, res) => {
+    const { adminPassword, referralBonus } = req.body;
+    
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    const bonus = parseInt(referralBonus);
+    if (isNaN(bonus) || bonus < 0) {
+      return res.status(400).json({ error: "Il bonus deve essere un numero positivo" });
+    }
+    
+    await storage.setAppSetting("referral_bonus", bonus.toString());
+    return res.json({ success: true, referralBonus: bonus });
+  });
+
+  // Admin: Get all referral activations
+  app.get("/api/admin/referral-activations", async (req, res) => {
+    const adminPassword = req.headers["x-admin-password"] as string;
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    const activations = await storage.getReferralActivations();
+    return res.json(activations);
   });
 
   const httpServer = createServer(app);

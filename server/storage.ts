@@ -5,11 +5,15 @@ import {
   users, 
   transactions,
   userPresetSettings,
+  appSettings,
+  referralActivations,
   type User, 
   type InsertUser, 
   type Transaction, 
   type InsertTransaction,
-  type UserPresetSettings
+  type UserPresetSettings,
+  type AppSettings,
+  type ReferralActivation
 } from "@shared/schema";
 
 const pool = new pg.Pool({
@@ -219,6 +223,80 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result[0];
     }
+  }
+
+  async getAppSetting(key: string): Promise<string | null> {
+    const result = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    return result[0]?.value ?? null;
+  }
+
+  async setAppSetting(key: string, value: string): Promise<void> {
+    const existing = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    if (existing.length > 0) {
+      await db.update(appSettings).set({ value }).where(eq(appSettings.key, key));
+    } else {
+      await db.insert(appSettings).values({ key, value });
+    }
+  }
+
+  async updateUserReferredBy(userId: string, referredBy: string): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ referredBy })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async updateUserTotalRecharged(userId: string, amount: number): Promise<User | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+    const currentTotal = parseFloat(user.totalRecharged || "0");
+    const newTotal = (currentTotal + amount).toFixed(2);
+    const result = await db
+      .update(users)
+      .set({ totalRecharged: newTotal })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async activateReferral(userId: string): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ referralActivated: true })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async createReferralActivation(referrerId: string, referredId: string, bonusAmount: number): Promise<ReferralActivation> {
+    const result = await db.insert(referralActivations).values({
+      referrerId,
+      referredId,
+      bonusAmount: bonusAmount.toFixed(2),
+    }).returning();
+    return result[0];
+  }
+
+  async getReferralActivations(): Promise<(ReferralActivation & { referrerUsername?: string; referredUsername?: string })[]> {
+    const activations = await db.select().from(referralActivations).orderBy(desc(referralActivations.activatedAt));
+    const result = [];
+    for (const activation of activations) {
+      const referrer = await this.getUser(activation.referrerId);
+      const referred = await this.getUser(activation.referredId);
+      result.push({
+        ...activation,
+        referrerUsername: referrer?.username,
+        referredUsername: referred?.username,
+      });
+    }
+    return result;
+  }
+
+  async getUserByReferralCode(referralCode: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.username, referralCode));
+    return result[0];
   }
 }
 

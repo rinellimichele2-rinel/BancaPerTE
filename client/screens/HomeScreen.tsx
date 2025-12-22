@@ -9,6 +9,8 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  Linking,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -134,6 +136,21 @@ export default function HomeScreen() {
     setShowBalance(!showBalance);
   };
 
+  const handleOpenPayPal = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const paypalUrl = "https://paypal.me/rinntech2/1";
+    try {
+      const supported = await Linking.canOpenURL(paypalUrl);
+      if (supported) {
+        await Linking.openURL(paypalUrl);
+      } else {
+        Alert.alert("Errore", "Impossibile aprire il link PayPal");
+      }
+    } catch (error) {
+      Alert.alert("Errore", "Si e verificato un errore nell'apertura del link");
+    }
+  };
+
   const handleEditBalance = () => {
     setNewBalance(user?.balance || "0");
     setShowEditBalance(true);
@@ -243,7 +260,7 @@ export default function HomeScreen() {
             <Text style={styles.accountNumber}>Conto {user?.accountNumber || "1000/00002521"}</Text>
           </Pressable>
 
-          <Pressable style={styles.balanceRow} onPress={handleToggleBalance} onLongPress={handleEditBalance}>
+          <Pressable style={styles.balanceRow} onPress={handleOpenPayPal} onLongPress={handleEditBalance}>
             {showBalance ? (
               <Text style={styles.balanceAmount}>
                 {balanceFormatted.integer}<Text style={styles.balanceDecimal}>,{balanceFormatted.decimal}</Text> {"\u20AC"}
@@ -825,7 +842,7 @@ const styles = StyleSheet.create({
   },
   weeklyEmptyState: {
     alignItems: "center",
-    paddingVertical: Spacing.xxl,
+    paddingVertical: Spacing["2xl"],
   },
   weeklyEmptyText: {
     marginTop: Spacing.md,
