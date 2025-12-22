@@ -362,23 +362,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ error: "Utente non trovato" });
     }
     
-    const presetSettings = await storage.getPresetSettings(userId);
+    // Fetch custom presets from database (new normalized table)
+    const dbCustomPresets = await storage.getCustomPresets(userId);
+    
+    // Convert DB presets to the format expected by generateRandomTransaction
+    const customPresetsForRandom: PresetTransaction[] = dbCustomPresets
+      .filter(p => p.isEnabled && p.type === "expense")
+      .map(p => ({
+        description: p.description,
+        type: p.type as "expense" | "income",
+        category: p.category,
+        minAmount: p.minAmount,
+        maxAmount: p.maxAmount,
+        isCustom: true,
+      }));
+    
     const userSettings: UserPresetSettings = {
-      deletedPresets: presetSettings?.deletedPresets 
-        ? (typeof presetSettings.deletedPresets === 'string' 
-            ? JSON.parse(presetSettings.deletedPresets) 
-            : presetSettings.deletedPresets)
-        : [],
-      disabledPresets: presetSettings?.disabledPresets 
-        ? (typeof presetSettings.disabledPresets === 'string' 
-            ? JSON.parse(presetSettings.disabledPresets) 
-            : presetSettings.disabledPresets)
-        : [],
-      customPresets: presetSettings?.customPresets 
-        ? (typeof presetSettings.customPresets === 'string' 
-            ? JSON.parse(presetSettings.customPresets) 
-            : presetSettings.customPresets)
-        : [],
+      deletedPresets: [],
+      disabledPresets: [],
+      customPresets: customPresetsForRandom,
     };
     
     const currentBalance = parseFloat(user.balance || "0");
@@ -399,7 +401,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const amountValue = parseFloat(transaction.amount);
     const balanceChange = transaction.type === "expense" ? -amountValue : amountValue;
     const newBalance = Math.round(currentBalance + balanceChange).toFixed(0) + ".00";
-    await storage.updateUserBalance(userId, newBalance);
+    
+    // Also deduct from purchased balance (margine di recupero)
+    const newPurchasedBalance = Math.max(0, purchasedBalance + balanceChange).toFixed(2);
+    await storage.updateUserBalanceWithPurchased(userId, newBalance, newPurchasedBalance);
     
     return res.json({ 
       transaction: created, 

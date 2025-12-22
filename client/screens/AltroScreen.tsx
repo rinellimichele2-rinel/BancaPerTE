@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { Icon } from "@/components/Icon";
 import { useNavigation } from "@react-navigation/native";
@@ -27,6 +27,18 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { DEFAULT_PRESETS, TRANSACTION_CATEGORIES, type PresetTransaction } from "@shared/presets";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+interface DbCustomPreset {
+  id: number;
+  userId: string;
+  description: string;
+  type: string;
+  category: string;
+  minAmount: number;
+  maxAmount: number;
+  isEnabled: boolean;
+  createdAt: string;
+}
 
 interface MenuItemProps {
   icon: string;
@@ -89,92 +101,107 @@ export default function AltroScreen() {
   const [txAmount, setTxAmount] = useState("");
   const [txType, setTxType] = useState<"expense" | "income">("income");
   const [txCategory, setTxCategory] = useState(TRANSACTION_CATEGORIES[0]);
-  const [disabledPresets, setDisabledPresets] = useState<string[]>([]);
-  const [deletedPresets, setDeletedPresets] = useState<string[]>([]);
-  const [customPresets, setCustomPresets] = useState<PresetTransaction[]>([]);
   const [showPresetEditor, setShowPresetEditor] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [editingPreset, setEditingPreset] = useState<PresetTransaction | null>(null);
+  const [editingPreset, setEditingPreset] = useState<DbCustomPreset | null>(null);
   const [presetDesc, setPresetDesc] = useState("");
   const [presetMinAmount, setPresetMinAmount] = useState("");
   const [presetMaxAmount, setPresetMaxAmount] = useState("");
   const [presetType, setPresetType] = useState<"expense" | "income">("expense");
   const [presetCategory, setPresetCategory] = useState(TRANSACTION_CATEGORIES[0]);
 
-  useEffect(() => {
-    if (!userId) return;
-    const loadSettings = async () => {
-      try {
-        const response = await fetch(new URL(`/api/users/${userId}/preset-settings`, getApiUrl()).toString());
-        if (response.ok) {
-          const data = await response.json();
-          setDeletedPresets(data.deletedPresets || []);
-          setDisabledPresets(data.disabledPresets || []);
-          setCustomPresets(data.customPresets || []);
-        }
-      } catch (error) {
-        console.error("Error loading preset settings:", error);
-      }
-    };
-    loadSettings();
-  }, [userId]);
+  // Fetch custom presets from database
+  const { data: customPresets = [], refetch: refetchPresets } = useQuery<DbCustomPreset[]>({
+    queryKey: [`/api/users/${userId}/custom-presets`],
+    enabled: !!userId,
+  });
 
-  const allPresets: PresetTransaction[] = [
-    ...DEFAULT_PRESETS.filter(p => !deletedPresets.includes(p.description)),
-    ...customPresets.map(p => ({ ...p, isCustom: true }))
+  // Create preset mutation
+  const createPresetMutation = useMutation({
+    mutationFn: async (data: { description: string; type: string; category: string; minAmount: number; maxAmount: number }) => {
+      const response = await apiRequest("POST", `/api/users/${userId}/custom-presets`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      refetchPresets();
+      setShowPresetEditor(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+  });
+
+  // Update preset mutation
+  const updatePresetMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<DbCustomPreset> }) => {
+      const response = await apiRequest("PUT", `/api/users/${userId}/custom-presets/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      refetchPresets();
+      setShowPresetEditor(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+  });
+
+  // Delete preset mutation
+  const deletePresetMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/users/${userId}/custom-presets/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      refetchPresets();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+  });
+
+  // Trigger preset transaction mutation
+  const triggerPresetMutation = useMutation({
+    mutationFn: async (presetId: number) => {
+      const response = await apiRequest("POST", `/api/users/${userId}/custom-presets/${presetId}/trigger`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/transactions/${userId}`] });
+      refreshUser();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (data.transaction) {
+        const amount = Math.abs(parseFloat(data.transaction.amount));
+        Alert.alert(
+          "Transazione creata",
+          `${data.transaction.description}: -${amount.toFixed(0)} EUR`
+        );
+      }
+    },
+    onError: (error: any) => {
+      Alert.alert("Errore", error.message || "Impossibile eseguire la transazione");
+    },
+  });
+
+  // Convert database presets to local format for display
+  const allPresets: (PresetTransaction & { dbId?: number })[] = [
+    ...DEFAULT_PRESETS,
+    ...customPresets.map(p => ({
+      description: p.description,
+      type: p.type as "expense" | "income",
+      category: p.category,
+      minAmount: p.minAmount,
+      maxAmount: p.maxAmount,
+      isCustom: true,
+      dbId: p.id,
+    }))
   ];
 
-  const savePresetSettings = async (updates: { deletedPresets?: string[]; disabledPresets?: string[]; customPresets?: PresetTransaction[] }) => {
-    if (!userId) return;
-    try {
-      await fetch(new URL(`/api/users/${userId}/preset-settings`, getApiUrl()).toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      });
-    } catch (error) {
-      console.error("Error saving preset settings:", error);
-    }
-  };
-
-  const deleteDefaultPreset = async (description: string) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const newList = [...deletedPresets, description];
-    setDeletedPresets(newList);
-    await savePresetSettings({ deletedPresets: newList });
-  };
-
-  const togglePresetDisabled = async (description: string) => {
+  const confirmDeletePreset = (preset: PresetTransaction & { dbId?: number }) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const newList = disabledPresets.includes(description)
-      ? disabledPresets.filter((d) => d !== description)
-      : [...disabledPresets, description];
-    setDisabledPresets(newList);
-    await savePresetSettings({ disabledPresets: newList });
-  };
-
-  const confirmDeletePreset = (description: string, isCustom?: boolean) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const isDisabled = disabledPresets.includes(description);
     
-    if (isCustom) {
+    if (preset.isCustom && preset.dbId) {
       Alert.alert(
         "Gestisci Preset",
-        `Cosa vuoi fare con "${description}"?`,
+        `Cosa vuoi fare con "${preset.description}"?`,
         [
           { text: "Annulla", style: "cancel" },
-          { text: "Modifica", onPress: () => openEditPreset(description) },
-          { text: "Elimina", style: "destructive", onPress: () => deleteCustomPreset(description) },
-        ]
-      );
-    } else {
-      Alert.alert(
-        "Gestisci Preset",
-        `Cosa vuoi fare con "${description}"?`,
-        [
-          { text: "Annulla", style: "cancel" },
-          { text: isDisabled ? "Riabilita" : "Disabilita", onPress: () => togglePresetDisabled(description) },
-          { text: "Elimina", style: "destructive", onPress: () => deleteDefaultPreset(description) },
+          { text: "Modifica", onPress: () => openEditPresetById(preset.dbId!) },
+          { text: "Elimina", style: "destructive", onPress: () => deletePresetMutation.mutate(preset.dbId!) },
         ]
       );
     }
@@ -190,14 +217,14 @@ export default function AltroScreen() {
     setShowPresetEditor(true);
   };
 
-  const openEditPreset = (description: string) => {
-    const preset = customPresets.find(p => p.description === description);
+  const openEditPresetById = (id: number) => {
+    const preset = customPresets.find(p => p.id === id);
     if (preset) {
       setEditingPreset(preset);
       setPresetDesc(preset.description);
       setPresetMinAmount(preset.minAmount.toString());
       setPresetMaxAmount(preset.maxAmount.toString());
-      setPresetType(preset.type);
+      setPresetType(preset.type as "expense" | "income");
       setPresetCategory(preset.category);
       setShowPresetEditor(true);
     }
@@ -209,33 +236,19 @@ export default function AltroScreen() {
     const max = parseInt(presetMaxAmount);
     if (isNaN(min) || isNaN(max) || min <= 0 || max < min) return;
 
-    const newPreset: PresetTransaction = {
+    const presetData = {
       description: presetDesc.trim(),
       type: presetType,
       category: presetCategory,
       minAmount: min,
       maxAmount: max,
-      isCustom: true,
     };
 
-    let newList: PresetTransaction[];
     if (editingPreset) {
-      newList = customPresets.map(p => p.description === editingPreset.description ? newPreset : p);
+      updatePresetMutation.mutate({ id: editingPreset.id, data: presetData });
     } else {
-      newList = [...customPresets, newPreset];
+      createPresetMutation.mutate(presetData);
     }
-
-    setCustomPresets(newList);
-    await savePresetSettings({ customPresets: newList });
-    setShowPresetEditor(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
-
-  const deleteCustomPreset = async (description: string) => {
-    const newList = customPresets.filter(p => p.description !== description);
-    setCustomPresets(newList);
-    await savePresetSettings({ customPresets: newList });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const createTransactionMutation = useMutation({
@@ -630,22 +643,26 @@ export default function AltroScreen() {
                   ) : null}
                   
                   {allPresets.filter(p => p.type === "expense").map((preset, index) => {
-                    const isDisabled = disabledPresets.includes(preset.description);
                     const isCustom = preset.isCustom;
                     return (
                       <Pressable 
-                        key={index}
+                        key={preset.dbId || index}
                         style={[
                           styles.presetItem, 
-                          isDisabled && styles.presetItemDisabled,
                           isCustom && styles.presetItemCustom
                         ]}
-                        onPress={() => handlePresetTransaction(preset)}
-                        onLongPress={() => confirmDeletePreset(preset.description, isCustom)}
+                        onPress={() => {
+                          if (isCustom && preset.dbId) {
+                            triggerPresetMutation.mutate(preset.dbId);
+                          } else {
+                            handlePresetTransaction(preset);
+                          }
+                        }}
+                        onLongPress={() => isCustom ? confirmDeletePreset(preset) : null}
                       >
                         <View style={styles.presetInfo}>
                           <View style={styles.presetDescRow}>
-                            <Text style={[styles.presetDesc, isDisabled && styles.presetDescDisabled]}>{preset.description}</Text>
+                            <Text style={styles.presetDesc}>{preset.description}</Text>
                             {isCustom ? <Text style={styles.customBadge}>Personalizzato</Text> : null}
                           </View>
                           <Text style={[styles.presetType, styles.presetTypeExpense]}>
@@ -654,17 +671,12 @@ export default function AltroScreen() {
                           <Text style={styles.presetRange}>
                             Importo: {preset.minAmount} - {preset.maxAmount} EUR
                           </Text>
-                          {isDisabled ? (
-                            <Text style={styles.presetDisabledBadge}>Escluso da random</Text>
-                          ) : null}
                         </View>
-                        {isCustom ? (
-                          <Pressable onPress={() => openEditPreset(preset.description)}>
+                        {isCustom && preset.dbId ? (
+                          <Pressable onPress={() => openEditPresetById(preset.dbId!)}>
                             <Icon name="edit-2" size={20} color={BankColors.cardBlue} />
                           </Pressable>
-                        ) : (
-                          <Icon name="minus-circle" size={24} color={BankColors.error} />
-                        )}
+                        ) : null}
                       </Pressable>
                     );
                   })}
