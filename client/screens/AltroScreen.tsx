@@ -575,11 +575,19 @@ export default function AltroScreen() {
                 <View style={styles.presetList}>
                   <View style={styles.randomSection}>
                     <Text style={styles.randomSectionTitle}>Genera una spesa casuale</Text>
-                    <Text style={styles.randomSectionSubtitle}>Simula uscite quotidiane come Conad, Amazon, benzina...</Text>
+                    <Text style={styles.randomSectionSubtitle}>
+                      {allPresets.filter(p => p.type === "expense").length > 0 
+                        ? "Simula uscite quotidiane dai preset configurati"
+                        : "Crea prima dei preset per generare spese casuali"}
+                    </Text>
                     <Pressable 
-                      style={[styles.randomBtn, generateRandomMutation.isPending && styles.submitBtnDisabled]}
+                      style={[
+                        styles.randomBtn, 
+                        styles.randomBtnFullWidth,
+                        (generateRandomMutation.isPending || allPresets.filter(p => p.type === "expense").length === 0) && styles.submitBtnDisabled
+                      ]}
                       onPress={() => generateRandomMutation.mutate()}
-                      disabled={generateRandomMutation.isPending}
+                      disabled={generateRandomMutation.isPending || allPresets.filter(p => p.type === "expense").length === 0}
                     >
                       {generateRandomMutation.isPending ? (
                         <ActivityIndicator color={BankColors.white} />
@@ -595,15 +603,24 @@ export default function AltroScreen() {
                   <View style={styles.presetDivider} />
                   
                   <View style={styles.presetHeader}>
-                    <View>
-                      <Text style={styles.presetTitle}>Preset uscite disponibili:</Text>
-                      <Text style={styles.presetSubtitle}>Tieni premuto per eliminare o disabilitare</Text>
+                    <View style={styles.presetHeaderLeft}>
+                      <Text style={styles.presetTitle}>Preset uscite disponibili</Text>
+                      <Text style={styles.presetSubtitle}>Tieni premuto per eliminare</Text>
                     </View>
                     <Pressable style={styles.addPresetBtn} onPress={openCreatePreset}>
                       <Icon name="plus" size={18} color={BankColors.white} />
                       <Text style={styles.addPresetBtnText}>Nuovo</Text>
                     </Pressable>
                   </View>
+                  
+                  {allPresets.filter(p => p.type === "expense").length === 0 ? (
+                    <View style={styles.emptyPresetState}>
+                      <Icon name="inbox" size={40} color={BankColors.gray300} />
+                      <Text style={styles.emptyPresetText}>Nessun preset configurato</Text>
+                      <Text style={styles.emptyPresetHint}>Premi "Nuovo" per creare il tuo primo preset</Text>
+                    </View>
+                  ) : null}
+                  
                   {allPresets.filter(p => p.type === "expense").map((preset, index) => {
                     const isDisabled = disabledPresets.includes(preset.description);
                     const isCustom = preset.isCustom;
@@ -1212,29 +1229,57 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: Spacing.sm,
   },
+  randomBtnFullWidth: {
+    width: "100%",
+  },
   randomBtnText: {
     color: BankColors.white,
     fontSize: 16,
     fontWeight: "600",
   },
   presetList: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
   },
   presetTitle: {
-    fontSize: 14,
-    color: BankColors.gray600,
+    fontSize: 15,
+    fontWeight: "600",
+    color: BankColors.gray800,
     marginBottom: Spacing.xs,
   },
   presetSubtitle: {
     fontSize: 12,
-    color: BankColors.gray400,
-    fontStyle: "italic",
+    color: BankColors.gray500,
   },
   presetHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
+  },
+  presetHeaderLeft: {
+    flex: 1,
+  },
+  emptyPresetState: {
+    alignItems: "center",
+    paddingVertical: Spacing["2xl"],
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: BankColors.gray50,
+    borderRadius: BorderRadius.lg,
+    marginHorizontal: Spacing.sm,
+  },
+  emptyPresetText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: BankColors.gray600,
+    marginTop: Spacing.md,
+  },
+  emptyPresetHint: {
+    fontSize: 13,
+    color: BankColors.gray400,
+    marginTop: Spacing.xs,
+    textAlign: "center",
   },
   addPresetBtn: {
     flexDirection: "row",
