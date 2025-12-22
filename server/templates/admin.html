@@ -214,6 +214,7 @@
         
         <div class="tabs">
           <button class="tab-btn active" onclick="switchTab('topup')">Ricariche</button>
+          <button class="tab-btn" onclick="switchTab('utenti')">Utenti</button>
           <button class="tab-btn" onclick="switchTab('referral')">Referral</button>
         </div>
         
@@ -243,6 +244,16 @@
               <input type="number" id="topup-amount" placeholder="Importo personalizzato">
             </div>
             <button onclick="topupUser()">Ricarica Utente</button>
+          </div>
+        </div>
+        
+        <div id="utenti-tab" class="tab-content">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="color: #333; font-size: 16px; margin: 0;">Utenti Registrati</h3>
+            <button class="preset-btn" style="min-width: auto; padding: 8px 12px;" onclick="loadUsers()">Aggiorna</button>
+          </div>
+          <div id="users-list">
+            <p style="color: #666; font-size: 13px;">Caricamento...</p>
           </div>
         </div>
         
@@ -382,7 +393,7 @@
       if (e.key === 'Enter') searchUser();
     });
     
-    // Auto-refresh user list every 30 seconds when logged in
+    // Auto-refresh every 30 seconds when logged in
     let autoRefreshInterval = null;
     function startAutoRefresh() {
       if (autoRefreshInterval) clearInterval(autoRefreshInterval);
@@ -390,6 +401,11 @@
         // Re-search current user to get updated data
         if (currentUser && document.getElementById('search-username').value) {
           searchUser();
+        }
+        // Also refresh users list if on utenti tab
+        const utentiTab = document.getElementById('utenti-tab');
+        if (utentiTab && utentiTab.classList.contains('active')) {
+          loadUsers();
         }
       }, 30000);
     }
@@ -409,7 +425,47 @@
       if (tab === 'referral') {
         loadReferralSettings();
         loadActivations();
+      } else if (tab === 'utenti') {
+        loadUsers();
       }
+    }
+
+    async function loadUsers() {
+      try {
+        const response = await fetch('/api/users');
+        
+        if (!response.ok) {
+          document.getElementById('users-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore nel caricamento</p>';
+          return;
+        }
+
+        const users = await response.json();
+        
+        if (users.length === 0) {
+          document.getElementById('users-list').innerHTML = '<p style="color: #666; font-size: 13px;">Nessun utente registrato</p>';
+          return;
+        }
+
+        let html = `<p style="color: #666; font-size: 12px; margin-bottom: 12px;">Totale: ${users.length} utenti</p>`;
+        for (const user of users) {
+          html += `
+            <div class="activation-item" style="cursor: pointer;" onclick="selectUserFromList('${user.username}')">
+              <p><strong>@${user.username}</strong></p>
+              <p style="font-size: 12px; color: #666;">${user.fullName || 'Nome non impostato'}</p>
+              <p style="font-size: 11px; color: #999;">Saldo: ${formatBalance(user.balance)} - ID: ${user.accountNumber || 'N/A'}</p>
+            </div>
+          `;
+        }
+        document.getElementById('users-list').innerHTML = html;
+      } catch (error) {
+        document.getElementById('users-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore di connessione</p>';
+      }
+    }
+
+    function selectUserFromList(username) {
+      document.getElementById('search-username').value = username;
+      switchTab('topup');
+      searchUser();
     }
 
     async function loadReferralSettings() {
