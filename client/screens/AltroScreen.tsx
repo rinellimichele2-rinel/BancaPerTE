@@ -497,6 +497,7 @@ export default function AltroScreen() {
                     value={txDescription}
                     onChangeText={setTxDescription}
                     placeholder="Es: Bonifico Affitto, Crypto, Stipendio"
+                    placeholderTextColor={BankColors.gray400}
                   />
 
                   <Text style={styles.formLabel}>Importo (EUR) - Max: {(() => {
@@ -521,6 +522,7 @@ export default function AltroScreen() {
                     }}
                     placeholder="Es: 100"
                     keyboardType="numeric"
+                    placeholderTextColor={BankColors.gray400}
                   />
 
                   <Text style={styles.formLabel}>Categoria</Text>
@@ -684,6 +686,7 @@ export default function AltroScreen() {
                   value={presetDesc}
                   onChangeText={setPresetDesc}
                   placeholder="Es: Supermercato Locale"
+                  placeholderTextColor={BankColors.gray400}
                 />
                 <Text style={styles.formLabel}>Importo Minimo (EUR)</Text>
                 <TextInput
@@ -692,6 +695,7 @@ export default function AltroScreen() {
                   onChangeText={setPresetMinAmount}
                   placeholder="Es: 10"
                   keyboardType="numeric"
+                  placeholderTextColor={BankColors.gray400}
                 />
                 <Text style={styles.formLabel}>Importo Massimo (EUR)</Text>
                 <TextInput
@@ -700,6 +704,7 @@ export default function AltroScreen() {
                   onChangeText={setPresetMaxAmount}
                   placeholder="Es: 100"
                   keyboardType="numeric"
+                  placeholderTextColor={BankColors.gray400}
                 />
                 <Text style={styles.formLabel}>Tipo</Text>
                 <View style={styles.typeSelector}>
@@ -1149,6 +1154,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     fontSize: 16,
     backgroundColor: BankColors.gray50,
+    color: BankColors.gray900,
   },
   typeSelector: {
     flexDirection: "row",
