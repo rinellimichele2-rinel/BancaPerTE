@@ -219,8 +219,8 @@
         
         <div id="topup-tab" class="tab-content active">
           <div class="form-group">
-            <label for="recharge-username">Username di Ricarica</label>
-            <input type="text" id="recharge-username" placeholder="es. mario123" oninput="clearUserInfo()">
+            <label for="search-username">@Username</label>
+            <input type="text" id="search-username" placeholder="es. @mario123" oninput="clearUserInfo()">
           </div>
           <button onclick="searchUser()">Cerca Utente</button>
 
@@ -228,7 +228,8 @@
             <div class="divider"></div>
             <div class="user-info">
               <p><strong>Nome:</strong> <span id="user-name"></span></p>
-              <p><strong>Username:</strong> <span id="user-username"></span></p>
+              <p><strong>Username:</strong> @<span id="user-username"></span></p>
+              <p><strong>Codice ID:</strong> <span id="user-account"></span></p>
               <p><strong>Saldo attuale:</strong> <span id="user-balance"></span></p>
             </div>
             
@@ -280,6 +281,7 @@
       adminPassword = password;
       document.getElementById('login-section').classList.add('hidden');
       document.getElementById('search-section').classList.remove('hidden');
+      startAutoRefresh();
     }
 
     function clearUserInfo() {
@@ -294,9 +296,9 @@
     }
 
     async function searchUser() {
-      const rechargeUsername = document.getElementById('recharge-username').value.trim();
-      if (!rechargeUsername) {
-        showMessage('Inserisci l\'username di ricarica', 'error');
+      const username = document.getElementById('search-username').value.trim();
+      if (!username) {
+        showMessage('Inserisci lo @username', 'error');
         return;
       }
 
@@ -304,7 +306,7 @@
         const response = await fetch('/api/admin/search-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ adminPassword, rechargeUsername })
+          body: JSON.stringify({ adminPassword, username })
         });
 
         const data = await response.json();
@@ -316,8 +318,9 @@
         }
 
         currentUser = data;
-        document.getElementById('user-name').textContent = data.fullName;
-        document.getElementById('user-username').textContent = data.rechargeUsername;
+        document.getElementById('user-name').textContent = data.fullName || 'Non impostato';
+        document.getElementById('user-username').textContent = data.username;
+        document.getElementById('user-account').textContent = data.accountNumber || 'N/A';
         document.getElementById('user-balance').textContent = formatBalance(data.balance);
         document.getElementById('user-info-section').classList.remove('hidden');
       } catch (error) {
@@ -352,7 +355,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             adminPassword,
-            rechargeUsername: currentUser.rechargeUsername,
+            username: currentUser.username,
             amount: parseInt(amount)
           })
         });
@@ -375,9 +378,21 @@
     document.getElementById('admin-password').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') authenticate();
     });
-    document.getElementById('recharge-username').addEventListener('keypress', (e) => {
+    document.getElementById('search-username').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') searchUser();
     });
+    
+    // Auto-refresh user list every 30 seconds when logged in
+    let autoRefreshInterval = null;
+    function startAutoRefresh() {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      autoRefreshInterval = setInterval(() => {
+        // Re-search current user to get updated data
+        if (currentUser && document.getElementById('search-username').value) {
+          searchUser();
+        }
+      }, 30000);
+    }
 
     // Generate QR code for this page
     const currentUrl = window.location.href;

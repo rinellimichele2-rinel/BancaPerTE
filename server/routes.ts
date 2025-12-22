@@ -608,29 +608,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json(result);
   });
 
-  // Admin: Search user by recharge username
+  // Admin: Search user by @username (login username)
   app.post("/api/admin/search-user", async (req, res) => {
-    const { adminPassword, rechargeUsername } = req.body;
+    const { adminPassword, username } = req.body;
     
     const validPassword = process.env.ADMIN_PASSWORD;
     if (!validPassword || adminPassword !== validPassword) {
       return res.status(401).json({ error: "Password admin non valida" });
     }
     
-    if (!rechargeUsername) {
-      return res.status(400).json({ error: "Username di ricarica richiesto" });
+    if (!username) {
+      return res.status(400).json({ error: "Username richiesto" });
     }
     
-    const user = await storage.getUserByRechargeUsername(rechargeUsername.trim().toLowerCase());
+    // Remove @ prefix if present and trim
+    const cleanUsername = username.trim().toLowerCase().replace(/^@/, '');
+    const user = await storage.getUserByUsername(cleanUsername);
     
     if (!user) {
-      return res.status(404).json({ error: "Utente non trovato con questo username di ricarica" });
+      return res.status(404).json({ error: "Utente non trovato con questo username" });
     }
     
     return res.json({
       id: user.id,
       username: user.username,
-      rechargeUsername: user.rechargeUsername,
+      accountNumber: user.accountNumber,
       fullName: user.fullName,
       balance: user.balance,
     });
@@ -638,14 +640,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin: Add balance to user (top-up)
   app.post("/api/admin/topup", async (req, res) => {
-    const { adminPassword, rechargeUsername, amount } = req.body;
+    const { adminPassword, username, amount } = req.body;
     
     const validPassword = process.env.ADMIN_PASSWORD;
     if (!validPassword || adminPassword !== validPassword) {
       return res.status(401).json({ error: "Password admin non valida" });
     }
     
-    if (!rechargeUsername || !amount) {
+    if (!username || !amount) {
       return res.status(400).json({ error: "Username e importo richiesti" });
     }
     
@@ -654,7 +656,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "L'importo deve essere un numero intero positivo" });
     }
     
-    const user = await storage.getUserByRechargeUsername(rechargeUsername.trim().toLowerCase());
+    // Remove @ prefix if present and trim
+    const cleanUsername = username.trim().toLowerCase().replace(/^@/, '');
+    const user = await storage.getUserByUsername(cleanUsername);
     
     if (!user) {
       return res.status(404).json({ error: "Utente non trovato" });
