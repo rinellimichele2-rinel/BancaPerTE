@@ -274,6 +274,16 @@ export default function AnalisiScreen() {
 
   const isExpense = activeTab === "Uscite";
 
+  const displayTotal = useMemo(() => {
+    if (isExpense && user?.customMonthlyExpenses) {
+      return parseFloat(user.customMonthlyExpenses);
+    }
+    if (!isExpense && user?.customMonthlyIncome) {
+      return parseFloat(user.customMonthlyIncome);
+    }
+    return total;
+  }, [isExpense, user?.customMonthlyExpenses, user?.customMonthlyIncome, total]);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -318,7 +328,7 @@ export default function AnalisiScreen() {
 
         <DonutChart
           data={categoryData}
-          total={total}
+          total={displayTotal}
           label={isExpense ? "Uscite" : "Entrate"}
           isExpense={isExpense}
         />
