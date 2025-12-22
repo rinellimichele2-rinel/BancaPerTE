@@ -298,6 +298,52 @@ export class DatabaseStorage implements IStorage {
     const result = await db.select().from(users).where(eq(users.username, referralCode));
     return result[0];
   }
+
+  async blockUser(userId: string, reason?: string): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ isBlocked: true, blockedReason: reason || null })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async unblockUser(userId: string): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ isBlocked: false, blockedReason: null })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async setUserBalance(userId: string, newBalance: string): Promise<User | undefined> {
+    const result = await db
+      .update(users)
+      .set({ balance: newBalance })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
+  }
+
+  async getTransferHistory(): Promise<Transaction[]> {
+    const result = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.isSimulated, false))
+      .orderBy(desc(transactions.createdAt));
+    return result;
+  }
+
+  async getAllUsersSorted(sortBy: 'balance' | 'newest'): Promise<User[]> {
+    if (sortBy === 'balance') {
+      const result = await db.select().from(users).orderBy(desc(users.balance));
+      return result;
+    } else {
+      const result = await db.select().from(users).orderBy(desc(users.createdAt));
+      return result;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

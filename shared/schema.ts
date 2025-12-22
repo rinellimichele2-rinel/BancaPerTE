@@ -19,6 +19,8 @@ export const users = pgTable("users", {
   referredBy: varchar("referred_by"),
   referralActivated: boolean("referral_activated").notNull().default(false),
   cardLastFour: text("card_last_four").notNull().default("3796"),
+  isBlocked: boolean("is_blocked").notNull().default(false),
+  blockedReason: text("blocked_reason"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

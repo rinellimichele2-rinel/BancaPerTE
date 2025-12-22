@@ -785,6 +785,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json(activations);
   });
 
+  // Admin: Get users sorted
+  app.get("/api/admin/users", async (req, res) => {
+    const adminPassword = req.headers["x-admin-password"] as string;
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    const sortBy = (req.query.sortBy as string) === 'balance' ? 'balance' : 'newest';
+    const allUsers = await storage.getAllUsersSorted(sortBy);
+    
+    const sanitizedUsers = allUsers.map(user => ({
+      id: user.id,
+      username: user.username,
+      fullName: user.fullName,
+      accountNumber: user.accountNumber,
+      balance: user.balance,
+      purchasedBalance: user.purchasedBalance,
+      totalRecharged: user.totalRecharged,
+      isBlocked: user.isBlocked,
+      blockedReason: user.blockedReason,
+      createdAt: user.createdAt,
+    }));
+    return res.json(sanitizedUsers);
+  });
+
+  // Admin: Block user
+  app.post("/api/admin/block-user", async (req, res) => {
+    const { adminPassword, userId, reason } = req.body;
+    
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    if (!userId) {
+      return res.status(400).json({ error: "ID utente richiesto" });
+    }
+    
+    const user = await storage.blockUser(userId, reason);
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    return res.json({ success: true, user: { id: user.id, username: user.username, isBlocked: user.isBlocked } });
+  });
+
+  // Admin: Unblock user
+  app.post("/api/admin/unblock-user", async (req, res) => {
+    const { adminPassword, userId } = req.body;
+    
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    if (!userId) {
+      return res.status(400).json({ error: "ID utente richiesto" });
+    }
+    
+    const user = await storage.unblockUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    return res.json({ success: true, user: { id: user.id, username: user.username, isBlocked: user.isBlocked } });
+  });
+
+  // Admin: Set user balance (for anti-cheat corrections)
+  app.post("/api/admin/set-balance", async (req, res) => {
+    const { adminPassword, userId, newBalance } = req.body;
+    
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    if (!userId || newBalance === undefined) {
+      return res.status(400).json({ error: "ID utente e nuovo saldo richiesti" });
+    }
+    
+    const balanceNum = parseFloat(newBalance);
+    if (isNaN(balanceNum) || balanceNum < 0) {
+      return res.status(400).json({ error: "Il saldo deve essere un numero positivo" });
+    }
+    
+    const user = await storage.setUserBalance(userId, balanceNum.toFixed(2));
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    return res.json({ success: true, user: { id: user.id, username: user.username, balance: user.balance } });
+  });
+
+  // Admin: Get transfer history (real transactions only)
+  app.get("/api/admin/transfers", async (req, res) => {
+    const adminPassword = req.headers["x-admin-password"] as string;
+    const validPassword = process.env.ADMIN_PASSWORD;
+    if (!validPassword || adminPassword !== validPassword) {
+      return res.status(401).json({ error: "Password admin non valida" });
+    }
+    
+    const transfers = await storage.getTransferHistory();
+    
+    // Enrich with user info
+    const enrichedTransfers = [];
+    for (const transfer of transfers) {
+      const user = await storage.getUser(transfer.userId);
+      enrichedTransfers.push({
+        ...transfer,
+        username: user?.username || 'Sconosciuto',
+        fullName: user?.fullName || 'Sconosciuto',
+      });
+    }
+    
+    return res.json(enrichedTransfers);
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

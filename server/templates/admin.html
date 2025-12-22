@@ -215,6 +215,7 @@
         <div class="tabs">
           <button class="tab-btn active" onclick="switchTab('topup')">Ricariche</button>
           <button class="tab-btn" onclick="switchTab('utenti')">Utenti</button>
+          <button class="tab-btn" onclick="switchTab('trasferimenti')">Scambi</button>
           <button class="tab-btn" onclick="switchTab('referral')">Referral</button>
         </div>
         
@@ -250,9 +251,40 @@
         <div id="utenti-tab" class="tab-content">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <h3 style="color: #333; font-size: 16px; margin: 0;">Utenti Registrati</h3>
-            <button class="preset-btn" style="min-width: auto; padding: 8px 12px;" onclick="loadUsers()">Aggiorna</button>
+            <button class="preset-btn" style="min-width: auto; padding: 8px 12px;" onclick="loadAdminUsers()">Aggiorna</button>
+          </div>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <button class="preset-btn" id="sort-newest" style="flex: 1;" onclick="setSortBy('newest')">Nuovi</button>
+            <button class="preset-btn" id="sort-balance" style="flex: 1;" onclick="setSortBy('balance')">Saldo</button>
           </div>
           <div id="users-list">
+            <p style="color: #666; font-size: 13px;">Caricamento...</p>
+          </div>
+          
+          <div id="user-detail-modal" class="hidden" style="margin-top: 16px; background: #f5f5f5; border-radius: 10px; padding: 16px;">
+            <h4 style="color: #208037; margin-bottom: 12px;">Gestione Utente</h4>
+            <div id="modal-user-info"></div>
+            <div class="divider"></div>
+            <div class="form-group">
+              <label>Modifica Saldo</label>
+              <input type="number" id="edit-balance" placeholder="Nuovo saldo">
+            </div>
+            <button onclick="saveNewBalance()" style="margin-bottom: 8px;">Salva Saldo</button>
+            <div class="form-group">
+              <label>Motivo Blocco (opzionale)</label>
+              <input type="text" id="block-reason" placeholder="es. Saldo sospetto">
+            </div>
+            <button id="block-btn" onclick="toggleBlockUser()" style="background: #c62828;">Blocca Utente</button>
+            <button onclick="closeUserModal()" style="margin-top: 8px; background: #666;">Chiudi</button>
+          </div>
+        </div>
+        
+        <div id="trasferimenti-tab" class="tab-content">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="color: #333; font-size: 16px; margin: 0;">Storico Scambi</h3>
+            <button class="preset-btn" style="min-width: auto; padding: 8px 12px;" onclick="loadTransfers()">Aggiorna</button>
+          </div>
+          <div id="transfers-list">
             <p style="color: #666; font-size: 13px;">Caricamento...</p>
           </div>
         </div>
@@ -405,7 +437,12 @@
         // Also refresh users list if on utenti tab
         const utentiTab = document.getElementById('utenti-tab');
         if (utentiTab && utentiTab.classList.contains('active')) {
-          loadUsers();
+          loadAdminUsers();
+        }
+        // Refresh transfers if on trasferimenti tab
+        const trasferimentiTab = document.getElementById('trasferimenti-tab');
+        if (trasferimentiTab && trasferimentiTab.classList.contains('active')) {
+          loadTransfers();
         }
       }, 30000);
     }
@@ -426,39 +463,199 @@
         loadReferralSettings();
         loadActivations();
       } else if (tab === 'utenti') {
-        loadUsers();
+        loadAdminUsers();
+      } else if (tab === 'trasferimenti') {
+        loadTransfers();
       }
     }
 
-    async function loadUsers() {
+    let currentSortBy = 'newest';
+    let selectedUserForEdit = null;
+    let allAdminUsers = [];
+
+    function setSortBy(sort) {
+      currentSortBy = sort;
+      document.getElementById('sort-newest').style.background = sort === 'newest' ? '#208037' : '#e8f5e9';
+      document.getElementById('sort-newest').style.color = sort === 'newest' ? 'white' : '#208037';
+      document.getElementById('sort-balance').style.background = sort === 'balance' ? '#208037' : '#e8f5e9';
+      document.getElementById('sort-balance').style.color = sort === 'balance' ? 'white' : '#208037';
+      loadAdminUsers();
+    }
+
+    async function loadAdminUsers() {
       try {
-        const response = await fetch('/api/users');
+        const response = await fetch(`/api/admin/users?sortBy=${currentSortBy}`, {
+          headers: { 'X-Admin-Password': adminPassword }
+        });
         
         if (!response.ok) {
           document.getElementById('users-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore nel caricamento</p>';
           return;
         }
 
-        const users = await response.json();
+        allAdminUsers = await response.json();
         
-        if (users.length === 0) {
+        if (allAdminUsers.length === 0) {
           document.getElementById('users-list').innerHTML = '<p style="color: #666; font-size: 13px;">Nessun utente registrato</p>';
           return;
         }
 
-        let html = `<p style="color: #666; font-size: 12px; margin-bottom: 12px;">Totale: ${users.length} utenti</p>`;
-        for (const user of users) {
+        let html = `<p style="color: #666; font-size: 12px; margin-bottom: 12px;">Totale: ${allAdminUsers.length} utenti</p>`;
+        for (const user of allAdminUsers) {
+          const blockedBadge = user.isBlocked ? '<span style="background: #c62828; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 6px;">BLOCCATO</span>' : '';
+          const createdDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString('it-IT') : 'N/A';
           html += `
-            <div class="activation-item" style="cursor: pointer;" onclick="selectUserFromList('${user.username}')">
-              <p><strong>@${user.username}</strong></p>
+            <div class="activation-item" style="cursor: pointer; ${user.isBlocked ? 'border-left: 3px solid #c62828;' : ''}" onclick="openUserModal('${user.id}')">
+              <p><strong>@${user.username}</strong>${blockedBadge}</p>
               <p style="font-size: 12px; color: #666;">${user.fullName || 'Nome non impostato'}</p>
-              <p style="font-size: 11px; color: #999;">Saldo: ${formatBalance(user.balance)} - ID: ${user.accountNumber || 'N/A'}</p>
+              <p style="font-size: 11px; color: #999;">Saldo: ${formatBalance(user.balance)} | Ricaricato: ${formatBalance(user.totalRecharged || 0)}</p>
+              <p style="font-size: 10px; color: #bbb;">Iscritto: ${createdDate}</p>
             </div>
           `;
         }
         document.getElementById('users-list').innerHTML = html;
       } catch (error) {
         document.getElementById('users-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore di connessione</p>';
+      }
+    }
+
+    function openUserModal(userId) {
+      selectedUserForEdit = allAdminUsers.find(u => u.id === userId);
+      if (!selectedUserForEdit) return;
+      
+      document.getElementById('modal-user-info').innerHTML = `
+        <p><strong>Username:</strong> @${selectedUserForEdit.username}</p>
+        <p><strong>Nome:</strong> ${selectedUserForEdit.fullName || 'Non impostato'}</p>
+        <p><strong>Saldo attuale:</strong> ${formatBalance(selectedUserForEdit.balance)}</p>
+        <p><strong>Totale ricaricato:</strong> ${formatBalance(selectedUserForEdit.totalRecharged || 0)}</p>
+        <p><strong>Stato:</strong> ${selectedUserForEdit.isBlocked ? 'BLOCCATO - ' + (selectedUserForEdit.blockedReason || 'Nessun motivo') : 'Attivo'}</p>
+      `;
+      document.getElementById('edit-balance').value = parseFloat(selectedUserForEdit.balance).toFixed(0);
+      document.getElementById('block-reason').value = '';
+      
+      const blockBtn = document.getElementById('block-btn');
+      if (selectedUserForEdit.isBlocked) {
+        blockBtn.textContent = 'Sblocca Utente';
+        blockBtn.style.background = '#2e7d32';
+      } else {
+        blockBtn.textContent = 'Blocca Utente';
+        blockBtn.style.background = '#c62828';
+      }
+      
+      document.getElementById('user-detail-modal').classList.remove('hidden');
+    }
+
+    function closeUserModal() {
+      document.getElementById('user-detail-modal').classList.add('hidden');
+      selectedUserForEdit = null;
+    }
+
+    async function saveNewBalance() {
+      if (!selectedUserForEdit) return;
+      
+      const newBalance = document.getElementById('edit-balance').value;
+      if (!newBalance || parseFloat(newBalance) < 0) {
+        showMessage('Inserisci un saldo valido', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/admin/set-balance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminPassword,
+            userId: selectedUserForEdit.id,
+            newBalance: parseFloat(newBalance)
+          })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          showMessage(`Saldo di @${selectedUserForEdit.username} aggiornato a ${formatBalance(newBalance)}`, 'success');
+          closeUserModal();
+          loadAdminUsers();
+        } else {
+          showMessage(data.error || 'Errore durante l\'aggiornamento', 'error');
+        }
+      } catch (error) {
+        showMessage('Errore di connessione', 'error');
+      }
+    }
+
+    async function toggleBlockUser() {
+      if (!selectedUserForEdit) return;
+      
+      const isBlocking = !selectedUserForEdit.isBlocked;
+      const reason = document.getElementById('block-reason').value;
+      
+      try {
+        const endpoint = isBlocking ? '/api/admin/block-user' : '/api/admin/unblock-user';
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminPassword,
+            userId: selectedUserForEdit.id,
+            reason: isBlocking ? reason : undefined
+          })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          showMessage(isBlocking ? `@${selectedUserForEdit.username} bloccato` : `@${selectedUserForEdit.username} sbloccato`, 'success');
+          closeUserModal();
+          loadAdminUsers();
+        } else {
+          showMessage(data.error || 'Errore durante l\'operazione', 'error');
+        }
+      } catch (error) {
+        showMessage('Errore di connessione', 'error');
+      }
+    }
+
+    async function loadTransfers() {
+      try {
+        const response = await fetch('/api/admin/transfers', {
+          headers: { 'X-Admin-Password': adminPassword }
+        });
+        
+        if (!response.ok) {
+          document.getElementById('transfers-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore nel caricamento</p>';
+          return;
+        }
+
+        const transfers = await response.json();
+        
+        if (transfers.length === 0) {
+          document.getElementById('transfers-list').innerHTML = '<p style="color: #666; font-size: 13px;">Nessuno scambio ancora</p>';
+          return;
+        }
+
+        let html = `<p style="color: #666; font-size: 12px; margin-bottom: 12px;">Totale: ${transfers.length} transazioni reali</p>`;
+        for (const transfer of transfers) {
+          const date = new Date(transfer.createdAt).toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          const isIncome = transfer.type === 'income';
+          const amountColor = isIncome ? '#2e7d32' : '#c62828';
+          const amountPrefix = isIncome ? '+' : '-';
+          html += `
+            <div class="activation-item">
+              <p><strong>@${transfer.username}</strong> (${transfer.fullName})</p>
+              <p style="font-size: 12px; color: ${amountColor};">${amountPrefix}${formatBalance(Math.abs(parseFloat(transfer.amount)))}</p>
+              <p style="font-size: 11px; color: #666;">${transfer.description}</p>
+              <p style="font-size: 10px; color: #999;">${date}</p>
+            </div>
+          `;
+        }
+        document.getElementById('transfers-list').innerHTML = html;
+      } catch (error) {
+        document.getElementById('transfers-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore di connessione</p>';
       }
     }
 
