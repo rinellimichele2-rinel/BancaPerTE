@@ -1003,8 +1003,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({ success: true, message: "Utente eliminato con successo" });
   });
 
-  // Admin: Get user transactions
-  app.get("/api/admin/user-transactions/:userId", async (req, res) => {
+  // Admin: Get user P2P transfers only (real transfers where user is sender or receiver)
+  app.get("/api/admin/user-transfers/:userId", async (req, res) => {
     const adminPassword = req.headers["x-admin-password"] as string;
     const validPassword = process.env.ADMIN_PASSWORD;
     if (!validPassword || adminPassword !== validPassword) {
@@ -1012,16 +1012,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     const { userId } = req.params;
-    const transactions = await storage.getTransactions(userId);
+    const allTransactions = await storage.getTransactions(userId);
+    
+    // Filter only real P2P transfers (category = "Trasferimenti" and isSimulated = false)
+    const transfers = allTransactions.filter(tx => 
+      tx.category === "Trasferimenti" && tx.isSimulated === false
+    );
     
     // Sort by date descending (newest first)
-    transactions.sort((a, b) => {
+    transfers.sort((a, b) => {
       const dateA = new Date(a.date || a.createdAt || 0);
       const dateB = new Date(b.date || b.createdAt || 0);
       return dateB.getTime() - dateA.getTime();
     });
     
-    return res.json(transactions);
+    return res.json(transfers);
   });
 
   // Admin: Set certified balance (realPurchasedBalance) - updates all three balance fields

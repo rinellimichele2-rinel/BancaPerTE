@@ -278,12 +278,12 @@
             <button onclick="closeUserModal()" style="margin-top: 8px; background: #666;">Chiudi</button>
           </div>
           
-          <div id="transactions-modal" class="hidden" style="margin-top: 16px; background: #f5f5f5; border-radius: 10px; padding: 16px;">
-            <h4 style="color: #208037; margin-bottom: 12px;">Transazioni di <span id="transactions-username"></span></h4>
-            <div id="transactions-list" style="max-height: 400px; overflow-y: auto;">
+          <div id="transfers-modal" class="hidden" style="margin-top: 16px; background: #f5f5f5; border-radius: 10px; padding: 16px;">
+            <h4 style="color: #208037; margin-bottom: 12px;">Cronologia Scambi di <span id="transfers-username"></span></h4>
+            <div id="transfers-list" style="max-height: 400px; overflow-y: auto;">
               <p style="color: #666; font-size: 13px;">Caricamento...</p>
             </div>
-            <button onclick="closeTransactionsModal()" style="margin-top: 12px; background: #666;">Chiudi</button>
+            <button onclick="closeTransfersModal()" style="margin-top: 12px; background: #666;">Chiudi</button>
           </div>
         </div>
         
@@ -510,7 +510,7 @@
               </div>
               <div style="display: flex; gap: 6px; margin-top: 8px;">
                 <button class="preset-btn" style="flex: 1; padding: 8px; font-size: 12px;" onclick="openUserModal('${user.id}')">Gestisci</button>
-                <button class="preset-btn" style="flex: 1; padding: 8px; font-size: 12px;" onclick="showUserTransactions('${user.id}', '${user.username}')">Transazioni</button>
+                <button class="preset-btn" style="flex: 1; padding: 8px; font-size: 12px;" onclick="showUserTransfers('${user.id}', '${user.username}')">Cronologia Scambi</button>
               </div>
             </div>
           `;
@@ -554,31 +554,31 @@
       selectedUserForEdit = null;
     }
 
-    async function showUserTransactions(userId, username) {
-      document.getElementById('transactions-username').textContent = '@' + username;
-      document.getElementById('transactions-list').innerHTML = '<p style="color: #666; font-size: 13px;">Caricamento...</p>';
-      document.getElementById('transactions-modal').classList.remove('hidden');
+    async function showUserTransfers(userId, username) {
+      document.getElementById('transfers-username').textContent = '@' + username;
+      document.getElementById('transfers-list').innerHTML = '<p style="color: #666; font-size: 13px;">Caricamento...</p>';
+      document.getElementById('transfers-modal').classList.remove('hidden');
       document.getElementById('user-detail-modal').classList.add('hidden');
       
       try {
-        const response = await fetch(`/api/admin/user-transactions/${userId}`, {
+        const response = await fetch(`/api/admin/user-transfers/${userId}`, {
           headers: { 'X-Admin-Password': adminPassword }
         });
         
         if (!response.ok) {
-          document.getElementById('transactions-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore nel caricamento</p>';
+          document.getElementById('transfers-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore nel caricamento</p>';
           return;
         }
 
-        const transactions = await response.json();
+        const transfers = await response.json();
         
-        if (transactions.length === 0) {
-          document.getElementById('transactions-list').innerHTML = '<p style="color: #666; font-size: 13px;">Nessuna transazione</p>';
+        if (transfers.length === 0) {
+          document.getElementById('transfers-list').innerHTML = '<p style="color: #666; font-size: 13px;">Nessuno scambio P2P effettuato</p>';
           return;
         }
 
-        let html = `<p style="color: #666; font-size: 12px; margin-bottom: 12px;">Totale: ${transactions.length} transazioni</p>`;
-        for (const tx of transactions) {
+        let html = `<p style="color: #666; font-size: 12px; margin-bottom: 12px;">Totale: ${transfers.length} scambi</p>`;
+        for (const tx of transfers) {
           const date = new Date(tx.date || tx.createdAt).toLocaleDateString('it-IT', {
             day: '2-digit',
             month: '2-digit',
@@ -589,24 +589,23 @@
           const isIncome = tx.type === 'income';
           const amountColor = isIncome ? '#2e7d32' : '#c62828';
           const amountPrefix = isIncome ? '+' : '-';
-          const realBadge = !tx.isSimulated ? '<span style="background: #208037; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 6px;">REALE</span>' : '';
+          const directionLabel = isIncome ? 'RICEVUTO' : 'INVIATO';
           html += `
             <div class="activation-item" style="border-left: 3px solid ${amountColor};">
-              <p><strong>${tx.description}</strong>${realBadge}</p>
-              <p style="font-size: 12px; color: ${amountColor};">${amountPrefix}${formatBalance(Math.abs(parseFloat(tx.amount)))}</p>
-              <p style="font-size: 11px; color: #666;">${tx.category}</p>
+              <p><strong>${tx.description}</strong></p>
+              <p style="font-size: 12px; color: ${amountColor};">${amountPrefix}${formatBalance(Math.abs(parseFloat(tx.amount)))} <span style="background: ${amountColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 6px;">${directionLabel}</span></p>
               <p style="font-size: 10px; color: #999;">${date}</p>
             </div>
           `;
         }
-        document.getElementById('transactions-list').innerHTML = html;
+        document.getElementById('transfers-list').innerHTML = html;
       } catch (error) {
-        document.getElementById('transactions-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore di connessione</p>';
+        document.getElementById('transfers-list').innerHTML = '<p style="color: #c62828; font-size: 13px;">Errore di connessione</p>';
       }
     }
 
-    function closeTransactionsModal() {
-      document.getElementById('transactions-modal').classList.add('hidden');
+    function closeTransfersModal() {
+      document.getElementById('transfers-modal').classList.add('hidden');
     }
 
     async function saveNewBalance() {
