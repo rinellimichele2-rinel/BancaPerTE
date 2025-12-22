@@ -275,13 +275,10 @@ export default function AnalisiScreen() {
   const isExpense = activeTab === "Uscite";
 
   const displayTotal = useMemo(() => {
-    if (isExpense && user?.customMonthlyExpenses) {
-      return parseFloat(user.customMonthlyExpenses);
-    }
-    if (!isExpense && user?.customMonthlyIncome) {
-      return parseFloat(user.customMonthlyIncome);
-    }
-    return total;
+    const offset = isExpense 
+      ? (user?.customMonthlyExpenses ? parseFloat(user.customMonthlyExpenses) : 0)
+      : (user?.customMonthlyIncome ? parseFloat(user.customMonthlyIncome) : 0);
+    return total + offset;
   }, [isExpense, user?.customMonthlyExpenses, user?.customMonthlyIncome, total]);
 
   return (

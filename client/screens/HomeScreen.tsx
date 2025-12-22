@@ -197,15 +197,16 @@ export default function HomeScreen() {
 
   const handleEditExpenses = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const currentExpenses = user?.customMonthlyExpenses || totalExpenses.toFixed(2);
-    setNewExpenses(currentExpenses.toString());
+    setNewExpenses(displayExpenses.toFixed(2));
     setShowEditExpenses(true);
   };
 
   const handleSaveExpenses = async () => {
     const value = newExpenses.replace(",", ".");
-    if (!isNaN(parseFloat(value))) {
-      await updateMonthlyValues(value, user?.customMonthlyIncome || null);
+    const newValue = parseFloat(value);
+    if (!isNaN(newValue)) {
+      const offset = (newValue - totalExpenses).toFixed(2);
+      await updateMonthlyValues(offset, user?.customMonthlyIncome || null);
       setShowEditExpenses(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
@@ -213,15 +214,16 @@ export default function HomeScreen() {
 
   const handleEditIncome = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const currentIncome = user?.customMonthlyIncome || totalIncome.toFixed(2);
-    setNewIncome(currentIncome.toString());
+    setNewIncome(displayIncome.toFixed(2));
     setShowEditIncome(true);
   };
 
   const handleSaveIncome = async () => {
     const value = newIncome.replace(",", ".");
-    if (!isNaN(parseFloat(value))) {
-      await updateMonthlyValues(user?.customMonthlyExpenses || null, value);
+    const newValue = parseFloat(value);
+    if (!isNaN(newValue)) {
+      const offset = (newValue - totalIncome).toFixed(2);
+      await updateMonthlyValues(user?.customMonthlyExpenses || null, offset);
       setShowEditIncome(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
@@ -242,6 +244,9 @@ export default function HomeScreen() {
   const totalIncome = transactions
     .filter(t => t.type === "income")
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+  const displayExpenses = totalExpenses + (user?.customMonthlyExpenses ? parseFloat(user.customMonthlyExpenses) : 0);
+  const displayIncome = totalIncome + (user?.customMonthlyIncome ? parseFloat(user.customMonthlyIncome) : 0);
 
   // Filter transactions from last 7 days
   const sevenDaysAgo = new Date();
@@ -393,7 +398,7 @@ export default function HomeScreen() {
               <Text style={styles.analisiLabel}>Uscite del mese</Text>
               <View style={styles.analisiAmountRow}>
                 <Text style={styles.analisiAmountNegative}>
-                  - {(user?.customMonthlyExpenses ? parseFloat(user.customMonthlyExpenses) : totalExpenses).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
+                  - {displayExpenses.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
                 </Text>
                 <Icon name="arrow-down" size={16} color={BankColors.error} />
               </View>
@@ -403,7 +408,7 @@ export default function HomeScreen() {
               <Text style={styles.analisiLabel}>Entrate del mese</Text>
               <View style={styles.analisiAmountRow}>
                 <Text style={styles.analisiAmountPositive}>
-                  + {(user?.customMonthlyIncome ? parseFloat(user.customMonthlyIncome) : totalIncome).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
+                  + {displayIncome.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
                 </Text>
                 <Icon name="arrow-up" size={16} color={BankColors.success} />
               </View>
