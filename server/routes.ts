@@ -54,7 +54,7 @@ function generateRandomTransaction(
   availablePresets = [...availablePresets, ...customExpensePresets];
   
   if (availablePresets.length === 0) {
-    availablePresets = DEFAULT_PRESETS.filter(p => p.type === "expense");
+    return null;
   }
   
   const preset = availablePresets[Math.floor(Math.random() * availablePresets.length)];
@@ -381,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({ 
         transaction: null, 
         newBalance: user.balance,
-        message: "Saldo gia al massimo pagato" 
+        message: "Nessun preset disponibile. Crea dei preset per generare transazioni casuali." 
       });
     }
     
