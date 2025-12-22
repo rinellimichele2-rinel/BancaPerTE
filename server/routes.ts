@@ -745,8 +745,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "Username richiesto" });
     }
     
-    // Remove @ prefix if present and trim
-    const cleanUsername = username.trim().toLowerCase().replace(/^@/, '');
+    // Remove @ prefix if present and trim (case-insensitive search via ilike)
+    const cleanUsername = username.trim().replace(/^@/, '');
     const user = await storage.getUserByUsername(cleanUsername);
     
     if (!user) {
@@ -780,8 +780,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "L'importo deve essere un numero intero positivo" });
     }
     
-    // Remove @ prefix if present and trim
-    const cleanUsername = username.trim().toLowerCase().replace(/^@/, '');
+    // Remove @ prefix if present and trim (case-insensitive search via ilike)
+    const cleanUsername = username.trim().replace(/^@/, '');
     const user = await storage.getUserByUsername(cleanUsername);
     
     if (!user) {
