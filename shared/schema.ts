@@ -50,6 +50,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   accountNumber: true,
   balance: true,
   purchasedBalance: true,
+  realPurchasedBalance: true,
   cardLastFour: true,
 });
 

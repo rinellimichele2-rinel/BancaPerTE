@@ -127,6 +127,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: username.toUpperCase(),
         accountNumber: `1000/${Math.floor(Math.random() * 100000).toString().padStart(8, "0")}`,
         balance: "10.00",
+        purchasedBalance: "0.00",
+        realPurchasedBalance: "0.00",
         cardLastFour: Math.floor(Math.random() * 10000).toString().padStart(4, "0"),
         rechargeUsername,
       });

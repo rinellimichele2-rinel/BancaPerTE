@@ -601,10 +601,16 @@ export default function AltroScreen() {
                       style={[
                         styles.randomBtn, 
                         styles.randomBtnFullWidth,
-                        (generateRandomMutation.isPending || allPresets.filter(p => p.type === "expense").length === 0) && styles.submitBtnDisabled
+                        generateRandomMutation.isPending && styles.submitBtnDisabled
                       ]}
-                      onPress={() => generateRandomMutation.mutate()}
-                      disabled={generateRandomMutation.isPending || allPresets.filter(p => p.type === "expense").length === 0}
+                      onPress={() => {
+                        if (allPresets.filter(p => p.type === "expense").length === 0) {
+                          Alert.alert("Nessun Preset", "Crea prima un preset di uscita per generare spese casuali.");
+                          return;
+                        }
+                        generateRandomMutation.mutate();
+                      }}
+                      disabled={generateRandomMutation.isPending}
                     >
                       {generateRandomMutation.isPending ? (
                         <ActivityIndicator color={BankColors.white} />
