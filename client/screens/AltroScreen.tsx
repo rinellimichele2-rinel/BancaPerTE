@@ -795,7 +795,7 @@ export default function AltroScreen() {
                     </Text>
                   ) : null}
                 </View>
-              )}
+              ) : null}
             </ScrollView>
           </View>
         </View>
