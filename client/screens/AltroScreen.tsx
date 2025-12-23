@@ -96,7 +96,12 @@ export default function AltroScreen() {
   const [showEditName, setShowEditName] = useState(false);
   const [newName, setNewName] = useState("");
   const [showConsole, setShowConsole] = useState(false);
-  const [consoleTab, setConsoleTab] = useState<"form" | "preset">("form");
+  const [consoleTab, setConsoleTab] = useState<"form" | "preset">("preset");
+  
+  const openExpensePresets = () => {
+    setConsoleTab("preset");
+    setShowConsole(true);
+  };
   const [txDescription, setTxDescription] = useState("");
   const [txAmount, setTxAmount] = useState("");
   const [txType, setTxType] = useState<"expense" | "income">("income");
@@ -420,6 +425,20 @@ export default function AltroScreen() {
           <View style={styles.topActionDivider} />
           <TopAction icon="shopping-cart" label="Carrello" />
         </View>
+
+        <Pressable 
+          style={styles.expenseButton}
+          onPress={openExpensePresets}
+        >
+          <View style={styles.expenseButtonIcon}>
+            <Icon name="minus-circle" size={28} color={BankColors.white} />
+          </View>
+          <View style={styles.expenseButtonText}>
+            <Text style={styles.expenseButtonTitle}>Genera Uscita</Text>
+            <Text style={styles.expenseButtonSubtitle}>Crea spese dai preset personalizzati</Text>
+          </View>
+          <Icon name="chevron-right" size={24} color={BankColors.white} />
+        </Pressable>
 
         <Pressable style={styles.profileCard} onPress={handleEditName}>
           <View style={styles.profileAvatar}>
@@ -946,6 +965,38 @@ const styles = StyleSheet.create({
   topActionDivider: {
     width: 1,
     backgroundColor: BankColors.gray300,
+  },
+  expenseButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BankColors.error,
+    marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    minHeight: 80,
+  },
+  expenseButtonIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Spacing.md,
+  },
+  expenseButtonText: {
+    flex: 1,
+  },
+  expenseButtonTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: BankColors.white,
+    marginBottom: 2,
+  },
+  expenseButtonSubtitle: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.85)",
   },
   profileCard: {
     flexDirection: "row",
