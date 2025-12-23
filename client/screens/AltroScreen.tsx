@@ -11,7 +11,6 @@ import {
   Alert,
   Linking,
   Platform,
-  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -673,14 +672,20 @@ export default function AltroScreen() {
                       <Text style={styles.presetTitle}>Preset uscite disponibili</Text>
                       <Text style={styles.presetSubtitle}>Tieni premuto per eliminare</Text>
                     </View>
-                    <TouchableOpacity 
-                      style={styles.addPresetBtn} 
-                      onPress={openCreatePreset}
-                      activeOpacity={0.7}
+                    <Pressable 
+                      style={({ pressed }) => [
+                        styles.addPresetBtn,
+                        pressed && styles.addPresetBtnPressed
+                      ]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        openCreatePreset();
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       <Icon name="plus" size={18} color={BankColors.white} />
                       <Text style={styles.addPresetBtnText}>Nuovo</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                   
                   {allPresets.filter(p => p.type === "expense").length === 0 ? (
@@ -1408,18 +1413,23 @@ const styles = StyleSheet.create({
   addPresetBtn: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: BankColors.primary,
     borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: 4,
-    zIndex: 10,
-    cursor: "pointer",
-  } as any,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    gap: 6,
+    minWidth: 100,
+    minHeight: 44,
+  },
+  addPresetBtnPressed: {
+    backgroundColor: "#2d8c4e",
+    transform: [{ scale: 0.97 }],
+  },
   addPresetBtnText: {
     color: BankColors.white,
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
   },
   presetItem: {
     flexDirection: "row",
