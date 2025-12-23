@@ -108,6 +108,9 @@ export default function AltroScreen() {
   const [presetMaxAmount, setPresetMaxAmount] = useState("");
   const [presetType, setPresetType] = useState<"expense" | "income">("expense");
   const [presetCategory, setPresetCategory] = useState(TRANSACTION_CATEGORIES[0]);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickDesc, setQuickDesc] = useState("");
+  const [quickAmount, setQuickAmount] = useState("");
 
   // Fetch custom presets from database
   const { data: customPresets = [], refetch: refetchPresets } = useQuery<DbCustomPreset[]>({
@@ -291,6 +294,31 @@ export default function AltroScreen() {
     } else {
       createPresetMutation.mutate(presetData);
     }
+  };
+
+  const handleQuickAdd = () => {
+    if (!quickDesc.trim()) {
+      Alert.alert("Errore", "Inserisci un nome per il preset");
+      return;
+    }
+    const cleanAmount = quickAmount.replace(/[^0-9]/g, "");
+    const amount = parseInt(cleanAmount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert("Errore", "Inserisci un importo valido");
+      return;
+    }
+    
+    createPresetMutation.mutate({
+      description: quickDesc.trim(),
+      type: "expense",
+      category: "Altre uscite",
+      minAmount: amount,
+      maxAmount: amount,
+    });
+    
+    setQuickDesc("");
+    setQuickAmount("");
+    setShowQuickAdd(false);
   };
 
   const createTransactionMutation = useMutation({
@@ -490,7 +518,14 @@ export default function AltroScreen() {
         </View>
       </Modal>
 
-      <Modal visible={showConsole} transparent animationType="slide">
+      <Modal 
+        visible={showConsole} 
+        transparent 
+        animationType="slide"
+        onRequestClose={() => setShowConsole(false)}
+        onDismiss={() => setShowConsole(false)}
+        presentationStyle="overFullScreen"
+      >
         <View style={styles.consoleOverlay}>
           <View style={[styles.consoleContainer, { paddingTop: insets.top }]}>
             <View style={styles.consoleHeader}>
@@ -670,25 +705,63 @@ export default function AltroScreen() {
                   <View style={styles.presetHeader}>
                     <View style={styles.presetHeaderLeft}>
                       <Text style={styles.presetTitle}>Preset uscite disponibili</Text>
-                      <Text style={styles.presetSubtitle}>Tieni premuto per eliminare</Text>
+                      <Text style={styles.presetSubtitle}>Tocca per usare, tieni premuto per gestire</Text>
                     </View>
                     <Pressable 
                       style={({ pressed }) => [
-                        styles.addPresetBtn,
-                        pressed && styles.addPresetBtnPressed
+                        styles.quickAddToggle,
+                        pressed && styles.quickAddTogglePressed
                       ]}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        openCreatePreset();
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setShowQuickAdd(!showQuickAdd);
                       }}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Icon name="plus" size={18} color={BankColors.white} />
-                      <Text style={styles.addPresetBtnText}>Nuovo</Text>
+                      <Icon name={showQuickAdd ? "x" : "plus"} size={22} color={BankColors.primary} />
                     </Pressable>
                   </View>
                   
-                  {allPresets.filter(p => p.type === "expense").length === 0 ? (
+                  {showQuickAdd ? (
+                    <View style={styles.quickAddForm}>
+                      <Text style={styles.quickAddTitle}>Aggiungi Preset Rapido</Text>
+                      <View style={styles.quickAddRow}>
+                        <TextInput
+                          style={[styles.quickAddInput, styles.quickAddInputName]}
+                          value={quickDesc}
+                          onChangeText={setQuickDesc}
+                          placeholder="Nome preset"
+                          placeholderTextColor={BankColors.gray400}
+                        />
+                        <TextInput
+                          style={[styles.quickAddInput, styles.quickAddInputAmount]}
+                          value={quickAmount}
+                          onChangeText={(t) => setQuickAmount(t.replace(/[^0-9]/g, ""))}
+                          placeholder="EUR"
+                          keyboardType="numeric"
+                          placeholderTextColor={BankColors.gray400}
+                        />
+                        <Pressable 
+                          style={({ pressed }) => [
+                            styles.quickAddBtn,
+                            pressed && styles.quickAddBtnPressed,
+                            createPresetMutation.isPending && styles.quickAddBtnDisabled
+                          ]}
+                          onPress={handleQuickAdd}
+                          disabled={createPresetMutation.isPending}
+                        >
+                          {createPresetMutation.isPending ? (
+                            <ActivityIndicator size="small" color={BankColors.white} />
+                          ) : (
+                            <Icon name="check" size={20} color={BankColors.white} />
+                          )}
+                        </Pressable>
+                      </View>
+                      <Text style={styles.quickAddHint}>Crea un preset uscita con importo fisso</Text>
+                    </View>
+                  ) : null}
+                  
+                  {allPresets.filter(p => p.type === "expense").length === 0 && !showQuickAdd ? (
                     <View style={styles.emptyPresetState}>
                       <Icon name="inbox" size={40} color={BankColors.gray300} />
                       <Text style={styles.emptyPresetText}>Nessun preset configurato</Text>
@@ -792,7 +865,14 @@ export default function AltroScreen() {
         </View>
       </Modal>
 
-      <Modal visible={showPresetEditor} animationType="slide" transparent>
+      <Modal 
+        visible={showPresetEditor} 
+        animationType="slide" 
+        transparent
+        onRequestClose={() => setShowPresetEditor(false)}
+        onDismiss={() => setShowPresetEditor(false)}
+        presentationStyle="overFullScreen"
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.consoleContainer}>
             <View style={styles.consoleHeader}>
@@ -1389,6 +1469,78 @@ const styles = StyleSheet.create({
   },
   presetHeaderLeft: {
     flex: 1,
+  },
+  quickAddToggle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: BankColors.gray100,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: BankColors.primary,
+  },
+  quickAddTogglePressed: {
+    backgroundColor: BankColors.gray200,
+    transform: [{ scale: 0.95 }],
+  },
+  quickAddForm: {
+    backgroundColor: BankColors.gray50,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+    borderColor: BankColors.primary,
+  },
+  quickAddTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: BankColors.gray700,
+    marginBottom: Spacing.md,
+  },
+  quickAddRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    alignItems: "center",
+  },
+  quickAddInput: {
+    backgroundColor: BankColors.white,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    fontSize: 15,
+    color: BankColors.gray900,
+    borderWidth: 1,
+    borderColor: BankColors.gray200,
+    minHeight: 48,
+  },
+  quickAddInputName: {
+    flex: 2,
+  },
+  quickAddInputAmount: {
+    flex: 1,
+    textAlign: "center",
+  },
+  quickAddBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BankColors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickAddBtnPressed: {
+    backgroundColor: "#2d8c4e",
+    transform: [{ scale: 0.95 }],
+  },
+  quickAddBtnDisabled: {
+    opacity: 0.6,
+  },
+  quickAddHint: {
+    fontSize: 12,
+    color: BankColors.gray500,
+    marginTop: Spacing.sm,
+    textAlign: "center",
   },
   emptyPresetState: {
     alignItems: "center",
