@@ -529,6 +529,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Certified expense - deducts from realPurchasedBalance (Saldo Certificato)
+  app.post("/api/transactions/certified-expense", async (req, res) => {
+    const { userId, description, amount, category } = req.body;
+    
+    if (!userId || !description || !amount) {
+      return res.status(400).json({ error: "Dati mancanti" });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    const expenseAmount = Math.floor(Math.abs(amount));
+    if (expenseAmount <= 0) {
+      return res.status(400).json({ error: "Importo non valido" });
+    }
+    
+    const currentBalance = parseFloat(user.balance || "0");
+    const purchasedBalance = parseFloat(user.purchasedBalance || "0");
+    const realPurchased = parseFloat(user.realPurchasedBalance || "0");
+    
+    if (realPurchased <= 0) {
+      return res.status(400).json({ error: "Saldo Certificato esaurito. Ricarica per continuare." });
+    }
+    
+    if (expenseAmount > realPurchased) {
+      return res.status(400).json({ 
+        error: `Saldo Certificato insufficiente. Disponibile: ${Math.floor(realPurchased)} EUR` 
+      });
+    }
+    
+    // Deduct from all balances
+    const newBalance = Math.max(0, currentBalance - expenseAmount).toFixed(2);
+    const newPurchased = Math.max(0, purchasedBalance - expenseAmount).toFixed(2);
+    const newRealPurchased = (realPurchased - expenseAmount).toFixed(2);
+    
+    // Update all three balances atomically
+    const updatedUser = await storage.updateUserAllBalances(userId, newBalance, newPurchased, newRealPurchased);
+    
+    // Create REAL transaction (not simulated)
+    const transaction = await storage.createTransaction({
+      userId,
+      description,
+      amount: (-expenseAmount).toString(),
+      type: "expense",
+      category: category || "Altre uscite",
+      isContabilizzato: true,
+      isSimulated: false,
+    });
+    
+    return res.json({
+      success: true,
+      transaction,
+      user: updatedUser,
+    });
+  });
+
   app.put("/api/transactions/:transactionId", async (req, res) => {
     const { transactionId } = req.params;
     const { amount, description } = req.body;
