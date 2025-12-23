@@ -587,6 +587,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Get manual expense templates (for Help button)
+  app.get("/api/transactions/:userId/expense-templates", async (req, res) => {
+    const { userId } = req.params;
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    // Get all manual expense transactions (isSimulated=false, type="expense")
+    const transactions = await storage.getTransactionsByUserId(userId);
+    const manualExpenses = transactions.filter(
+      t => t.type === "expense" && t.isSimulated === false
+    );
+    
+    // Extract unique descriptions with their categories
+    const templates = new Map<string, { description: string; category: string; avgAmount: number }>();
+    for (const tx of manualExpenses) {
+      const key = tx.description;
+      if (!templates.has(key)) {
+        templates.set(key, {
+          description: tx.description,
+          category: tx.category || "Altre uscite",
+          avgAmount: Math.abs(parseFloat(tx.amount || "0")),
+        });
+      }
+    }
+    
+    return res.json({ templates: Array.from(templates.values()) });
+  });
+
+  // Generate random expense from manual templates (Help button)
+  app.post("/api/transactions/generate-from-template", async (req, res) => {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: "Dati mancanti" });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    const realPurchased = parseFloat(user.realPurchasedBalance || "0");
+    if (realPurchased <= 0) {
+      return res.status(400).json({ error: "Saldo Certificato esaurito. Ricarica per continuare." });
+    }
+    
+    // Get manual expense transactions as templates
+    const transactions = await storage.getTransactionsByUserId(userId);
+    const manualExpenses = transactions.filter(
+      t => t.type === "expense" && t.isSimulated === false
+    );
+    
+    if (manualExpenses.length === 0) {
+      return res.status(400).json({ 
+        error: "Nessun modello disponibile. Crea prima delle uscite manuali nella Console." 
+      });
+    }
+    
+    // Pick a random template
+    const template = manualExpenses[Math.floor(Math.random() * manualExpenses.length)];
+    const baseAmount = Math.abs(parseFloat(template.amount || "0"));
+    
+    // Generate random amount: ±30% of original, minimum 1 EUR
+    const variation = 0.3;
+    const minAmount = Math.max(1, Math.floor(baseAmount * (1 - variation)));
+    const maxAmount = Math.floor(baseAmount * (1 + variation));
+    let randomAmount = Math.floor(Math.random() * (maxAmount - minAmount + 1)) + minAmount;
+    
+    // Cap to available certified balance
+    randomAmount = Math.min(randomAmount, Math.floor(realPurchased));
+    
+    if (randomAmount <= 0) {
+      return res.status(400).json({ error: "Saldo Certificato insufficiente." });
+    }
+    
+    // Deduct from all balances
+    const currentBalance = parseFloat(user.balance || "0");
+    const purchasedBalance = parseFloat(user.purchasedBalance || "0");
+    
+    const newBalance = Math.max(0, currentBalance - randomAmount).toFixed(2);
+    const newPurchased = Math.max(0, purchasedBalance - randomAmount).toFixed(2);
+    const newRealPurchased = (realPurchased - randomAmount).toFixed(2);
+    
+    // Update all three balances atomically
+    const updatedUser = await storage.updateUserAllBalances(userId, newBalance, newPurchased, newRealPurchased);
+    
+    // Create REAL transaction (not simulated) with slight description variation
+    const transaction = await storage.createTransaction({
+      userId,
+      description: template.description,
+      amount: (-randomAmount).toString(),
+      type: "expense",
+      category: template.category || "Altre uscite",
+      isContabilizzato: true,
+      isSimulated: false,
+    });
+    
+    return res.json({
+      success: true,
+      transaction,
+      user: updatedUser,
+      templateUsed: template.description,
+      originalAmount: baseAmount,
+      generatedAmount: randomAmount,
+    });
+  });
+
   app.put("/api/transactions/:transactionId", async (req, res) => {
     const { transactionId } = req.params;
     const { amount, description } = req.body;
