@@ -162,25 +162,38 @@ export default function AltroScreen() {
     },
   });
 
-  // Trigger preset transaction mutation
+  // Trigger preset transaction mutation - deducts from Saldo Certificato
   const triggerPresetMutation = useMutation({
     mutationFn: async (presetId: number) => {
-      const response = await apiRequest("POST", `/api/users/${userId}/custom-presets/${presetId}/trigger`);
-      return response.json();
+      const timestamp = Date.now();
+      const response = await apiRequest("POST", `/api/users/${userId}/custom-presets/${presetId}/trigger?_t=${timestamp}`);
+      const result = await response.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      return result;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/transactions/${userId}`] });
-      refreshUser();
+    onSuccess: async (data) => {
+      // Force invalidate all caches to ensure iOS shows fresh data
+      await queryClient.invalidateQueries({ queryKey: [`/api/transactions/${userId}`] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+      await queryClient.refetchQueries({ queryKey: [`/api/transactions/${userId}`] });
+      
+      // Force refresh user data from server
+      await refreshUser();
+      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (data.transaction) {
         const amount = Math.abs(parseFloat(data.transaction.amount));
+        const newBalance = data.user?.realPurchasedBalance || "0";
         Alert.alert(
-          "Transazione creata",
-          `${data.transaction.description}: -${amount.toFixed(0)} EUR`
+          "Spesa dal Saldo Certificato",
+          `${data.transaction.description}: -${amount.toFixed(0)} EUR\nNuovo saldo: ${parseFloat(newBalance).toFixed(0)} EUR`
         );
       }
     },
     onError: (error: any) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("Errore", error.message || "Impossibile eseguire la transazione");
     },
   });
@@ -1412,11 +1425,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: BankColors.gray50,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
     marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: BankColors.gray200,
+    minHeight: 72,
   },
   presetItemDisabled: {
     opacity: 0.6,
@@ -1476,8 +1490,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   presetDesc: {
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: "600",
     color: BankColors.gray900,
     marginBottom: 4,
   },

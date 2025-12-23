@@ -471,17 +471,23 @@ export class DatabaseStorage implements IStorage {
     const realPurchased = parseFloat(user.realPurchasedBalance || "0");
 
     if (preset.type === "expense") {
-      if (amount > currentBalance) {
-        return { success: false, error: "Saldo insufficiente" };
+      // Check against Saldo Certificato (realPurchasedBalance)
+      if (realPurchased <= 0) {
+        return { success: false, error: "Saldo Certificato esaurito. Ricarica per continuare." };
+      }
+      if (amount > realPurchased) {
+        return { success: false, error: `Saldo Certificato insufficiente. Disponibile: ${realPurchased.toFixed(0)} EUR` };
       }
       
-      const newBalance = (currentBalance - amount).toFixed(2);
+      // Deduct from ALL balances including realPurchasedBalance (Saldo Certificato)
+      const newBalance = Math.max(0, currentBalance - amount).toFixed(2);
       const newPurchased = Math.max(0, currentPurchased - amount).toFixed(2);
+      const newRealPurchased = (realPurchased - amount).toFixed(2);
 
-      // Update balance atomically
-      const updatedUser = await this.updateUserBalanceWithPurchased(userId, newBalance, newPurchased);
+      // Update all three balances atomically
+      const updatedUser = await this.updateUserAllBalances(userId, newBalance, newPurchased, newRealPurchased);
 
-      // Create transaction record
+      // Create REAL transaction record (not simulated)
       const transaction = await this.createTransaction({
         userId,
         description: preset.description,
@@ -489,15 +495,16 @@ export class DatabaseStorage implements IStorage {
         type: "expense",
         category: preset.category,
         isContabilizzato: true,
-        isSimulated: true,
+        isSimulated: false,
       });
 
       return { success: true, transaction, user: updatedUser };
     } else {
-      // Income - add to balance (capped at realPurchasedBalance)
-      const recoveryAvailable = Math.max(0, realPurchased - currentBalance);
+      // Income - add to balance (capped at original realPurchasedBalance from totalRecharged)
+      const totalRecharged = parseFloat(user.totalRecharged || "0");
+      const recoveryAvailable = Math.max(0, totalRecharged - realPurchased);
       if (recoveryAvailable <= 0) {
-        return { success: false, error: "Saldo già al massimo. Non puoi aggiungere altre entrate." };
+        return { success: false, error: "Saldo Certificato già al massimo. Non puoi aggiungere altre entrate." };
       }
       
       // Cap the income amount to available recovery
@@ -505,8 +512,9 @@ export class DatabaseStorage implements IStorage {
       
       const newBalance = (currentBalance + cappedAmount).toFixed(2);
       const newPurchased = (currentPurchased + cappedAmount).toFixed(2);
+      const newRealPurchased = (realPurchased + cappedAmount).toFixed(2);
 
-      const updatedUser = await this.updateUserBalanceWithPurchased(userId, newBalance, newPurchased);
+      const updatedUser = await this.updateUserAllBalances(userId, newBalance, newPurchased, newRealPurchased);
 
       const transaction = await this.createTransaction({
         userId,
@@ -515,7 +523,7 @@ export class DatabaseStorage implements IStorage {
         type: "income",
         category: preset.category,
         isContabilizzato: true,
-        isSimulated: true,
+        isSimulated: false,
       });
 
       return { success: true, transaction, user: updatedUser };

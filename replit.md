@@ -96,11 +96,20 @@ Schema validation uses Drizzle-Zod for type-safe inserts.
 - **Atomic transaction records**: Both sender and receiver get transaction records for audit trail
 
 ### Balance Modification Rules
-- Balance can ONLY be changed by:
-  1. Admin top-ups (future feature)
+- **Saldo Certificato (realPurchasedBalance)** can ONLY be changed by:
+  1. Admin top-ups via admin panel
   2. P2P transfers between users
-  3. Auto-generated transactions (for demo purposes)
+  3. Custom preset transactions (user-created presets)
+- Auto-generated transactions only affect display balance, NOT Saldo Certificato
 - Editing existing transactions only changes the transaction record, NOT the user's balance
+
+### Custom Preset System
+- Users can create custom expense/income presets in AltroScreen
+- Presets are stored in PostgreSQL database (`user_custom_presets` table)
+- When triggered, presets DEDUCT from `realPurchasedBalance` (Saldo Certificato)
+- Transactions created by presets are marked as `isSimulated: false` (real transactions)
+- System validates sufficient certified balance before allowing expense
+- iOS cache-busting via timestamps ensures fresh data display
 
 ## Admin Panel Features (v2.0)
 The admin panel at `/admin` now includes:
