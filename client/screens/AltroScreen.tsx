@@ -385,9 +385,12 @@ export default function AltroScreen() {
       await queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
       await refreshUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const newBalance = parseFloat(data.user?.balance || "0");
+      const certified = parseFloat(data.user?.realPurchasedBalance || "0");
+      const margin = Math.max(0, certified - newBalance);
       Alert.alert(
         "Uscita Registrata",
-        `${data.transaction?.description}: -${Math.abs(parseFloat(data.transaction?.amount || "0")).toFixed(0)} EUR\nNuovo Saldo Certificato: ${parseFloat(data.user?.realPurchasedBalance || "0").toFixed(0)} EUR`
+        `${data.transaction?.description}: -${Math.abs(parseFloat(data.transaction?.amount || "0")).toFixed(0)} EUR\nMargine di recupero: ${margin.toFixed(0)} EUR`
       );
     },
     onError: (error: Error) => {
@@ -726,7 +729,7 @@ export default function AltroScreen() {
               ) : consoleTab === "expense" ? (
                 <View style={styles.consoleForm}>
                   <Text style={styles.expenseFormHint}>
-                    Registra un'uscita reale che scala dal Saldo Certificato.
+                    Registra un'uscita per creare margine di recupero. L'uscita scala solo dal saldo visualizzato, non dal Saldo Certificato.
                   </Text>
                   
                   <Text style={styles.formLabel}>Descrizione Uscita</Text>
@@ -738,18 +741,18 @@ export default function AltroScreen() {
                     placeholderTextColor={BankColors.gray400}
                   />
 
-                  <Text style={styles.formLabel}>Importo (EUR) - Disponibile: {(() => {
-                    const certified = parseFloat(user?.realPurchasedBalance || "0");
-                    return certified.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                  <Text style={styles.formLabel}>Importo (EUR) - Saldo attuale: {(() => {
+                    const balance = parseFloat(user?.balance || "0");
+                    return Math.floor(balance).toLocaleString('it-IT');
                   })()}</Text>
                   <TextInput
                     style={styles.formInput}
                     value={expenseAmount}
                     onChangeText={(text) => {
-                      const certified = parseFloat(user?.realPurchasedBalance || "0");
+                      const balance = parseFloat(user?.balance || "0");
                       const numValue = parseInt(text.replace(/[^0-9]/g, ''), 10);
-                      if (!isNaN(numValue) && numValue > certified) {
-                        setExpenseAmount(Math.floor(certified).toString());
+                      if (!isNaN(numValue) && numValue > balance) {
+                        setExpenseAmount(Math.floor(balance).toString());
                       } else {
                         setExpenseAmount(text.replace(/[^0-9]/g, ''));
                       }
@@ -776,22 +779,22 @@ export default function AltroScreen() {
 
                   <Pressable 
                     style={[styles.submitBtnExpense, createExpenseMutation.isPending && styles.submitBtnDisabled, (() => {
-                      const certified = parseFloat(user?.realPurchasedBalance || "0");
-                      return certified <= 0 ? styles.submitBtnDisabled : {};
+                      const balance = parseFloat(user?.balance || "0");
+                      return balance <= 0 ? styles.submitBtnDisabled : {};
                     })()]}
                     onPress={handleAddExpense}
-                    disabled={createExpenseMutation.isPending || parseFloat(user?.realPurchasedBalance || "0") <= 0}
+                    disabled={createExpenseMutation.isPending || parseFloat(user?.balance || "0") <= 0}
                   >
                     {createExpenseMutation.isPending ? (
                       <ActivityIndicator color={BankColors.white} />
                     ) : (
-                      <Text style={styles.submitBtnText}>Certifica Uscita</Text>
+                      <Text style={styles.submitBtnText}>Registra Uscita</Text>
                     )}
                   </Pressable>
                   
-                  {parseFloat(user?.realPurchasedBalance || "0") <= 0 ? (
+                  {parseFloat(user?.balance || "0") <= 0 ? (
                     <Text style={styles.noBalanceHint}>
-                      Saldo Certificato esaurito. Ricarica per registrare nuove uscite.
+                      Saldo esaurito. Usa Entrata per recuperare il margine disponibile.
                     </Text>
                   ) : null}
                 </View>

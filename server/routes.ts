@@ -529,7 +529,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Certified expense - deducts from realPurchasedBalance (Saldo Certificato)
+  // Console expense - deducts from display balance only, creates recovery margin
+  // realPurchasedBalance stays the same, allowing recovery via Entrata
   app.post("/api/transactions/certified-expense", async (req, res) => {
     const { userId, description, amount, category } = req.body;
     
@@ -551,39 +552,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const purchasedBalance = parseFloat(user.purchasedBalance || "0");
     const realPurchased = parseFloat(user.realPurchasedBalance || "0");
     
-    if (realPurchased <= 0) {
-      return res.status(400).json({ error: "Saldo Certificato esaurito. Ricarica per continuare." });
+    // Check if user has enough display balance
+    if (currentBalance <= 0) {
+      return res.status(400).json({ error: "Saldo insufficiente per registrare l'uscita." });
     }
     
-    if (expenseAmount > realPurchased) {
-      return res.status(400).json({ 
-        error: `Saldo Certificato insufficiente. Disponibile: ${Math.floor(realPurchased)} EUR` 
-      });
-    }
+    // Cap expense to current display balance
+    const actualExpense = Math.min(expenseAmount, Math.floor(currentBalance));
     
-    // Deduct from all balances
-    const newBalance = Math.max(0, currentBalance - expenseAmount).toFixed(2);
-    const newPurchased = Math.max(0, purchasedBalance - expenseAmount).toFixed(2);
-    const newRealPurchased = (realPurchased - expenseAmount).toFixed(2);
+    // Deduct from display balance ONLY - this creates recovery margin
+    // realPurchasedBalance stays the same!
+    const newBalance = Math.max(0, currentBalance - actualExpense).toFixed(2);
+    const newPurchased = Math.max(0, purchasedBalance - actualExpense).toFixed(2);
     
-    // Update all three balances atomically
-    const updatedUser = await storage.updateUserAllBalances(userId, newBalance, newPurchased, newRealPurchased);
+    // Update only balance and purchasedBalance, keep realPurchasedBalance unchanged
+    await storage.updateUserBalanceWithPurchased(userId, newBalance, newPurchased);
     
-    // Create REAL transaction (not simulated)
+    // Get updated user
+    const updatedUser = await storage.getUser(userId);
+    
+    // Create transaction (template for Help button)
     const transaction = await storage.createTransaction({
       userId,
       description,
-      amount: (-expenseAmount).toString(),
+      amount: (-actualExpense).toString(),
       type: "expense",
       category: category || "Altre uscite",
       isContabilizzato: true,
       isSimulated: false,
     });
     
+    // Calculate new recovery margin
+    const newRecoveryMargin = Math.max(0, realPurchased - parseFloat(newBalance));
+    
     return res.json({
       success: true,
       transaction,
       user: updatedUser,
+      recoveryMargin: newRecoveryMargin,
     });
   });
 
