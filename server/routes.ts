@@ -855,14 +855,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json(sanitizedUsers);
   });
 
-  // Search user by username (for transfers)
+  // List all users for transfer (excluding blocked users)
+  app.get("/api/users/list", async (req, res) => {
+    const { exclude } = req.query;
+    const allUsers = await storage.getAllUsers();
+    
+    // Filter out blocked users and optionally exclude the requesting user
+    const filteredUsers = allUsers
+      .filter(u => !u.isBlocked)
+      .filter(u => exclude ? u.id !== exclude : true)
+      .map(u => ({
+        id: u.id,
+        username: u.username,
+        fullName: u.fullName,
+        displayName: u.displayName,
+        accountNumber: u.accountNumber,
+      }));
+    
+    return res.json(filteredUsers);
+  });
+
+  // Search user by username (for transfers) - supports partial matching
   app.get("/api/users/search/:username", async (req, res) => {
     const { username } = req.params;
+    const { partial } = req.query;
     
     if (!username || username.trim().length === 0) {
       return res.status(400).json({ error: "Username richiesto" });
     }
     
+    // If partial=true, search for partial matches
+    if (partial === "true") {
+      const users = await storage.searchUsersByPartialUsername(username.trim());
+      const filtered = users
+        .filter(u => !u.isBlocked)
+        .map(u => ({
+          id: u.id,
+          username: u.username,
+          fullName: u.fullName,
+          displayName: u.displayName,
+          accountNumber: u.accountNumber,
+        }));
+      return res.json(filtered);
+    }
+    
+    // Exact match
     const user = await storage.getUserByUsername(username.trim());
     
     if (!user) {

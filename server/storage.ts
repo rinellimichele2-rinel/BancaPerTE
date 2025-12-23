@@ -72,6 +72,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async searchUsersByPartialUsername(partialUsername: string): Promise<User[]> {
+    const result = await db.select().from(users).where(ilike(users.username, `%${partialUsername}%`));
+    return result;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await db.insert(users).values(insertUser).returning();
     return result[0];

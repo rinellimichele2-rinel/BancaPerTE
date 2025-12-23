@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,10 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigation } from "@react-navigation/native";
 import { Icon } from "@/components/Icon";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
@@ -21,8 +22,9 @@ interface UserInfo {
   id: string;
   username: string;
   fullName: string | null;
+  displayName?: string | null;
   accountNumber: string | null;
-  balance: string | null;
+  balance?: string | null;
 }
 
 export default function TransferScreen() {
@@ -37,10 +39,25 @@ export default function TransferScreen() {
   const [isTransferring, setIsTransferring] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<UserInfo[]>([]);
+  
+  // Fetch all users for listing
+  const { data: allUsers = [], isLoading: isLoadingUsers } = useQuery<UserInfo[]>({
+    queryKey: ["/api/users/list", user?.id],
+    queryFn: async () => {
+      const response = await fetch(
+        new URL(`/api/users/list?exclude=${user?.id}`, getApiUrl()).toString()
+      );
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!user?.id,
+  });
 
   const handleSearch = async () => {
     if (!searchUsername.trim()) {
-      setSearchError("Inserisci uno username da cercare");
+      setSearchResults([]);
+      setSearchError(null);
       return;
     }
 
@@ -54,18 +71,25 @@ export default function TransferScreen() {
     setIsSearching(true);
     setSearchError(null);
     setSelectedUser(null);
+    setSearchResults([]);
 
     try {
+      // Use partial matching to find users
       const response = await fetch(
-        new URL(`/api/users/search/${encodeURIComponent(usernameToSearch)}`, getApiUrl()).toString()
+        new URL(`/api/users/search/${encodeURIComponent(usernameToSearch)}?partial=true`, getApiUrl()).toString()
       );
       
       if (response.ok) {
-        const foundUser = await response.json();
-        setSelectedUser(foundUser);
-        setSearchError(null);
-      } else if (response.status === 404) {
-        setSearchError("Utente non trovato. Verifica lo username e riprova.");
+        const results = await response.json();
+        // Filter out current user
+        const filtered = results.filter((u: UserInfo) => u.id !== user?.id);
+        if (filtered.length === 0) {
+          setSearchError("Nessun utente trovato con questo username");
+        } else if (filtered.length === 1) {
+          setSelectedUser(filtered[0]);
+        } else {
+          setSearchResults(filtered);
+        }
       } else {
         setSearchError("Errore durante la ricerca");
       }
@@ -79,8 +103,15 @@ export default function TransferScreen() {
   const clearSearch = () => {
     setSearchUsername("");
     setSelectedUser(null);
+    setSearchResults([]);
     setSearchError(null);
     setAmount("");
+  };
+  
+  const selectUser = (u: UserInfo) => {
+    setSelectedUser(u);
+    setSearchResults([]);
+    setSearchError(null);
   };
 
   const handleTransfer = async () => {
@@ -221,9 +252,12 @@ export default function TransferScreen() {
           <View style={styles.usersList}>
             <View style={styles.foundUserLabel}>
               <Icon name="check-circle" size={16} color={BankColors.primary} />
-              <Text style={styles.foundUserText}>Utente trovato</Text>
+              <Text style={styles.foundUserText}>Destinatario selezionato</Text>
             </View>
-            <View style={[styles.userCard, styles.userCardSelected]}>
+            <Pressable 
+              style={[styles.userCard, styles.userCardSelected]}
+              onPress={clearSearch}
+            >
               <View style={styles.userAvatar}>
                 <Text style={styles.userAvatarText}>
                   {selectedUser.username.charAt(0).toUpperCase()}
@@ -232,18 +266,72 @@ export default function TransferScreen() {
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>@{selectedUser.username}</Text>
                 <Text style={styles.userAccount}>
-                  {selectedUser.accountNumber || "ID non disponibile"}
+                  {selectedUser.displayName || selectedUser.fullName || selectedUser.accountNumber || "Tocca per cambiare"}
                 </Text>
               </View>
               <Icon name="check-circle" size={24} color={BankColors.primary} />
-            </View>
+            </Pressable>
           </View>
-        ) : !searchError && !isSearching ? (
-          <View style={styles.hintContainer}>
-            <Icon name="info" size={20} color={BankColors.gray400} />
-            <Text style={styles.hintText}>
-              Inserisci lo username esatto del destinatario per inviare denaro
-            </Text>
+        ) : searchResults.length > 0 ? (
+          <View style={styles.usersList}>
+            <View style={styles.foundUserLabel}>
+              <Icon name="users" size={16} color={BankColors.primary} />
+              <Text style={styles.foundUserText}>{searchResults.length} utenti trovati</Text>
+            </View>
+            {searchResults.map((u) => (
+              <Pressable 
+                key={u.id}
+                style={styles.userCard}
+                onPress={() => selectUser(u)}
+              >
+                <View style={styles.userAvatar}>
+                  <Text style={styles.userAvatarText}>
+                    {u.username.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>@{u.username}</Text>
+                  <Text style={styles.userAccount}>
+                    {u.displayName || u.fullName || u.accountNumber || ""}
+                  </Text>
+                </View>
+                <Icon name="chevron-right" size={20} color={BankColors.gray400} />
+              </Pressable>
+            ))}
+          </View>
+        ) : !searchError && !isSearching && !searchUsername ? (
+          <View style={styles.usersList}>
+            <View style={styles.foundUserLabel}>
+              <Icon name="users" size={16} color={BankColors.gray500} />
+              <Text style={[styles.foundUserText, { color: BankColors.gray600 }]}>
+                {isLoadingUsers ? "Caricamento..." : `${allUsers.length} utenti disponibili`}
+              </Text>
+            </View>
+            {allUsers.slice(0, 10).map((u) => (
+              <Pressable 
+                key={u.id}
+                style={styles.userCard}
+                onPress={() => selectUser(u)}
+              >
+                <View style={styles.userAvatar}>
+                  <Text style={styles.userAvatarText}>
+                    {u.username.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>@{u.username}</Text>
+                  <Text style={styles.userAccount}>
+                    {u.displayName || u.fullName || u.accountNumber || ""}
+                  </Text>
+                </View>
+                <Icon name="chevron-right" size={20} color={BankColors.gray400} />
+              </Pressable>
+            ))}
+            {allUsers.length > 10 ? (
+              <Text style={styles.moreUsersHint}>
+                Usa la ricerca per trovare altri utenti...
+              </Text>
+            ) : null}
           </View>
         ) : null}
 
@@ -494,5 +582,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: BankColors.white,
+  },
+  moreUsersHint: {
+    fontSize: 13,
+    color: BankColors.gray400,
+    textAlign: "center",
+    marginTop: Spacing.sm,
+    fontStyle: "italic",
   },
 });
