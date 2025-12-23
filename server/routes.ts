@@ -597,9 +597,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Get all manual expense transactions (isSimulated=false, type="expense")
-    const transactions = await storage.getTransactionsByUserId(userId);
+    const transactions = await storage.getTransactions(userId);
     const manualExpenses = transactions.filter(
-      t => t.type === "expense" && t.isSimulated === false
+      (t: { type: string; isSimulated: boolean }) => t.type === "expense" && t.isSimulated === false
     );
     
     // Extract unique descriptions with their categories
@@ -637,9 +637,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Get manual expense transactions as templates
-    const transactions = await storage.getTransactionsByUserId(userId);
+    const transactions = await storage.getTransactions(userId);
     const manualExpenses = transactions.filter(
-      t => t.type === "expense" && t.isSimulated === false
+      (t: { type: string; isSimulated: boolean }) => t.type === "expense" && t.isSimulated === false
     );
     
     if (manualExpenses.length === 0) {

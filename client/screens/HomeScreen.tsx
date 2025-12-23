@@ -112,22 +112,42 @@ export default function HomeScreen() {
     enabled: !!userId,
   });
 
-  const generateTransactionsMutation = useMutation({
+  const generateFromTemplateMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/transactions/${userId}/generate-random`);
-      return response.json();
+      const baseUrl = process.env.EXPO_PUBLIC_DOMAIN;
+      const url = `https://${baseUrl}/api/transactions/generate-from-template`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Errore nella generazione");
+      }
+      return data;
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
       await refreshUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (data.templateUsed && data.generatedAmount) {
+        Alert.alert(
+          "Uscita Generata",
+          `${data.templateUsed}: -${data.generatedAmount} EUR`
+        );
+      }
+    },
+    onError: (error: Error) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Attenzione", error.message);
     },
   });
 
   const handleHelpPress = () => {
     if (!userId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    generateTransactionsMutation.mutate();
+    generateFromTemplateMutation.mutate();
   };
 
   const handleRefresh = useCallback(async () => {
@@ -293,7 +313,7 @@ export default function HomeScreen() {
                 <Text style={styles.headerActionText}>Cerca</Text>
               </Pressable>
               <Pressable style={styles.headerAction} onPress={handleHelpPress}>
-                {generateTransactionsMutation.isPending ? (
+                {generateFromTemplateMutation.isPending ? (
                   <ActivityIndicator size="small" color={BankColors.white} />
                 ) : (
                   <Icon name="help-circle" size={22} color={BankColors.white} />
