@@ -41,28 +41,35 @@ export default function TransferScreen() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<UserInfo[]>([]);
   
-  // Fetch all users for listing
-  const { data: allUsers = [], isLoading: isLoadingUsers } = useQuery<UserInfo[]>({
+  // Fetch all users for listing - with cache busting for fresh data
+  const { data: allUsers = [], isLoading: isLoadingUsers, refetch: refetchUsers } = useQuery<UserInfo[]>({
     queryKey: ["/api/users/list", user?.id],
     queryFn: async () => {
+      const timestamp = Date.now();
       const response = await fetch(
-        new URL(`/api/users/list?exclude=${user?.id}`, getApiUrl()).toString()
+        new URL(`/api/users/list?exclude=${user?.id}&_t=${timestamp}`, getApiUrl()).toString()
       );
       if (!response.ok) return [];
-      return response.json();
+      const data = await response.json();
+      console.log("[TransferScreen] Users fetched from API:", JSON.stringify(data));
+      return data;
     },
     enabled: !!user?.id,
+    staleTime: 0,
+    gcTime: 0,
   });
   
-  // Filter users in real-time as user types
+  // Filter users in real-time as user types - search by exact username string
   const filteredUsers = React.useMemo(() => {
+    console.log("[TransferScreen] allUsers:", JSON.stringify(allUsers.map(u => u.username)));
     if (!searchUsername.trim()) return allUsers;
     const search = searchUsername.trim().toLowerCase().replace(/^@/, "");
-    return allUsers.filter(u => 
-      u.username.toLowerCase().includes(search) ||
-      (u.fullName && u.fullName.toLowerCase().includes(search)) ||
-      (u.displayName && u.displayName.toLowerCase().includes(search))
-    );
+    return allUsers.filter(u => {
+      const usernameMatch = u.username.toLowerCase().includes(search);
+      const fullNameMatch = u.fullName && u.fullName.toLowerCase().includes(search);
+      const displayNameMatch = u.displayName && u.displayName.toLowerCase().includes(search);
+      return usernameMatch || fullNameMatch || displayNameMatch;
+    });
   }, [searchUsername, allUsers]);
 
   const handleSearch = async () => {
@@ -214,7 +221,16 @@ export default function TransferScreen() {
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
-        <Text style={styles.sectionTitle}>Cerca destinatario</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Cerca destinatario</Text>
+          <Pressable 
+            style={styles.refreshButton}
+            onPress={() => refetchUsers()}
+          >
+            <Icon name="refresh-cw" size={16} color={BankColors.primary} />
+            <Text style={styles.refreshButtonText}>Aggiorna</Text>
+          </Pressable>
+        </View>
         
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
@@ -326,7 +342,7 @@ export default function TransferScreen() {
 
         {selectedUser ? (
           <View style={styles.transferForm}>
-            <Text style={styles.sectionTitle}>Importo da trasferire</Text>
+            <Text style={[styles.sectionTitle, { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.sm }]}>Importo da trasferire</Text>
             <View style={styles.amountInputContainer}>
               <Text style={styles.currencySymbol}>EUR</Text>
               <TextInput
@@ -407,13 +423,30 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.sm,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: BankColors.gray700,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.sm,
+  },
+  refreshButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  refreshButtonText: {
+    fontSize: 13,
+    color: BankColors.primary,
+    fontWeight: "500",
   },
   searchContainer: {
     flexDirection: "row",
