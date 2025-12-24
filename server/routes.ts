@@ -861,12 +861,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const allUsers = await storage.getAllUsers();
     
     // Filter out blocked users and optionally exclude the requesting user
+    // Use rechargeUsername for display (has the _XXX suffix) for consistency with admin panel
     const filteredUsers = allUsers
       .filter(u => !u.isBlocked)
       .filter(u => exclude ? u.id !== exclude : true)
       .map(u => ({
         id: u.id,
-        username: u.username,
+        username: u.rechargeUsername || u.username,
         fullName: u.fullName,
         displayName: u.displayName,
         accountNumber: u.accountNumber,
@@ -891,7 +892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .filter(u => !u.isBlocked)
         .map(u => ({
           id: u.id,
-          username: u.username,
+          username: u.rechargeUsername || u.username,
           fullName: u.fullName,
           displayName: u.displayName,
           accountNumber: u.accountNumber,
