@@ -53,6 +53,17 @@ export default function TransferScreen() {
     },
     enabled: !!user?.id,
   });
+  
+  // Filter users in real-time as user types
+  const filteredUsers = React.useMemo(() => {
+    if (!searchUsername.trim()) return allUsers;
+    const search = searchUsername.trim().toLowerCase().replace(/^@/, "");
+    return allUsers.filter(u => 
+      u.username.toLowerCase().includes(search) ||
+      (u.fullName && u.fullName.toLowerCase().includes(search)) ||
+      (u.displayName && u.displayName.toLowerCase().includes(search))
+    );
+  }, [searchUsername, allUsers]);
 
   const handleSearch = async () => {
     if (!searchUsername.trim()) {
@@ -272,68 +283,46 @@ export default function TransferScreen() {
               <Icon name="check-circle" size={24} color={BankColors.primary} />
             </Pressable>
           </View>
-        ) : searchResults.length > 0 ? (
+        ) : (
           <View style={styles.usersList}>
             <View style={styles.foundUserLabel}>
-              <Icon name="users" size={16} color={BankColors.primary} />
-              <Text style={styles.foundUserText}>{searchResults.length} utenti trovati</Text>
-            </View>
-            {searchResults.map((u) => (
-              <Pressable 
-                key={u.id}
-                style={styles.userCard}
-                onPress={() => selectUser(u)}
-              >
-                <View style={styles.userAvatar}>
-                  <Text style={styles.userAvatarText}>
-                    {u.username.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>@{u.username}</Text>
-                  <Text style={styles.userAccount}>
-                    {u.displayName || u.fullName || u.accountNumber || ""}
-                  </Text>
-                </View>
-                <Icon name="chevron-right" size={20} color={BankColors.gray400} />
-              </Pressable>
-            ))}
-          </View>
-        ) : !searchError && !isSearching && !searchUsername ? (
-          <View style={styles.usersList}>
-            <View style={styles.foundUserLabel}>
-              <Icon name="users" size={16} color={BankColors.gray500} />
-              <Text style={[styles.foundUserText, { color: BankColors.gray600 }]}>
-                {isLoadingUsers ? "Caricamento..." : `${allUsers.length} utenti disponibili`}
+              <Icon name="users" size={16} color={searchUsername ? BankColors.primary : BankColors.gray500} />
+              <Text style={[styles.foundUserText, { color: searchUsername ? BankColors.primary : BankColors.gray600 }]}>
+                {isLoadingUsers ? "Caricamento..." : 
+                  searchUsername ? `${filteredUsers.length} risultati` : 
+                  `${allUsers.length} utenti disponibili`}
               </Text>
             </View>
-            {allUsers.slice(0, 10).map((u) => (
-              <Pressable 
-                key={u.id}
-                style={styles.userCard}
-                onPress={() => selectUser(u)}
-              >
-                <View style={styles.userAvatar}>
-                  <Text style={styles.userAvatarText}>
-                    {u.username.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>@{u.username}</Text>
-                  <Text style={styles.userAccount}>
-                    {u.displayName || u.fullName || u.accountNumber || ""}
-                  </Text>
-                </View>
-                <Icon name="chevron-right" size={20} color={BankColors.gray400} />
-              </Pressable>
-            ))}
-            {allUsers.length > 10 ? (
-              <Text style={styles.moreUsersHint}>
-                Usa la ricerca per trovare altri utenti...
-              </Text>
-            ) : null}
+            {filteredUsers.length === 0 && searchUsername ? (
+              <View style={styles.noResultsContainer}>
+                <Icon name="user-x" size={32} color={BankColors.gray400} />
+                <Text style={styles.noResultsText}>Nessun utente trovato</Text>
+                <Text style={styles.noResultsHint}>Prova con un altro username</Text>
+              </View>
+            ) : (
+              filteredUsers.map((u) => (
+                <Pressable 
+                  key={u.id}
+                  style={styles.userCard}
+                  onPress={() => selectUser(u)}
+                >
+                  <View style={styles.userAvatar}>
+                    <Text style={styles.userAvatarText}>
+                      {u.username.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>@{u.username}</Text>
+                    <Text style={styles.userAccount}>
+                      {u.displayName || u.fullName || u.accountNumber || ""}
+                    </Text>
+                  </View>
+                  <Icon name="chevron-right" size={20} color={BankColors.gray400} />
+                </Pressable>
+              ))
+            )}
           </View>
-        ) : null}
+        )}
 
         {selectedUser ? (
           <View style={styles.transferForm}>
@@ -589,5 +578,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: Spacing.sm,
     fontStyle: "italic",
+  },
+  noResultsContainer: {
+    alignItems: "center",
+    paddingVertical: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  noResultsText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: BankColors.gray600,
+  },
+  noResultsHint: {
+    fontSize: 14,
+    color: BankColors.gray400,
   },
 });
