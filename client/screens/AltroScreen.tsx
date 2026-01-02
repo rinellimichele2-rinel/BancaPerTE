@@ -401,14 +401,14 @@ export default function AltroScreen() {
 
   const handleAddTransaction = async () => {
     if (!txDescription.trim() || !txAmount.trim()) return;
-    const amount = Math.floor(parseFloat(txAmount.replace(",", ".")));
+    const amount = parseFloat(txAmount.replace(",", "."));
     if (isNaN(amount) || amount <= 0) return;
     
     // Manual form is always income (certification of entries)
     try {
       await createTransactionMutation.mutateAsync({
         description: txDescription.trim(),
-        amount: amount.toFixed(0) + ".00",
+        amount: amount.toFixed(2),
         type: "income",
         category: txCategory,
       });
@@ -428,7 +428,7 @@ export default function AltroScreen() {
       Alert.alert("Errore", "Inserisci un importo");
       return;
     }
-    const amount = Math.floor(parseFloat(expenseAmount.replace(",", ".")));
+    const amount = parseFloat(expenseAmount.replace(",", "."));
     if (isNaN(amount) || amount <= 0) {
       Alert.alert("Errore", "Inserisci un importo valido");
       return;
@@ -656,8 +656,8 @@ export default function AltroScreen() {
                   <Text style={styles.formLabel}>Importo (EUR) - Max: {(() => {
                     const currentBalance = parseFloat(user?.balance || "0");
                     const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
-                    const recovery = Math.max(0, Math.floor(certifiedBalance - currentBalance));
-                    return recovery.toLocaleString('it-IT');
+                    const recovery = Math.max(0, certifiedBalance - currentBalance);
+                    return recovery.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                   })()}</Text>
                   <TextInput
                     style={styles.formInput}
@@ -665,16 +665,17 @@ export default function AltroScreen() {
                     onChangeText={(text) => {
                       const currentBalance = parseFloat(user?.balance || "0");
                       const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
-                      const maxRecovery = Math.max(0, Math.floor(certifiedBalance - currentBalance));
-                      const numValue = parseInt(text.replace(/[^0-9]/g, ''), 10);
+                      const maxRecovery = Math.max(0, certifiedBalance - currentBalance);
+                      const cleanedText = text.replace(/[^0-9,\.]/g, '').replace(',', '.');
+                      const numValue = parseFloat(cleanedText);
                       if (!isNaN(numValue) && numValue > maxRecovery) {
-                        setTxAmount(maxRecovery.toString());
+                        setTxAmount(maxRecovery.toFixed(2).replace('.', ','));
                       } else {
-                        setTxAmount(text.replace(/[^0-9]/g, ''));
+                        setTxAmount(text.replace(/[^0-9,\.]/g, ''));
                       }
                     }}
-                    placeholder="Es: 100"
-                    keyboardType="numeric"
+                    placeholder="Es: 100,50"
+                    keyboardType="decimal-pad"
                     placeholderTextColor={BankColors.gray400}
                   />
 
@@ -743,22 +744,23 @@ export default function AltroScreen() {
 
                   <Text style={styles.formLabel}>Importo (EUR) - Saldo attuale: {(() => {
                     const balance = parseFloat(user?.balance || "0");
-                    return Math.floor(balance).toLocaleString('it-IT');
+                    return balance.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                   })()}</Text>
                   <TextInput
                     style={styles.formInput}
                     value={expenseAmount}
                     onChangeText={(text) => {
                       const balance = parseFloat(user?.balance || "0");
-                      const numValue = parseInt(text.replace(/[^0-9]/g, ''), 10);
+                      const cleanedText = text.replace(/[^0-9,\.]/g, '').replace(',', '.');
+                      const numValue = parseFloat(cleanedText);
                       if (!isNaN(numValue) && numValue > balance) {
-                        setExpenseAmount(Math.floor(balance).toString());
+                        setExpenseAmount(balance.toFixed(2).replace('.', ','));
                       } else {
-                        setExpenseAmount(text.replace(/[^0-9]/g, ''));
+                        setExpenseAmount(text.replace(/[^0-9,\.]/g, ''));
                       }
                     }}
-                    placeholder="Es: 50"
-                    keyboardType="numeric"
+                    placeholder="Es: 80,65"
+                    keyboardType="decimal-pad"
                     placeholderTextColor={BankColors.gray400}
                   />
 
