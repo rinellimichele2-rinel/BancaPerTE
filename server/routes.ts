@@ -93,13 +93,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register AI-curated news feed routes
   registerNewsRoutes(app);
 
-  // Server date endpoint for client synchronization
+  // Server date endpoint for client synchronization with Europe/Rome timezone
   app.get("/api/server-date", (req, res) => {
     const now = new Date();
+    // Format date in Europe/Rome timezone
+    const romeFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Rome',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    const parts = romeFormatter.formatToParts(now);
+    const romeDateStr = `${parts.find(p => p.type === 'year')?.value}-${parts.find(p => p.type === 'month')?.value}-${parts.find(p => p.type === 'day')?.value}T${parts.find(p => p.type === 'hour')?.value}:${parts.find(p => p.type === 'minute')?.value}:${parts.find(p => p.type === 'second')?.value}`;
+    
     return res.json({
       date: now.toISOString(),
+      romeDate: romeDateStr,
       timestamp: now.getTime(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      timezone: 'Europe/Rome',
+      currentMonth: parseInt(parts.find(p => p.type === 'month')?.value || '1'),
+      currentYear: parseInt(parts.find(p => p.type === 'year')?.value || '2026'),
+      currentDay: parseInt(parts.find(p => p.type === 'day')?.value || '1')
     });
   });
 

@@ -257,11 +257,27 @@ export default function HomeScreen() {
 
   const balanceFormatted = user?.balance ? formatBalance(user.balance) : { integer: "0", decimal: "00" };
 
-  const totalExpenses = transactions
+  // Get server date for Europe/Rome timezone (filter current month/year only)
+  const { data: serverDate } = useQuery<{ currentMonth: number; currentYear: number }>({
+    queryKey: ["/api/server-date"],
+  });
+  
+  const currentMonth = serverDate?.currentMonth || new Date().getMonth() + 1;
+  const currentYear = serverDate?.currentYear || new Date().getFullYear();
+
+  // Filter transactions for current month only - auto-resets at month start
+  const currentMonthTransactions = transactions.filter(t => {
+    const dateValue = t.date || t.createdAt;
+    if (!dateValue) return false;
+    const txDate = new Date(dateValue);
+    return txDate.getMonth() + 1 === currentMonth && txDate.getFullYear() === currentYear;
+  });
+
+  const totalExpenses = currentMonthTransactions
     .filter(t => t.type === "expense")
     .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
 
-  const totalIncome = transactions
+  const totalIncome = currentMonthTransactions
     .filter(t => t.type === "income")
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 

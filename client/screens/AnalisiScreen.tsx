@@ -16,7 +16,13 @@ import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { Transaction } from "@shared/schema";
 
 type TabType = "Uscite" | "Entrate";
-type PeriodType = "DIC" | "ULTIMI 12 MESI" | "TUTTO IL 2025" | "TUTTO IL 2026";
+type PeriodType = "MONTH" | "ULTIMI 12 MESI" | "TUTTO IL 2025" | "TUTTO IL 2026";
+
+// Italian month names
+const ITALIAN_MONTHS = [
+  "GEN", "FEB", "MAR", "APR", "MAG", "GIU",
+  "LUG", "AGO", "SET", "OTT", "NOV", "DIC"
+];
 
 const EXPENSE_CATEGORIES = [
   { id: "Casa", color: "#FF9800", icon: "home" },
@@ -188,26 +194,68 @@ function CategoryRow({
 export default function AnalisiScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { userId, user } = useAuth();
+  const { userId } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("Uscite");
-  const [activePeriod, setActivePeriod] = useState<PeriodType>("TUTTO IL 2026");
+  const [activePeriod, setActivePeriod] = useState<PeriodType>("MONTH");
+  
+  // Get server date for Europe/Rome timezone
+  const { data: serverDate } = useQuery<{ currentMonth: number; currentYear: number }>({
+    queryKey: ["/api/server-date"],
+  });
+  
+  // Month navigation state (0-indexed for easier date math)
+  // Initialize once from server date, then user controls navigation
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  
+  // Initialize month state only once when server date first loads
+  React.useEffect(() => {
+    if (serverDate && !hasInitialized) {
+      setSelectedMonth(serverDate.currentMonth - 1);
+      setSelectedYear(serverDate.currentYear);
+      setHasInitialized(true);
+    }
+  }, [serverDate, hasInitialized]);
 
   const { data: transactions = [] } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions", userId],
     enabled: !!userId,
   });
+  
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      if (selectedMonth === 0) {
+        setSelectedMonth(11);
+        setSelectedYear(selectedYear - 1);
+      } else {
+        setSelectedMonth(selectedMonth - 1);
+      }
+    } else {
+      if (selectedMonth === 11) {
+        setSelectedMonth(0);
+        setSelectedYear(selectedYear + 1);
+      } else {
+        setSelectedMonth(selectedMonth + 1);
+      }
+    }
+    setActivePeriod("MONTH");
+  };
+  
+  const getMonthLabel = () => {
+    return `${ITALIAN_MONTHS[selectedMonth]} ${selectedYear}`;
+  };
 
   const { categoryData, total, totalIncome, totalExpense } = useMemo(() => {
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
 
     let filteredTransactions = transactions.filter(t => {
       const dateValue = t.date || t.createdAt;
       if (!dateValue) return false;
       const date = new Date(dateValue);
-      if (activePeriod === "DIC") {
-        return date.getMonth() === 11 && date.getFullYear() === currentYear;
+      if (activePeriod === "MONTH") {
+        // Filter by selected month and year
+        return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
       } else if (activePeriod === "ULTIMI 12 MESI") {
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
@@ -217,7 +265,7 @@ export default function AnalisiScreen() {
       } else if (activePeriod === "TUTTO IL 2026") {
         return date.getFullYear() === 2026;
       }
-      return date.getFullYear() === currentYear;
+      return true;
     });
 
     const isExpenseTab = activeTab === "Uscite";
@@ -267,7 +315,7 @@ export default function AnalisiScreen() {
       totalIncome: incomeTotal,
       totalExpense: expenseTotal,
     };
-  }, [transactions, activeTab, activePeriod]);
+  }, [transactions, activeTab, activePeriod, selectedMonth, selectedYear]);
 
   const formatCurrency = (amount: number, isExpense: boolean) => {
     const formatted = amount.toFixed(2).replace(".", ",");
@@ -278,12 +326,8 @@ export default function AnalisiScreen() {
 
   const isExpense = activeTab === "Uscite";
 
-  const displayTotal = useMemo(() => {
-    const offset = isExpense 
-      ? (user?.customMonthlyExpenses ? parseFloat(user.customMonthlyExpenses) : 0)
-      : (user?.customMonthlyIncome ? parseFloat(user.customMonthlyIncome) : 0);
-    return total + offset;
-  }, [isExpense, user?.customMonthlyExpenses, user?.customMonthlyIncome, total]);
+  // Analisi uses ONLY transaction data - no aesthetic offsets from Home
+  // This ensures data comes strictly from Transaction Console and Random generations
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -305,7 +349,7 @@ export default function AnalisiScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.accountHeader}>
-          <Text style={styles.accountLabel}>CONTO {user?.accountNumber || "00000000"}</Text>
+          <Text style={styles.accountLabel}>ANALISI TRANSAZIONI</Text>
         </View>
 
         <View style={styles.tabContainer}>
@@ -329,7 +373,7 @@ export default function AnalisiScreen() {
 
         <DonutChart
           data={categoryData}
-          total={displayTotal}
+          total={total}
           label={isExpense ? "Uscite" : "Entrate"}
           isExpense={isExpense}
         />
@@ -339,23 +383,50 @@ export default function AnalisiScreen() {
         </Pressable>
 
         <View style={styles.periodContainer}>
-          <Pressable style={styles.periodArrow}>
+          <Pressable style={styles.periodArrow} onPress={() => navigateMonth('prev')}>
             <Icon name="chevron-left" size={24} color={BankColors.gray600} />
           </Pressable>
-          {(["DIC", "ULTIMI 12 MESI", "TUTTO IL 2025", "TUTTO IL 2026"] as PeriodType[]).map((period) => (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.periodScrollContent}
+          >
             <Pressable
-              key={period}
-              style={[styles.periodButton, activePeriod === period && styles.activePeriod]}
-              onPress={() => setActivePeriod(period)}
+              style={[styles.periodButton, activePeriod === "MONTH" && styles.activePeriod]}
+              onPress={() => setActivePeriod("MONTH")}
             >
-              <Text style={[
-                styles.periodText, 
-                activePeriod === period && styles.activePeriodText
-              ]}>
-                {period === "ULTIMI 12 MESI" ? "ULTIMI\n12 MESI" : period}
+              <Text style={[styles.periodText, activePeriod === "MONTH" && styles.activePeriodText]}>
+                {getMonthLabel()}
               </Text>
             </Pressable>
-          ))}
+            <Pressable
+              style={[styles.periodButton, activePeriod === "ULTIMI 12 MESI" && styles.activePeriod]}
+              onPress={() => setActivePeriod("ULTIMI 12 MESI")}
+            >
+              <Text style={[styles.periodText, activePeriod === "ULTIMI 12 MESI" && styles.activePeriodText]}>
+                {"ULTIMI\n12 MESI"}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.periodButton, activePeriod === "TUTTO IL 2025" && styles.activePeriod]}
+              onPress={() => setActivePeriod("TUTTO IL 2025")}
+            >
+              <Text style={[styles.periodText, activePeriod === "TUTTO IL 2025" && styles.activePeriodText]}>
+                TUTTO IL 2025
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.periodButton, activePeriod === "TUTTO IL 2026" && styles.activePeriod]}
+              onPress={() => setActivePeriod("TUTTO IL 2026")}
+            >
+              <Text style={[styles.periodText, activePeriod === "TUTTO IL 2026" && styles.activePeriodText]}>
+                TUTTO IL 2026
+              </Text>
+            </Pressable>
+          </ScrollView>
+          <Pressable style={styles.periodArrow} onPress={() => navigateMonth('next')}>
+            <Icon name="chevron-right" size={24} color={BankColors.gray600} />
+          </Pressable>
         </View>
 
         <View style={styles.totalRow}>
@@ -540,6 +611,11 @@ const styles = StyleSheet.create({
   },
   periodArrow: {
     padding: Spacing.xs,
+  },
+  periodScrollContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
   },
   periodButton: {
     paddingHorizontal: Spacing.md,
