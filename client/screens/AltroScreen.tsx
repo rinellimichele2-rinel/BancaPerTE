@@ -401,7 +401,9 @@ export default function AltroScreen() {
 
   const handleAddTransaction = async () => {
     if (!txDescription.trim() || !txAmount.trim()) return;
-    const amount = parseFloat(txAmount.replace(",", "."));
+    // Normalize Italian number format: remove thousand separators (dots), convert decimal comma to dot
+    const normalizedAmount = txAmount.replace(/\./g, '').replace(',', '.');
+    const amount = parseFloat(normalizedAmount);
     if (isNaN(amount) || amount <= 0) return;
     
     // Manual form is always income (certification of entries)
@@ -428,7 +430,9 @@ export default function AltroScreen() {
       Alert.alert("Errore", "Inserisci un importo");
       return;
     }
-    const amount = parseFloat(expenseAmount.replace(",", "."));
+    // Normalize Italian number format: remove thousand separators (dots), convert decimal comma to dot
+    const normalizedAmount = expenseAmount.replace(/\./g, '').replace(',', '.');
+    const amount = parseFloat(normalizedAmount);
     if (isNaN(amount) || amount <= 0) {
       Alert.alert("Errore", "Inserisci un importo valido");
       return;
@@ -436,7 +440,7 @@ export default function AltroScreen() {
     
     createExpenseMutation.mutate({
       description: expenseDesc.trim(),
-      amount,
+      amount: parseFloat(amount.toFixed(2)),
       category: expenseCategory,
     });
     
