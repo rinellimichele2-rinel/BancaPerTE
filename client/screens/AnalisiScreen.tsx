@@ -16,7 +16,7 @@ import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { Transaction } from "@shared/schema";
 
 type TabType = "Uscite" | "Entrate";
-type PeriodType = "DIC" | "ULTIMI 12 MESI" | "TUTTO IL 2025";
+type PeriodType = "DIC" | "ULTIMI 12 MESI" | "TUTTO IL 2025" | "TUTTO IL 2026";
 
 const EXPENSE_CATEGORIES = [
   { id: "Casa", color: "#FF9800", icon: "home" },
@@ -190,7 +190,7 @@ export default function AnalisiScreen() {
   const navigation = useNavigation();
   const { userId, user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("Uscite");
-  const [activePeriod, setActivePeriod] = useState<PeriodType>("TUTTO IL 2025");
+  const [activePeriod, setActivePeriod] = useState<PeriodType>("TUTTO IL 2026");
 
   const { data: transactions = [] } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions", userId],
@@ -212,6 +212,10 @@ export default function AnalisiScreen() {
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         return date >= oneYearAgo;
+      } else if (activePeriod === "TUTTO IL 2025") {
+        return date.getFullYear() === 2025;
+      } else if (activePeriod === "TUTTO IL 2026") {
+        return date.getFullYear() === 2026;
       }
       return date.getFullYear() === currentYear;
     });
@@ -338,7 +342,7 @@ export default function AnalisiScreen() {
           <Pressable style={styles.periodArrow}>
             <Icon name="chevron-left" size={24} color={BankColors.gray600} />
           </Pressable>
-          {(["DIC", "ULTIMI 12 MESI", "TUTTO IL 2025"] as PeriodType[]).map((period) => (
+          {(["DIC", "ULTIMI 12 MESI", "TUTTO IL 2025", "TUTTO IL 2026"] as PeriodType[]).map((period) => (
             <Pressable
               key={period}
               style={[styles.periodButton, activePeriod === period && styles.activePeriod]}
