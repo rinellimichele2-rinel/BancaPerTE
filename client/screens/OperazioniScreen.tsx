@@ -57,6 +57,10 @@ export default function OperazioniScreen() {
     navigation.navigate("Transfer");
   };
 
+  const handleBonificoPress = () => {
+    navigation.navigate("Bonifico");
+  };
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + Spacing.lg }]}>
@@ -82,7 +86,7 @@ export default function OperazioniScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Operazioni frequenti</Text>
           <View style={styles.card}>
-            <OperationItem title="Bonifico" />
+            <OperationItem title="Bonifico" onPress={handleBonificoPress} />
             <OperationItem title="Prelievo cardless" />
             <OperationItem title="Scambia denaro" onPress={handleTransferPress} />
           </View>
@@ -93,7 +97,7 @@ export default function OperazioniScreen() {
           
           <SectionHeader icon="send" iconColor={BankColors.primary} title="Bonifici e giroconti" />
           <View style={styles.card}>
-            <OperationItem title="Bonifico" />
+            <OperationItem title="Bonifico" onPress={handleBonificoPress} />
             <OperationItem title="Bonifico per agevolazioni fiscali" />
           </View>
 

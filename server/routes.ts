@@ -1372,6 +1372,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json(enrichedTransfers);
   });
 
+  // Bonifico endpoint - creates real transaction with commission
+  app.post("/api/bonifico", async (req, res) => {
+    const { userId, destinatario, iban, amount, causale, bonificoIstantaneo } = req.body;
+    
+    if (!userId || !destinatario || !iban || !amount) {
+      return res.status(400).json({ error: "Dati mancanti per il bonifico" });
+    }
+    
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: "Importo non valido" });
+    }
+    
+    const COMMISSION_FEE = 1.0;
+    const totalCost = amountNum + COMMISSION_FEE;
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utente non trovato" });
+    }
+    
+    // Server-side validation against Saldo Certificato (realPurchasedBalance)
+    const certifiedBalance = parseFloat(user.realPurchasedBalance || "0");
+    if (totalCost > certifiedBalance) {
+      return res.status(400).json({ 
+        error: `Saldo Certificato insufficiente. Disponibile: ${certifiedBalance.toFixed(2)} EUR, Richiesto: ${totalCost.toFixed(2)} EUR` 
+      });
+    }
+    
+    // Deduct from all balances
+    const currentBalance = parseFloat(user.balance || "0");
+    const purchasedBalance = parseFloat(user.purchasedBalance || "0");
+    
+    const newBalance = (currentBalance - totalCost).toFixed(2);
+    const newPurchasedBalance = (purchasedBalance - totalCost).toFixed(2);
+    const newRealPurchasedBalance = (certifiedBalance - totalCost).toFixed(2);
+    
+    // Update user balances
+    await storage.updateUserAllBalances(userId, newBalance, newPurchasedBalance, newRealPurchasedBalance);
+    
+    // Generate unique operation number
+    const now = new Date();
+    const italianFormatter = new Intl.DateTimeFormat('it-IT', { 
+      timeZone: 'Europe/Rome',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    const formattedDate = italianFormatter.format(now);
+    const dateForFilename = formattedDate.replace(/\//g, '.');
+    
+    const operationNumber = `INTER${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}BOSBE${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    const trn = `0${Math.floor(Math.random() * 1000000000000000000).toString().substring(0, 18)}`;
+    
+    // Create transaction record for the bonifico amount only
+    const transactionDescription = causale || `Bonifico a ${destinatario}`;
+    await storage.createTransaction({
+      userId,
+      description: transactionDescription,
+      amount: (-amountNum).toFixed(2),
+      type: "expense",
+      category: "Bonifici",
+      accountNumber: iban,
+      isContabilizzato: true,
+      isSimulated: false,
+      date: now,
+    });
+    
+    // Create separate commission transaction record
+    await storage.createTransaction({
+      userId,
+      description: `Commissione bonifico`,
+      amount: (-COMMISSION_FEE).toFixed(2),
+      type: "expense", 
+      category: "Commissioni",
+      accountNumber: null,
+      isContabilizzato: true,
+      isSimulated: false,
+      date: now,
+    });
+    
+    // Format date for receipt
+    const receiptDateFormatter = new Intl.DateTimeFormat('it-IT', {
+      timeZone: 'Europe/Rome',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+    const receiptDate = receiptDateFormatter.format(now).toUpperCase();
+    
+    // Generate receipt data
+    const receipt = {
+      operationNumber,
+      trn,
+      date: receiptDate,
+      dateExecution: dateForFilename,
+      senderName: user.fullName,
+      accountNumber: user.accountNumber,
+      destinatario,
+      iban,
+      amount: amountNum,
+      commission: COMMISSION_FEE,
+      totalAmount: totalCost,
+      causale: causale || "Bonifico",
+      bonificoIstantaneo,
+      banca: "EQUISBANK SPA",
+      bicSwift: "BCTITMM1XXX",
+    };
+    
+    return res.json({ 
+      success: true, 
+      receipt,
+      newBalance,
+      newRealPurchasedBalance 
+    });
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

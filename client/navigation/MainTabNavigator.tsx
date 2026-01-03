@@ -10,6 +10,7 @@ import AdvisorScreen from "@/screens/AdvisorScreen";
 import NewsScreen from "@/screens/NewsScreen";
 import OperazioniScreen from "@/screens/OperazioniScreen";
 import TransferScreen from "@/screens/TransferScreen";
+import BonificoScreen from "@/screens/BonificoScreen";
 import CarteScreen from "@/screens/CarteScreen";
 import AltroScreen from "@/screens/AltroScreen";
 import { Icon } from "@/components/Icon";
@@ -27,6 +28,7 @@ export type HomeStackParamList = {
 export type OperazioniStackParamList = {
   OperazioniMain: undefined;
   Transfer: undefined;
+  Bonifico: undefined;
 };
 
 export type MainTabParamList = {
@@ -77,6 +79,7 @@ function OperazioniStackNavigator() {
     <OperazioniStack.Navigator screenOptions={{ headerShown: false }}>
       <OperazioniStack.Screen name="OperazioniMain" component={OperazioniScreen} />
       <OperazioniStack.Screen name="Transfer" component={TransferScreen} />
+      <OperazioniStack.Screen name="Bonifico" component={BonificoScreen} />
     </OperazioniStack.Navigator>
   );
 }
