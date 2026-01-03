@@ -37,7 +37,7 @@ export default function BonificoScreen() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
 
-  const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
+  const activeBalance = parseFloat(user?.balance || "0");
   const accountNumber = user?.accountNumber || "N/A";
   const fullName = user?.fullName || "Utente";
 
@@ -87,10 +87,10 @@ export default function BonificoScreen() {
     }
     
     const totalCost = amount + COMMISSION_FEE;
-    if (totalCost > certifiedBalance) {
+    if (totalCost > activeBalance) {
       Alert.alert(
         "Saldo Insufficiente",
-        `Il tuo Saldo Certificato è ${formatItalianNumber(certifiedBalance)} EUR.\n\nImporto: ${formatItalianNumber(amount)} EUR\nCommissione: ${formatItalianNumber(COMMISSION_FEE)} EUR\nTotale: ${formatItalianNumber(totalCost)} EUR\n\nFondi insufficienti per completare l'operazione.`
+        `Il tuo Saldo Attivo è ${formatItalianNumber(activeBalance)} EUR.\n\nImporto: ${formatItalianNumber(amount)} EUR\nCommissione: ${formatItalianNumber(COMMISSION_FEE)} EUR\nTotale: ${formatItalianNumber(totalCost)} EUR\n\nFondi insufficienti per completare l'operazione.`
       );
       return false;
     }
@@ -188,7 +188,7 @@ export default function BonificoScreen() {
       <View style={styles.senderCard}>
         <Text style={styles.senderSubtitle}>Conto</Text>
         <Text style={styles.senderInfo}>Conto - {accountNumber} - {fullName.toUpperCase()}</Text>
-        <Text style={styles.balanceInfo}>Saldo disponibile: {formatItalianNumber(certifiedBalance)} EUR</Text>
+        <Text style={styles.balanceInfo}>Saldo disponibile (Attivo): {formatItalianNumber(activeBalance)} EUR</Text>
       </View>
 
       <View style={styles.checkboxRow}>

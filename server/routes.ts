@@ -1393,23 +1393,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ error: "Utente non trovato" });
     }
     
-    // Server-side validation against Saldo Certificato (realPurchasedBalance)
-    const certifiedBalance = parseFloat(user.realPurchasedBalance || "0");
-    if (totalCost > certifiedBalance) {
+    // Server-side validation against Saldo Attivo (balance)
+    const activeBalance = parseFloat(user.balance || "0");
+    if (totalCost > activeBalance) {
       return res.status(400).json({ 
-        error: `Saldo Certificato insufficiente. Disponibile: ${certifiedBalance.toFixed(2)} EUR, Richiesto: ${totalCost.toFixed(2)} EUR` 
+        error: `Saldo Attivo insufficiente. Disponibile: ${activeBalance.toFixed(2)} EUR, Richiesto: ${totalCost.toFixed(2)} EUR` 
       });
     }
     
-    // Deduct from all balances
-    const currentBalance = parseFloat(user.balance || "0");
+    // Deduct only from Saldo Attivo (balance)
+    // realPurchasedBalance (Saldo Certificato) stays unchanged - same as Transaction Console behavior
     const purchasedBalance = parseFloat(user.purchasedBalance || "0");
+    const realPurchasedBalance = parseFloat(user.realPurchasedBalance || "0");
     
-    const newBalance = (currentBalance - totalCost).toFixed(2);
+    const newBalance = (activeBalance - totalCost).toFixed(2);
+    // purchasedBalance tracks display, may go negative if needed
     const newPurchasedBalance = (purchasedBalance - totalCost).toFixed(2);
-    const newRealPurchasedBalance = (certifiedBalance - totalCost).toFixed(2);
+    // realPurchasedBalance (Saldo Certificato) remains unchanged
+    const newRealPurchasedBalance = realPurchasedBalance.toFixed(2);
     
-    // Update user balances
+    // Update user balances - Saldo Certificato stays the same
     await storage.updateUserAllBalances(userId, newBalance, newPurchasedBalance, newRealPurchasedBalance);
     
     // Generate unique operation number
