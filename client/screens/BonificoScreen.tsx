@@ -98,13 +98,27 @@ export default function BonificoScreen() {
   };
 
   const handleContinue = () => {
-    if (currentStep === 1 && validateStep1()) {
-      setCurrentStep(2);
-    } else if (currentStep === 2 && validateStep2()) {
-      setCurrentStep(3);
-    } else if (currentStep === 3 && validateStep3()) {
-      handleConfirmTransfer();
+    try {
+      if (currentStep === 1 && validateStep1()) {
+        setCurrentStep(2);
+      } else if (currentStep === 2 && validateStep2()) {
+        setCurrentStep(3);
+      } else if (currentStep === 3 && validateStep3()) {
+        handleConfirmTransfer();
+      }
+    } catch (error: any) {
+      Alert.alert("Errore", error.message || "Si è verificato un errore");
     }
+  };
+
+  const isButtonEnabled = () => {
+    if (currentStep === 1) return destinatario.trim().length > 0;
+    if (currentStep === 2) return iban.trim().length >= 15;
+    if (currentStep === 3) {
+      const amount = parseItalianNumber(importo);
+      return amount > 0 && (amount + COMMISSION_FEE) <= activeBalance;
+    }
+    return false;
   };
 
   const handleConfirmTransfer = () => {
@@ -347,6 +361,20 @@ export default function BonificoScreen() {
           <Text style={styles.costValueTotal}>{formatItalianNumber((parseItalianNumber(importo) || 0) + COMMISSION_FEE)} EUR</Text>
         </View>
       </View>
+
+      <View style={styles.balanceNote}>
+        <Text style={styles.balanceNoteLabel}>Saldo disponibile (Attivo)</Text>
+        <Text style={[styles.balanceNoteValue, (parseItalianNumber(importo) + COMMISSION_FEE) > activeBalance && styles.balanceNoteValueError]}>
+          {formatItalianNumber(activeBalance)} EUR
+        </Text>
+      </View>
+
+      {(parseItalianNumber(importo) + COMMISSION_FEE) > activeBalance && parseItalianNumber(importo) > 0 ? (
+        <View style={styles.insufficientFundsWarning}>
+          <Icon name="alert-circle" size={18} color={BankColors.error} />
+          <Text style={styles.insufficientFundsText}>Saldo insufficiente per questa operazione</Text>
+        </View>
+      ) : null}
     </ScrollView>
   );
 
@@ -442,14 +470,18 @@ export default function BonificoScreen() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.md }]}>
         <Pressable
-          style={[styles.continueButton, isProcessing && styles.continueButtonDisabled]}
+          style={[
+            styles.continueButton, 
+            isButtonEnabled() && styles.continueButtonActive,
+            isProcessing && styles.continueButtonDisabled
+          ]}
           onPress={handleContinue}
           disabled={isProcessing}
         >
           {isProcessing ? (
             <ActivityIndicator color={BankColors.white} />
           ) : (
-            <Text style={styles.continueButtonText}>Continua</Text>
+            <Text style={[styles.continueButtonText, isButtonEnabled() && styles.continueButtonTextActive]}>Continua</Text>
           )}
         </Pressable>
         <Text style={styles.nextStepText}>
@@ -762,6 +794,39 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: BankColors.gray900,
   },
+  balanceNote: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  balanceNoteLabel: {
+    fontSize: 14,
+    color: BankColors.gray600,
+  },
+  balanceNoteValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: BankColors.success,
+  },
+  balanceNoteValueError: {
+    color: BankColors.error,
+  },
+  insufficientFundsWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEE2E2",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  insufficientFundsText: {
+    fontSize: 14,
+    color: BankColors.error,
+    flex: 1,
+  },
   footer: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
@@ -775,6 +840,9 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     alignItems: "center",
   },
+  continueButtonActive: {
+    backgroundColor: BankColors.success,
+  },
   continueButtonDisabled: {
     opacity: 0.6,
   },
@@ -782,6 +850,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: BankColors.gray700,
+  },
+  continueButtonTextActive: {
+    color: BankColors.white,
   },
   nextStepText: {
     fontSize: 13,
