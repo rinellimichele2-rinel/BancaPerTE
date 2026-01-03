@@ -281,8 +281,10 @@ export default function HomeScreen() {
     .filter(t => t.type === "income")
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-  const displayExpenses = totalExpenses + (user?.customMonthlyExpenses ? parseFloat(user.customMonthlyExpenses) : 0);
-  const displayIncome = totalIncome + (user?.customMonthlyIncome ? parseFloat(user.customMonthlyIncome) : 0);
+  // Display totals are now based only on current month transactions
+  // customMonthlyExpenses/Income are no longer added to avoid cross-month data spillover
+  const displayExpenses = totalExpenses;
+  const displayIncome = totalIncome;
 
   // Filter transactions from last 7 days
   const sevenDaysAgo = new Date();
