@@ -34,9 +34,9 @@ function setupCors(app: express.Application) {
 
     // Allow localhost for local development
     origins.add("http://localhost:8081");
-    origins.add("http://localhost:5000");
+    origins.add("http://localhost:5001");
     origins.add("http://127.0.0.1:8081");
-    origins.add("http://127.0.0.1:5000");
+    origins.add("http://127.0.0.1:5001");
 
     const origin = req.header("origin");
 
@@ -250,7 +250,7 @@ function setupErrorHandler(app: express.Application) {
 
   setupErrorHandler(app);
 
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = parseInt(process.env.PORT || "5001", 10);
   server.listen(port, "0.0.0.0", () => {
     log(`express server serving on port ${port}`);
   });

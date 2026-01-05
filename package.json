@@ -3,7 +3,7 @@
   "main": "client/index.js",
   "version": "1.0.0",
   "scripts": {
-    "expo:dev": "EXPO_PACKAGER_PROXY_URL=https://$REPLIT_DEV_DOMAIN REACT_NATIVE_PACKAGER_HOSTNAME=$REPLIT_DEV_DOMAIN EXPO_PUBLIC_DOMAIN=$REPLIT_DEV_DOMAIN:5000 npx expo start --localhost",
+    "expo:dev": "npx expo start --localhost",
     "server:dev": "tsx server/index.ts",
     "all:dev": "npm run expo:dev & npm run server:dev",
     "expo:start:static:build": "npx expo start --no-dev --minify --localhost",
@@ -12,7 +12,6 @@
     "server:prod": "NODE_ENV=production node server_dist/index.js",
     "db:push": "drizzle-kit push",
     "deploy": "node scripts/deploy.js",
-    "deploy:windows": "powershell -ExecutionPolicy Bypass -File scripts/quick-deploy.ps1",
     "lint": "npx expo lint",
     "lint:fix": "npx expo lint --fix",
     "check:types": "tsc --noEmit",

@@ -1,3 +1,9 @@
+var __defProp = Object.defineProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
 // server/index.ts
 import "dotenv/config";
 import express from "express";
@@ -11,111 +17,53 @@ import { eq as eq2, desc as desc2, like as like2 } from "drizzle-orm";
 // server/db.ts
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
+var sqlite = new Database("sqlite.db");
+var db = drizzle(sqlite);
 
 // shared/schema.ts
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import {
-  createInsertSchema,
-  createInsertSchema as createInsertSchema2,
-} from "drizzle-zod";
-import { v4 as uuidv4, v4 as uuidv42 } from "uuid";
-
-// server/storage.pg.ts
-import { eq, desc, like } from "drizzle-orm";
-
-// server/db.pg.ts
-import { drizzle as drizzle2 } from "drizzle-orm/node-postgres";
-import pg from "pg";
-import {
-  pgTable,
-  text as text2,
-  integer as integer2,
-  boolean,
-  timestamp,
-  serial,
-} from "drizzle-orm/pg-core";
-
-// server/replit_integrations/chat/routes.ts
-import OpenAI from "openai";
-
-// server/replit_integrations/chat/storage.ts
-import { eq as eq3, desc as desc3 } from "drizzle-orm";
-
-// server/replit_integrations/news/routes.ts
-import OpenAI2 from "openai";
-import { eq as eq4, desc as desc4 } from "drizzle-orm";
-
-// server/index.ts
-import * as fs from "fs";
-import * as path from "path";
-
-let __defProp = Object.defineProperty;
-let __export = (target, all) => {
-  for (let name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-let sqlite = new Database("sqlite.db");
-let db = drizzle(sqlite);
-let users = sqliteTable("users", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => uuidv4()),
+import { createInsertSchema } from "drizzle-zod";
+import { v4 as uuidv4 } from "uuid";
+var users = sqliteTable("users", {
+  id: text("id").primaryKey().$defaultFn(() => uuidv4()),
   username: text("username").notNull().unique(),
   rechargeUsername: text("recharge_username").unique(),
   pin: text("pin").notNull(),
-  hasSetPin: integer("has_set_pin", { mode: "boolean" })
-    .notNull()
-    .default(false),
+  hasSetPin: integer("has_set_pin", { mode: "boolean" }).notNull().default(false),
   fullName: text("full_name").notNull(),
   accountNumber: text("account_number").notNull(),
   balance: text("balance").notNull().default("0.00"),
   purchasedBalance: text("purchased_balance").notNull().default("0.00"),
-  realPurchasedBalance: text("real_purchased_balance")
-    .notNull()
-    .default("0.00"),
+  realPurchasedBalance: text("real_purchased_balance").notNull().default("0.00"),
   totalRecharged: text("total_recharged").notNull().default("0.00"),
   referredBy: text("referred_by"),
-  referralActivated: integer("referral_activated", { mode: "boolean" })
-    .notNull()
-    .default(false),
+  referralActivated: integer("referral_activated", { mode: "boolean" }).notNull().default(false),
   cardLastFour: text("card_last_four").notNull().default("3796"),
   displayName: text("display_name"),
   customMonthlyExpenses: text("custom_monthly_expenses"),
   customMonthlyIncome: text("custom_monthly_income"),
-  isBlocked: integer("is_blocked", { mode: "boolean" })
-    .notNull()
-    .default(false),
+  isBlocked: integer("is_blocked", { mode: "boolean" }).notNull().default(false),
   blockedReason: text("blocked_reason"),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+    () => /* @__PURE__ */ new Date()
+  )
 });
-let transactions = sqliteTable("transactions", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => uuidv4()),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
+var transactions = sqliteTable("transactions", {
+  id: text("id").primaryKey().$defaultFn(() => uuidv4()),
+  userId: text("user_id").notNull().references(() => users.id),
   description: text("description").notNull(),
   amount: text("amount").notNull(),
   type: text("type").notNull(),
   category: text("category").notNull(),
   accountNumber: text("account_number"),
-  isContabilizzato: integer("is_contabilizzato", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  isSimulated: integer("is_simulated", { mode: "boolean" })
-    .notNull()
-    .default(true),
-  date: integer("date", { mode: "timestamp" }).$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+  isContabilizzato: integer("is_contabilizzato", { mode: "boolean" }).notNull().default(false),
+  isSimulated: integer("is_simulated", { mode: "boolean" }).notNull().default(true),
+  date: integer("date", { mode: "timestamp" }).$defaultFn(() => /* @__PURE__ */ new Date()),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+    () => /* @__PURE__ */ new Date()
+  )
 });
-let insertUserSchema = createInsertSchema(users).pick({
+var insertUserSchema = createInsertSchema(users).pick({
   username: true,
   rechargeUsername: true,
   pin: true,
@@ -126,9 +74,9 @@ let insertUserSchema = createInsertSchema(users).pick({
   purchasedBalance: true,
   realPurchasedBalance: true,
   cardLastFour: true,
-  displayName: true,
+  displayName: true
 });
-let insertTransactionSchema = createInsertSchema(transactions).pick({
+var insertTransactionSchema = createInsertSchema(transactions).pick({
   userId: true,
   description: true,
   amount: true,
@@ -137,49 +85,39 @@ let insertTransactionSchema = createInsertSchema(transactions).pick({
   accountNumber: true,
   isContabilizzato: true,
   isSimulated: true,
-  date: true,
+  date: true
 });
-let conversations = sqliteTable("conversations", {
+var conversations = sqliteTable("conversations", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   userId: text("user_id").references(() => users.id),
   title: text("title").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => /* @__PURE__ */ new Date()),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => /* @__PURE__ */ new Date())
 });
-let messages = sqliteTable("messages", {
+var messages = sqliteTable("messages", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  conversationId: integer("conversation_id", { mode: "number" })
-    .notNull()
-    .references(() => conversations.id, { onDelete: "cascade" }),
+  conversationId: integer("conversation_id", { mode: "number" }).notNull().references(() => conversations.id, { onDelete: "cascade" }),
   role: text("role").notNull(),
   content: text("content").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => /* @__PURE__ */ new Date()),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => /* @__PURE__ */ new Date())
 });
-let insertConversationSchema = createInsertSchema(conversations).omit({
+var insertConversationSchema = createInsertSchema(conversations).omit({
   id: true,
-  createdAt: true,
+  createdAt: true
 });
-let insertMessageSchema = createInsertSchema(messages).omit({
+var insertMessageSchema = createInsertSchema(messages).omit({
   id: true,
-  createdAt: true,
+  createdAt: true
 });
-let userPresetSettings = sqliteTable("user_preset_settings", {
+var userPresetSettings = sqliteTable("user_preset_settings", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   deletedPresets: text("deleted_presets").notNull().default("[]"),
   disabledPresets: text("disabled_presets").notNull().default("[]"),
-  customPresets: text("custom_presets").notNull().default("[]"),
+  customPresets: text("custom_presets").notNull().default("[]")
 });
-let userCustomPresets = sqliteTable("user_custom_presets", {
+var userCustomPresets = sqliteTable("user_custom_presets", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   description: text("description").notNull(),
   minAmount: integer("min_amount").notNull(),
   maxAmount: integer("max_amount").notNull(),
@@ -187,34 +125,36 @@ let userCustomPresets = sqliteTable("user_custom_presets", {
   category: text("category").notNull(),
   isEnabled: integer("is_enabled", { mode: "boolean" }).notNull().default(true),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+    () => /* @__PURE__ */ new Date()
+  )
 });
-let appSettings = sqliteTable("app_settings", {
+var appSettings = sqliteTable("app_settings", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   key: text("key").notNull().unique(),
-  value: text("value").notNull(),
+  value: text("value").notNull()
 });
-let referralActivations = sqliteTable("referral_activations", {
+var referralActivations = sqliteTable("referral_activations", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  referrerId: text("referrer_id")
-    .notNull()
-    .references(() => users.id),
-  referredId: text("referred_id")
-    .notNull()
-    .references(() => users.id),
+  referrerId: text("referrer_id").notNull().references(() => users.id),
+  referredId: text("referred_id").notNull().references(() => users.id),
   bonusAmount: text("bonus_amount").notNull(),
   activatedAt: integer("activated_at", { mode: "timestamp" }).$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+    () => /* @__PURE__ */ new Date()
+  )
 });
-let insertCustomPresetSchema = createInsertSchema(userCustomPresets).omit({
-  id: true,
-  createdAt: true,
-});
+var insertCustomPresetSchema = createInsertSchema(
+  userCustomPresets
+).omit({ id: true, createdAt: true });
+
+// server/storage.pg.ts
+import { eq, desc, like } from "drizzle-orm";
+
+// server/db.pg.ts
+import { drizzle as drizzle2 } from "drizzle-orm/node-postgres";
+import pg from "pg";
 
 // shared/schema.pg.ts
-let schema_pg_exports = {};
+var schema_pg_exports = {};
 __export(schema_pg_exports, {
   appSettings: () => appSettings2,
   conversations: () => conversations2,
@@ -228,12 +168,20 @@ __export(schema_pg_exports, {
   transactions: () => transactions2,
   userCustomPresets: () => userCustomPresets2,
   userPresetSettings: () => userPresetSettings2,
-  users: () => users2,
+  users: () => users2
 });
+import {
+  pgTable,
+  text as text2,
+  integer as integer2,
+  boolean,
+  timestamp,
+  serial
+} from "drizzle-orm/pg-core";
+import { createInsertSchema as createInsertSchema2 } from "drizzle-zod";
+import { v4 as uuidv42 } from "uuid";
 var users2 = pgTable("users", {
-  id: text2("id")
-    .primaryKey()
-    .$defaultFn(() => uuidv42()),
+  id: text2("id").primaryKey().$defaultFn(() => uuidv42()),
   username: text2("username").notNull().unique(),
   rechargeUsername: text2("recharge_username").unique(),
   pin: text2("pin").notNull(),
@@ -242,9 +190,7 @@ var users2 = pgTable("users", {
   accountNumber: text2("account_number").notNull(),
   balance: text2("balance").notNull().default("0.00"),
   purchasedBalance: text2("purchased_balance").notNull().default("0.00"),
-  realPurchasedBalance: text2("real_purchased_balance")
-    .notNull()
-    .default("0.00"),
+  realPurchasedBalance: text2("real_purchased_balance").notNull().default("0.00"),
   totalRecharged: text2("total_recharged").notNull().default("0.00"),
   referredBy: text2("referred_by"),
   referralActivated: boolean("referral_activated").notNull().default(false),
@@ -254,17 +200,11 @@ var users2 = pgTable("users", {
   customMonthlyIncome: text2("custom_monthly_income"),
   isBlocked: boolean("is_blocked").notNull().default(false),
   blockedReason: text2("blocked_reason"),
-  createdAt: timestamp("created_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+  createdAt: timestamp("created_at").$defaultFn(() => /* @__PURE__ */ new Date())
 });
 var transactions2 = pgTable("transactions", {
-  id: text2("id")
-    .primaryKey()
-    .$defaultFn(() => uuidv42()),
-  userId: text2("user_id")
-    .notNull()
-    .references(() => users2.id),
+  id: text2("id").primaryKey().$defaultFn(() => uuidv42()),
+  userId: text2("user_id").notNull().references(() => users2.id),
   description: text2("description").notNull(),
   amount: text2("amount").notNull(),
   type: text2("type").notNull(),
@@ -273,9 +213,7 @@ var transactions2 = pgTable("transactions", {
   isContabilizzato: boolean("is_contabilizzato").notNull().default(false),
   isSimulated: boolean("is_simulated").notNull().default(true),
   date: timestamp("date").$defaultFn(() => /* @__PURE__ */ new Date()),
-  createdAt: timestamp("created_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+  createdAt: timestamp("created_at").$defaultFn(() => /* @__PURE__ */ new Date())
 });
 var insertUserSchema2 = createInsertSchema2(users2).pick({
   username: true,
@@ -288,7 +226,7 @@ var insertUserSchema2 = createInsertSchema2(users2).pick({
   purchasedBalance: true,
   realPurchasedBalance: true,
   cardLastFour: true,
-  displayName: true,
+  displayName: true
 });
 var insertTransactionSchema2 = createInsertSchema2(transactions2).pick({
   userId: true,
@@ -299,100 +237,81 @@ var insertTransactionSchema2 = createInsertSchema2(transactions2).pick({
   accountNumber: true,
   isContabilizzato: true,
   isSimulated: true,
-  date: true,
+  date: true
 });
 var conversations2 = pgTable("conversations", {
   id: serial("id").primaryKey(),
   userId: text2("user_id").references(() => users2.id),
   title: text2("title").notNull(),
-  createdAt: timestamp("created_at")
-    .notNull()
-    .$defaultFn(() => /* @__PURE__ */ new Date()),
+  createdAt: timestamp("created_at").notNull().$defaultFn(() => /* @__PURE__ */ new Date())
 });
 var messages2 = pgTable("messages", {
   id: serial("id").primaryKey(),
-  conversationId: integer2("conversation_id")
-    .notNull()
-    .references(() => conversations2.id, { onDelete: "cascade" }),
+  conversationId: integer2("conversation_id").notNull().references(() => conversations2.id, { onDelete: "cascade" }),
   role: text2("role").notNull(),
   content: text2("content").notNull(),
-  createdAt: timestamp("created_at")
-    .notNull()
-    .$defaultFn(() => /* @__PURE__ */ new Date()),
+  createdAt: timestamp("created_at").notNull().$defaultFn(() => /* @__PURE__ */ new Date())
 });
 var insertConversationSchema2 = createInsertSchema2(conversations2).omit({
   id: true,
-  createdAt: true,
+  createdAt: true
 });
 var insertMessageSchema2 = createInsertSchema2(messages2).omit({
   id: true,
-  createdAt: true,
+  createdAt: true
 });
 var userPresetSettings2 = pgTable("user_preset_settings", {
   id: serial("id").primaryKey(),
-  userId: text2("user_id")
-    .notNull()
-    .references(() => users2.id),
+  userId: text2("user_id").notNull().references(() => users2.id),
   deletedPresets: text2("deleted_presets").notNull().default("[]"),
   disabledPresets: text2("disabled_presets").notNull().default("[]"),
-  customPresets: text2("custom_presets").notNull().default("[]"),
+  customPresets: text2("custom_presets").notNull().default("[]")
 });
 var userCustomPresets2 = pgTable("user_custom_presets", {
   id: serial("id").primaryKey(),
-  userId: text2("user_id")
-    .notNull()
-    .references(() => users2.id),
+  userId: text2("user_id").notNull().references(() => users2.id),
   description: text2("description").notNull(),
   minAmount: integer2("min_amount").notNull(),
   maxAmount: integer2("max_amount").notNull(),
   type: text2("type").notNull(),
   category: text2("category").notNull(),
   isEnabled: boolean("is_enabled").notNull().default(true),
-  createdAt: timestamp("created_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+  createdAt: timestamp("created_at").$defaultFn(() => /* @__PURE__ */ new Date())
 });
 var appSettings2 = pgTable("app_settings", {
   id: serial("id").primaryKey(),
   key: text2("key").notNull().unique(),
-  value: text2("value").notNull(),
+  value: text2("value").notNull()
 });
 var referralActivations2 = pgTable("referral_activations", {
   id: serial("id").primaryKey(),
-  referrerId: text2("referrer_id")
-    .notNull()
-    .references(() => users2.id),
-  referredId: text2("referred_id")
-    .notNull()
-    .references(() => users2.id),
+  referrerId: text2("referrer_id").notNull().references(() => users2.id),
+  referredId: text2("referred_id").notNull().references(() => users2.id),
   bonusAmount: text2("bonus_amount").notNull(),
-  activatedAt: timestamp("activated_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+  activatedAt: timestamp("activated_at").$defaultFn(() => /* @__PURE__ */ new Date())
 });
-var insertCustomPresetSchema2 = createInsertSchema2(userCustomPresets2).omit({
-  id: true,
-  createdAt: true,
-});
+var insertCustomPresetSchema2 = createInsertSchema2(
+  userCustomPresets2
+).omit({ id: true, createdAt: true });
 
 // server/db.pg.ts
-let { Pool } = pg;
-let _db = null;
-let _pool = null;
+var { Pool } = pg;
+var _db = null;
+var _pool = null;
 function getDb() {
   if (_db) return _db;
   if (!process.env.DATABASE_URL) {
     throw new Error(
-      "DATABASE_URL must be set. Configure a PostgreSQL database and set the env variable.",
+      "DATABASE_URL must be set. Configure a PostgreSQL database and set the env variable."
     );
   }
   _pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.DATABASE_URL
   });
   _db = drizzle2(_pool, { schema: schema_pg_exports });
   return _db;
 }
-let db2 = new Proxy(
+var db2 = new Proxy(
   {},
   {
     get(_target, prop) {
@@ -400,28 +319,22 @@ let db2 = new Proxy(
       const value = real[prop];
       if (typeof value === "function") return value.bind(real);
       return value;
-    },
-  },
+    }
+  }
 );
 
 // server/storage.pg.ts
-let PostgresStorage = class {
+var PostgresStorage = class {
   async getUser(id) {
     const result = await db2.select().from(users2).where(eq(users2.id, id));
     return result[0];
   }
   async getUserByUsername(username) {
-    const result = await db2
-      .select()
-      .from(users2)
-      .where(like(users2.username, username));
+    const result = await db2.select().from(users2).where(like(users2.username, username));
     return result[0];
   }
   async getUserByRechargeUsername(rechargeUsername) {
-    const result = await db2
-      .select()
-      .from(users2)
-      .where(eq(users2.rechargeUsername, rechargeUsername));
+    const result = await db2.select().from(users2).where(eq(users2.rechargeUsername, rechargeUsername));
     return result[0];
   }
   async getAllUsers() {
@@ -429,10 +342,7 @@ let PostgresStorage = class {
     return result;
   }
   async searchUsersByPartialUsername(partialUsername) {
-    const result = await db2
-      .select()
-      .from(users2)
-      .where(like(users2.username, `%${partialUsername}%`));
+    const result = await db2.select().from(users2).where(like(users2.username, `%${partialUsername}%`));
     return result;
   }
   async createUser(insertUser) {
@@ -440,88 +350,43 @@ let PostgresStorage = class {
     return result[0];
   }
   async updateUserBalance(userId, newBalance) {
-    const result = await db2
-      .update(users2)
-      .set({ balance: newBalance })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ balance: newBalance }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
-  async updateUserBalanceWithPurchased(
-    userId,
-    newBalance,
-    newPurchasedBalance,
-  ) {
-    const result = await db2
-      .update(users2)
-      .set({ balance: newBalance, purchasedBalance: newPurchasedBalance })
-      .where(eq(users2.id, userId))
-      .returning();
+  async updateUserBalanceWithPurchased(userId, newBalance, newPurchasedBalance) {
+    const result = await db2.update(users2).set({ balance: newBalance, purchasedBalance: newPurchasedBalance }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
-  async updateUserAllBalances(
-    userId,
-    newBalance,
-    newPurchasedBalance,
-    newRealPurchasedBalance,
-  ) {
-    const result = await db2
-      .update(users2)
-      .set({
-        balance: newBalance,
-        purchasedBalance: newPurchasedBalance,
-        realPurchasedBalance: newRealPurchasedBalance,
-      })
-      .where(eq(users2.id, userId))
-      .returning();
+  async updateUserAllBalances(userId, newBalance, newPurchasedBalance, newRealPurchasedBalance) {
+    const result = await db2.update(users2).set({
+      balance: newBalance,
+      purchasedBalance: newPurchasedBalance,
+      realPurchasedBalance: newRealPurchasedBalance
+    }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async updateUserName(userId, newName) {
-    const result = await db2
-      .update(users2)
-      .set({ fullName: newName })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ fullName: newName }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async updateUserAccountNumber(userId, newAccountNumber) {
-    const result = await db2
-      .update(users2)
-      .set({ accountNumber: newAccountNumber })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ accountNumber: newAccountNumber }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async updateUserDisplayName(userId, displayName) {
-    const result = await db2
-      .update(users2)
-      .set({ displayName })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ displayName }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async updateUserMonthlyValues(userId, expenses, income) {
-    const result = await db2
-      .update(users2)
-      .set({ customMonthlyExpenses: expenses, customMonthlyIncome: income })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ customMonthlyExpenses: expenses, customMonthlyIncome: income }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async updateUserPin(userId, newPin) {
-    const result = await db2
-      .update(users2)
-      .set({ pin: newPin, hasSetPin: true })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ pin: newPin, hasSetPin: true }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async setUserRechargeUsername(userId, rechargeUsername) {
-    const result = await db2
-      .update(users2)
-      .set({ rechargeUsername })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ rechargeUsername }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async transferBalance(fromUserId, toUserId, amount) {
@@ -536,7 +401,7 @@ let PostgresStorage = class {
     if (fromUserId === toUserId) {
       return {
         success: false,
-        error: "Non puoi trasferire denaro a te stesso",
+        error: "Non puoi trasferire denaro a te stesso"
       };
     }
     const fromBalance = parseFloat(fromUser.balance || "0");
@@ -548,7 +413,7 @@ let PostgresStorage = class {
     if (amount <= 0) {
       return {
         success: false,
-        error: "L'importo deve essere maggiore di zero",
+        error: "L'importo deve essere maggiore di zero"
       };
     }
     if (amount > fromBalance) {
@@ -557,25 +422,25 @@ let PostgresStorage = class {
     const newFromBalance = (fromBalance - amount).toFixed(2);
     const newToBalance = (toBalance + amount).toFixed(2);
     const newFromPurchased = Math.max(0, fromPurchasedBalance - amount).toFixed(
-      2,
+      2
     );
     const newToPurchased = (toPurchasedBalance + amount).toFixed(2);
     const newFromRealPurchased = Math.max(
       0,
-      fromRealPurchased - amount,
+      fromRealPurchased - amount
     ).toFixed(2);
     const newToRealPurchased = (toRealPurchased + amount).toFixed(2);
     const updatedFromUser = await this.updateUserAllBalances(
       fromUserId,
       newFromBalance,
       newFromPurchased,
-      newFromRealPurchased,
+      newFromRealPurchased
     );
     const updatedToUser = await this.updateUserAllBalances(
       toUserId,
       newToBalance,
       newToPurchased,
-      newToRealPurchased,
+      newToRealPurchased
     );
     if (!updatedFromUser || !updatedToUser) {
       return { success: false, error: "Errore durante il trasferimento" };
@@ -583,62 +448,36 @@ let PostgresStorage = class {
     return { success: true, fromUser: updatedFromUser, toUser: updatedToUser };
   }
   async getTransactions(userId) {
-    const result = await db2
-      .select()
-      .from(transactions2)
-      .where(eq(transactions2.userId, userId))
-      .orderBy(desc(transactions2.createdAt));
+    const result = await db2.select().from(transactions2).where(eq(transactions2.userId, userId)).orderBy(desc(transactions2.createdAt));
     return result;
   }
   async getTransaction(id) {
-    const result = await db2
-      .select()
-      .from(transactions2)
-      .where(eq(transactions2.id, id));
+    const result = await db2.select().from(transactions2).where(eq(transactions2.id, id));
     return result[0];
   }
   async createTransaction(insertTransaction) {
-    const result = await db2
-      .insert(transactions2)
-      .values(insertTransaction)
-      .returning();
+    const result = await db2.insert(transactions2).values(insertTransaction).returning();
     return result[0];
   }
   async createMultipleTransactions(insertTransactions) {
     if (insertTransactions.length === 0) return [];
-    const result = await db2
-      .insert(transactions2)
-      .values(insertTransactions)
-      .returning();
+    const result = await db2.insert(transactions2).values(insertTransactions).returning();
     return result;
   }
   async updateTransaction(id, updates) {
-    const result = await db2
-      .update(transactions2)
-      .set(updates)
-      .where(eq(transactions2.id, id))
-      .returning();
+    const result = await db2.update(transactions2).set(updates).where(eq(transactions2.id, id)).returning();
     return result[0];
   }
   async deleteUser(userId) {
     try {
-      const userConversations = await db2
-        .select()
-        .from(conversations2)
-        .where(eq(conversations2.userId, userId));
+      const userConversations = await db2.select().from(conversations2).where(eq(conversations2.userId, userId));
       for (const conv of userConversations) {
-        await db2
-          .delete(messages2)
-          .where(eq(messages2.conversationId, conv.id));
+        await db2.delete(messages2).where(eq(messages2.conversationId, conv.id));
       }
       await db2.delete(conversations2).where(eq(conversations2.userId, userId));
       await db2.delete(transactions2).where(eq(transactions2.userId, userId));
-      await db2
-        .delete(userPresetSettings2)
-        .where(eq(userPresetSettings2.userId, userId));
-      await db2
-        .delete(userCustomPresets2)
-        .where(eq(userCustomPresets2.userId, userId));
+      await db2.delete(userPresetSettings2).where(eq(userPresetSettings2.userId, userId));
+      await db2.delete(userCustomPresets2).where(eq(userCustomPresets2.userId, userId));
       await db2.delete(users2).where(eq(users2.id, userId));
       return true;
     } catch (error) {
@@ -647,71 +486,42 @@ let PostgresStorage = class {
     }
   }
   async getPresetSettings(userId) {
-    const result = await db2
-      .select()
-      .from(userPresetSettings2)
-      .where(eq(userPresetSettings2.userId, userId));
+    const result = await db2.select().from(userPresetSettings2).where(eq(userPresetSettings2.userId, userId));
     return result[0];
   }
   async savePresetSettings(userId, settings) {
     const existing = await this.getPresetSettings(userId);
     if (existing) {
-      const result = await db2
-        .update(userPresetSettings2)
-        .set({
-          deletedPresets: settings.deletedPresets
-            ? JSON.stringify(settings.deletedPresets)
-            : existing.deletedPresets,
-          disabledPresets: settings.disabledPresets
-            ? JSON.stringify(settings.disabledPresets)
-            : existing.disabledPresets,
-          customPresets: settings.customPresets
-            ? JSON.stringify(settings.customPresets)
-            : existing.customPresets,
-        })
-        .where(eq(userPresetSettings2.userId, userId))
-        .returning();
+      const result = await db2.update(userPresetSettings2).set({
+        deletedPresets: settings.deletedPresets ? JSON.stringify(settings.deletedPresets) : existing.deletedPresets,
+        disabledPresets: settings.disabledPresets ? JSON.stringify(settings.disabledPresets) : existing.disabledPresets,
+        customPresets: settings.customPresets ? JSON.stringify(settings.customPresets) : existing.customPresets
+      }).where(eq(userPresetSettings2.userId, userId)).returning();
       return result[0];
     } else {
-      const result = await db2
-        .insert(userPresetSettings2)
-        .values({
-          userId,
-          deletedPresets: JSON.stringify(settings.deletedPresets || []),
-          disabledPresets: JSON.stringify(settings.disabledPresets || []),
-          customPresets: JSON.stringify(settings.customPresets || []),
-        })
-        .returning();
+      const result = await db2.insert(userPresetSettings2).values({
+        userId,
+        deletedPresets: JSON.stringify(settings.deletedPresets || []),
+        disabledPresets: JSON.stringify(settings.disabledPresets || []),
+        customPresets: JSON.stringify(settings.customPresets || [])
+      }).returning();
       return result[0];
     }
   }
   async getAppSetting(key) {
-    const result = await db2
-      .select()
-      .from(appSettings2)
-      .where(eq(appSettings2.key, key));
+    const result = await db2.select().from(appSettings2).where(eq(appSettings2.key, key));
     return result[0]?.value ?? null;
   }
   async setAppSetting(key, value) {
-    const existing = await db2
-      .select()
-      .from(appSettings2)
-      .where(eq(appSettings2.key, key));
+    const existing = await db2.select().from(appSettings2).where(eq(appSettings2.key, key));
     if (existing.length > 0) {
-      await db2
-        .update(appSettings2)
-        .set({ value })
-        .where(eq(appSettings2.key, key));
+      await db2.update(appSettings2).set({ value }).where(eq(appSettings2.key, key));
     } else {
       await db2.insert(appSettings2).values({ key, value });
     }
   }
   async updateUserReferredBy(userId, referredBy) {
-    const result = await db2
-      .update(users2)
-      .set({ referredBy })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ referredBy }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async updateUserTotalRecharged(userId, amount) {
@@ -719,37 +529,23 @@ let PostgresStorage = class {
     if (!user) return void 0;
     const currentTotal = parseFloat(user.totalRecharged || "0");
     const newTotal = (currentTotal + amount).toFixed(2);
-    const result = await db2
-      .update(users2)
-      .set({ totalRecharged: newTotal })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ totalRecharged: newTotal }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async activateReferral(userId) {
-    const result = await db2
-      .update(users2)
-      .set({ referralActivated: true })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ referralActivated: true }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async createReferralActivation(referrerId, referredId, bonusAmount) {
-    const result = await db2
-      .insert(referralActivations2)
-      .values({
-        referrerId,
-        referredId,
-        bonusAmount: bonusAmount.toFixed(2),
-      })
-      .returning();
+    const result = await db2.insert(referralActivations2).values({
+      referrerId,
+      referredId,
+      bonusAmount: bonusAmount.toFixed(2)
+    }).returning();
     return result[0];
   }
   async getReferralActivations() {
-    const activations = await db2
-      .select()
-      .from(referralActivations2)
-      .orderBy(desc(referralActivations2.activatedAt));
+    const activations = await db2.select().from(referralActivations2).orderBy(desc(referralActivations2.activatedAt));
     const result = [];
     for (const activation of activations) {
       const referrer = await this.getUser(activation.referrerId);
@@ -757,101 +553,59 @@ let PostgresStorage = class {
       result.push({
         ...activation,
         referrerUsername: referrer?.username,
-        referredUsername: referred?.username,
+        referredUsername: referred?.username
       });
     }
     return result;
   }
   async getUserByReferralCode(referralCode) {
-    const result = await db2
-      .select()
-      .from(users2)
-      .where(eq(users2.username, referralCode));
+    const result = await db2.select().from(users2).where(eq(users2.username, referralCode));
     return result[0];
   }
   async blockUser(userId, reason) {
-    const result = await db2
-      .update(users2)
-      .set({ isBlocked: true, blockedReason: reason || null })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ isBlocked: true, blockedReason: reason || null }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async unblockUser(userId) {
-    const result = await db2
-      .update(users2)
-      .set({ isBlocked: false, blockedReason: null })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ isBlocked: false, blockedReason: null }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async setUserBalance(userId, newBalance) {
-    const result = await db2
-      .update(users2)
-      .set({ balance: newBalance })
-      .where(eq(users2.id, userId))
-      .returning();
+    const result = await db2.update(users2).set({ balance: newBalance }).where(eq(users2.id, userId)).returning();
     return result[0];
   }
   async getTransferHistory() {
-    const result = await db2
-      .select()
-      .from(transactions2)
-      .where(eq(transactions2.isSimulated, false))
-      .orderBy(desc(transactions2.createdAt));
+    const result = await db2.select().from(transactions2).where(eq(transactions2.isSimulated, false)).orderBy(desc(transactions2.createdAt));
     return result;
   }
   async getAllUsersSorted(sortBy) {
     if (sortBy === "balance") {
-      const result = await db2
-        .select()
-        .from(users2)
-        .orderBy(desc(users2.balance));
+      const result = await db2.select().from(users2).orderBy(desc(users2.balance));
       return result;
     } else {
-      const result = await db2
-        .select()
-        .from(users2)
-        .orderBy(desc(users2.createdAt));
+      const result = await db2.select().from(users2).orderBy(desc(users2.createdAt));
       return result;
     }
   }
   // Custom Presets CRUD
   async getCustomPresets(userId) {
-    const result = await db2
-      .select()
-      .from(userCustomPresets2)
-      .where(eq(userCustomPresets2.userId, userId))
-      .orderBy(desc(userCustomPresets2.createdAt));
+    const result = await db2.select().from(userCustomPresets2).where(eq(userCustomPresets2.userId, userId)).orderBy(desc(userCustomPresets2.createdAt));
     return result;
   }
   async getCustomPreset(id) {
-    const result = await db2
-      .select()
-      .from(userCustomPresets2)
-      .where(eq(userCustomPresets2.id, id));
+    const result = await db2.select().from(userCustomPresets2).where(eq(userCustomPresets2.id, id));
     return result[0];
   }
   async createCustomPreset(preset) {
-    const result = await db2
-      .insert(userCustomPresets2)
-      .values(preset)
-      .returning();
+    const result = await db2.insert(userCustomPresets2).values(preset).returning();
     return result[0];
   }
   async updateCustomPreset(id, updates) {
-    const result = await db2
-      .update(userCustomPresets2)
-      .set(updates)
-      .where(eq(userCustomPresets2.id, id))
-      .returning();
+    const result = await db2.update(userCustomPresets2).set(updates).where(eq(userCustomPresets2.id, id)).returning();
     return result[0];
   }
   async deleteCustomPreset(id) {
-    const result = await db2
-      .delete(userCustomPresets2)
-      .where(eq(userCustomPresets2.id, id))
-      .returning();
+    const result = await db2.delete(userCustomPresets2).where(eq(userCustomPresets2.id, id)).returning();
     return result.length > 0;
   }
   async triggerPresetTransaction(userId, presetId) {
@@ -866,9 +620,7 @@ let PostgresStorage = class {
     if (!user) {
       return { success: false, error: "Utente non trovato" };
     }
-    const amount =
-      Math.floor(Math.random() * (preset.maxAmount - preset.minAmount + 1)) +
-      preset.minAmount;
+    const amount = Math.floor(Math.random() * (preset.maxAmount - preset.minAmount + 1)) + preset.minAmount;
     const currentBalance = parseFloat(user.balance || "0");
     const currentPurchased = parseFloat(user.purchasedBalance || "0");
     const realPurchased = parseFloat(user.realPurchasedBalance || "0");
@@ -876,13 +628,13 @@ let PostgresStorage = class {
       if (realPurchased <= 0) {
         return {
           success: false,
-          error: "Saldo Certificato esaurito. Ricarica per continuare.",
+          error: "Saldo Certificato esaurito. Ricarica per continuare."
         };
       }
       if (amount > realPurchased) {
         return {
           success: false,
-          error: `Saldo Certificato insufficiente. Disponibile: ${realPurchased.toFixed(0)} EUR`,
+          error: `Saldo Certificato insufficiente. Disponibile: ${realPurchased.toFixed(0)} EUR`
         };
       }
       const newBalance = Math.max(0, currentBalance - amount).toFixed(2);
@@ -892,7 +644,7 @@ let PostgresStorage = class {
         userId,
         newBalance,
         newPurchased,
-        newRealPurchased,
+        newRealPurchased
       );
       const transaction = await this.createTransaction({
         userId,
@@ -901,7 +653,7 @@ let PostgresStorage = class {
         type: "expense",
         category: preset.category,
         isContabilizzato: true,
-        isSimulated: false,
+        isSimulated: false
       });
       return { success: true, transaction, user: updatedUser };
     } else {
@@ -910,8 +662,7 @@ let PostgresStorage = class {
       if (recoveryAvailable <= 0) {
         return {
           success: false,
-          error:
-            "Saldo Certificato gi\xE0 al massimo. Non puoi aggiungere altre entrate.",
+          error: "Saldo Certificato gi\xE0 al massimo. Non puoi aggiungere altre entrate."
         };
       }
       const cappedAmount = Math.min(amount, recoveryAvailable);
@@ -922,7 +673,7 @@ let PostgresStorage = class {
         userId,
         newBalance,
         newPurchased,
-        newRealPurchased,
+        newRealPurchased
       );
       const transaction = await this.createTransaction({
         userId,
@@ -931,7 +682,7 @@ let PostgresStorage = class {
         type: "income",
         category: preset.category,
         isContabilizzato: true,
-        isSimulated: false,
+        isSimulated: false
       });
       return { success: true, transaction, user: updatedUser };
     }
@@ -939,36 +690,29 @@ let PostgresStorage = class {
 };
 
 // server/storage.ts
-let storage = new PostgresStorage();
-let chatStorage = {
+var storage = new PostgresStorage();
+
+// server/replit_integrations/chat/routes.ts
+import OpenAI from "openai";
+
+// server/replit_integrations/chat/storage.ts
+import { eq as eq3, desc as desc3 } from "drizzle-orm";
+var chatStorage = {
   async getConversation(id) {
-    const [conversation] = await db
-      .select()
-      .from(conversations)
-      .where(eq3(conversations.id, id));
+    const [conversation] = await db.select().from(conversations).where(eq3(conversations.id, id));
     return conversation;
   },
   async getAllConversations(userId) {
     if (userId) {
-      return db
-        .select()
-        .from(conversations)
-        .where(eq3(conversations.userId, userId))
-        .orderBy(desc3(conversations.createdAt));
+      return db.select().from(conversations).where(eq3(conversations.userId, userId)).orderBy(desc3(conversations.createdAt));
     }
-    return db
-      .select()
-      .from(conversations)
-      .orderBy(desc3(conversations.createdAt));
+    return db.select().from(conversations).orderBy(desc3(conversations.createdAt));
   },
   async createConversation(title, userId) {
-    const [conversation] = await db
-      .insert(conversations)
-      .values({
-        title,
-        userId: userId || null,
-      })
-      .returning();
+    const [conversation] = await db.insert(conversations).values({
+      title,
+      userId: userId || null
+    }).returning();
     return conversation;
   },
   async deleteConversation(id) {
@@ -976,28 +720,20 @@ let chatStorage = {
     await db.delete(conversations).where(eq3(conversations.id, id));
   },
   async getMessagesByConversation(conversationId) {
-    return db
-      .select()
-      .from(messages)
-      .where(eq3(messages.conversationId, conversationId))
-      .orderBy(messages.createdAt);
+    return db.select().from(messages).where(eq3(messages.conversationId, conversationId)).orderBy(messages.createdAt);
   },
   async createMessage(conversationId, role, content) {
-    const [message] = await db
-      .insert(messages)
-      .values({ conversationId, role, content })
-      .returning();
+    const [message] = await db.insert(messages).values({ conversationId, role, content }).returning();
     return message;
-  },
+  }
 };
 
 // server/replit_integrations/chat/routes.ts
-let openai = new OpenAI({
-  apiKey:
-    process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "dummy-key-for-local-dev",
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+var openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "dummy-key-for-local-dev",
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
 });
-let FINANCIAL_ADVISOR_SYSTEM_PROMPT = `Sei un consulente finanziario AI personale di EquisCash. 
+var FINANCIAL_ADVISOR_SYSTEM_PROMPT = `Sei un consulente finanziario AI personale di EquisCash. 
 Il tuo nome \xE8 "Assistente EquisCash".
 
 Le tue competenze includono:
@@ -1046,7 +782,7 @@ function registerChatRoutes(app2) {
       const { title, userId } = req.body;
       const conversation = await chatStorage.createConversation(
         title || "Nuova Conversazione",
-        userId,
+        userId
       );
       res.status(201).json(conversation);
     } catch (error) {
@@ -1064,55 +800,54 @@ function registerChatRoutes(app2) {
       res.status(500).json({ error: "Failed to delete conversation" });
     }
   });
-  app2.post("/api/conversations/:id/messages", async (req, res) => {
-    try {
-      const conversationId = parseInt(req.params.id);
-      const { content, userContext } = req.body;
-      await chatStorage.createMessage(conversationId, "user", content);
-      const messages3 =
-        await chatStorage.getMessagesByConversation(conversationId);
-      const chatMessages = [
-        {
-          role: "system",
-          content:
-            FINANCIAL_ADVISOR_SYSTEM_PROMPT +
-            (userContext
-              ? `
+  app2.post(
+    "/api/conversations/:id/messages",
+    async (req, res) => {
+      try {
+        const conversationId = parseInt(req.params.id);
+        const { content, userContext } = req.body;
+        await chatStorage.createMessage(conversationId, "user", content);
+        const messages3 = await chatStorage.getMessagesByConversation(conversationId);
+        const chatMessages = [
+          {
+            role: "system",
+            content: FINANCIAL_ADVISOR_SYSTEM_PROMPT + (userContext ? `
 
-Contesto utente: ${userContext}`
-              : ""),
-        },
-        ...messages3.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-      ];
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: chatMessages,
-        max_tokens: 1024,
-      });
-      const assistantResponse =
-        completion.choices[0]?.message?.content ||
-        "Mi scuso, non sono riuscito a elaborare una risposta.";
-      const savedMessage = await chatStorage.createMessage(
-        conversationId,
-        "assistant",
-        assistantResponse,
-      );
-      res.json({ message: savedMessage });
-    } catch (error) {
-      console.error("Error sending message:", error);
-      res.status(500).json({ error: "Failed to send message" });
+Contesto utente: ${userContext}` : "")
+          },
+          ...messages3.map((m) => ({
+            role: m.role,
+            content: m.content
+          }))
+        ];
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: chatMessages,
+          max_tokens: 1024
+        });
+        const assistantResponse = completion.choices[0]?.message?.content || "Mi scuso, non sono riuscito a elaborare una risposta.";
+        const savedMessage = await chatStorage.createMessage(
+          conversationId,
+          "assistant",
+          assistantResponse
+        );
+        res.json({ message: savedMessage });
+      } catch (error) {
+        console.error("Error sending message:", error);
+        res.status(500).json({ error: "Failed to send message" });
+      }
     }
-  });
+  );
 }
-let openai2 = new OpenAI2({
-  apiKey:
-    process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "dummy-key-for-local-dev",
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+
+// server/replit_integrations/news/routes.ts
+import OpenAI2 from "openai";
+import { eq as eq4, desc as desc4 } from "drizzle-orm";
+var openai2 = new OpenAI2({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "dummy-key-for-local-dev",
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
 });
-let FINANCIAL_NEWS_TOPICS = [
+var FINANCIAL_NEWS_TOPICS = [
   {
     category: "Mercati",
     icon: "trending-up",
@@ -1120,8 +855,8 @@ let FINANCIAL_NEWS_TOPICS = [
       "Borsa Italiana",
       "FTSE MIB",
       "mercati azionari europei",
-      "Wall Street",
-    ],
+      "Wall Street"
+    ]
   },
   {
     category: "Economia",
@@ -1130,8 +865,8 @@ let FINANCIAL_NEWS_TOPICS = [
       "PIL Italia",
       "inflazione",
       "BCE tassi interesse",
-      "economia europea",
-    ],
+      "economia europea"
+    ]
   },
   {
     category: "Risparmio",
@@ -1140,58 +875,50 @@ let FINANCIAL_NEWS_TOPICS = [
       "conti deposito",
       "buoni fruttiferi",
       "investimenti sicuri",
-      "rendimenti",
-    ],
+      "rendimenti"
+    ]
   },
   {
     category: "Banche",
     icon: "building",
-    topics: ["banche italiane", "mutui", "prestiti", "fintech"],
+    topics: ["banche italiane", "mutui", "prestiti", "fintech"]
   },
   {
     category: "Crypto",
     icon: "cpu",
-    topics: ["Bitcoin", "criptovalute", "blockchain", "ETF crypto"],
+    topics: ["Bitcoin", "criptovalute", "blockchain", "ETF crypto"]
   },
   {
     category: "Immobiliare",
     icon: "home",
-    topics: ["mercato immobiliare", "mutui casa", "affitti", "prezzi case"],
+    topics: ["mercato immobiliare", "mutui casa", "affitti", "prezzi case"]
   },
   {
     category: "Lavoro",
     icon: "briefcase",
-    topics: ["occupazione Italia", "pensioni", "INPS", "stipendi"],
+    topics: ["occupazione Italia", "pensioni", "INPS", "stipendi"]
   },
   {
     category: "Fisco",
     icon: "file-text",
-    topics: ["tasse", "dichiarazione redditi", "bonus fiscali", "detrazioni"],
-  },
+    topics: ["tasse", "dichiarazione redditi", "bonus fiscali", "detrazioni"]
+  }
 ];
 async function generatePersonalizedNews(userId, userBalance) {
   let spendingCategories = [];
   if (userId) {
-    const userTransactions = await db
-      .select()
-      .from(transactions)
-      .where(eq4(transactions.userId, userId))
-      .orderBy(desc4(transactions.date))
-      .limit(50);
+    const userTransactions = await db.select().from(transactions).where(eq4(transactions.userId, userId)).orderBy(desc4(transactions.date)).limit(50);
     const categoryCount = {};
     userTransactions.forEach((tx) => {
       categoryCount[tx.category] = (categoryCount[tx.category] || 0) + 1;
     });
-    spendingCategories = Object.entries(categoryCount)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([cat]) => cat);
+    spendingCategories = Object.entries(categoryCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([cat]) => cat);
   }
   const today = /* @__PURE__ */ new Date();
   const dateStr = today.toLocaleDateString("it-IT", {
     day: "numeric",
     month: "long",
-    year: "numeric",
+    year: "numeric"
   });
   const prompt = `Sei un esperto giornalista finanziario italiano. Genera 8 notizie finanziarie realistiche e attuali per un utente di una app bancaria italiana.
 
@@ -1218,18 +945,13 @@ Rispondi SOLO con un array JSON valido (senza markdown, senza commenti). Ogni og
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 2e3,
-      temperature: 0.8,
+      temperature: 0.8
     });
     const content = completion.choices[0]?.message?.content || "[]";
-    const cleanContent = content
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
+    const cleanContent = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const newsItems = JSON.parse(cleanContent);
     return newsItems.map((item, index) => {
-      const categoryInfo =
-        FINANCIAL_NEWS_TOPICS.find((t) => t.category === item.category) ||
-        FINANCIAL_NEWS_TOPICS[0];
+      const categoryInfo = FINANCIAL_NEWS_TOPICS.find((t) => t.category === item.category) || FINANCIAL_NEWS_TOPICS[0];
       return {
         id: `news-${Date.now()}-${index}`,
         title: item.title,
@@ -1238,9 +960,9 @@ Rispondi SOLO con un array JSON valido (senza markdown, senza commenti). Ogni og
         relevanceScore: item.relevanceScore,
         source: item.source,
         publishedAt: new Date(
-          Date.now() - Math.random() * 24 * 60 * 60 * 1e3,
+          Date.now() - Math.random() * 24 * 60 * 60 * 1e3
         ).toISOString(),
-        icon: categoryInfo.icon,
+        icon: categoryInfo.icon
       };
     });
   } catch (error) {
@@ -1254,47 +976,43 @@ function getDefaultNews() {
     {
       id: "default-1",
       title: "FTSE MIB chiude in rialzo: banche protagoniste",
-      summary:
-        "La Borsa di Milano chiude positiva trainata dal comparto bancario. I titoli del settore tra i migliori della giornata.",
+      summary: "La Borsa di Milano chiude positiva trainata dal comparto bancario. I titoli del settore tra i migliori della giornata.",
       category: "Mercati",
       relevanceScore: 85,
       source: "Il Sole 24 Ore",
       publishedAt: now.toISOString(),
-      icon: "trending-up",
+      icon: "trending-up"
     },
     {
       id: "default-2",
       title: "BCE: tassi invariati, focus su inflazione",
-      summary:
-        "La Banca Centrale Europea mantiene i tassi di interesse stabili. Lagarde: 'Monitoreremo attentamente i dati sull'inflazione'.",
+      summary: "La Banca Centrale Europea mantiene i tassi di interesse stabili. Lagarde: 'Monitoreremo attentamente i dati sull'inflazione'.",
       category: "Economia",
       relevanceScore: 90,
       source: "ANSA Economia",
       publishedAt: new Date(now.getTime() - 2 * 60 * 60 * 1e3).toISOString(),
-      icon: "globe",
+      icon: "globe"
     },
     {
       id: "default-3",
       title: "Conti deposito: rendimenti in aumento",
-      summary:
-        "Le banche italiane alzano i tassi sui conti deposito. Opportunit\xE0 interessanti per i risparmiatori.",
+      summary: "Le banche italiane alzano i tassi sui conti deposito. Opportunit\xE0 interessanti per i risparmiatori.",
       category: "Risparmio",
       relevanceScore: 95,
       source: "Milano Finanza",
       publishedAt: new Date(now.getTime() - 4 * 60 * 60 * 1e3).toISOString(),
-      icon: "piggy-bank",
+      icon: "piggy-bank"
     },
     {
       id: "default-4",
       title: "Mercato immobiliare: prezzi stabili nel 2024",
-      summary:
-        "L'Osservatorio del Mercato Immobiliare conferma la stabilizzazione dei prezzi nelle principali citt\xE0 italiane.",
+      summary: "L'Osservatorio del Mercato Immobiliare conferma la stabilizzazione dei prezzi nelle principali citt\xE0 italiane.",
       category: "Immobiliare",
       relevanceScore: 75,
       source: "Idealista News",
       publishedAt: new Date(now.getTime() - 6 * 60 * 60 * 1e3).toISOString(),
-      icon: "home",
-    },
+      icon: "home"
+    }
   ];
 }
 function registerNewsRoutes(app2) {
@@ -1305,8 +1023,8 @@ function registerNewsRoutes(app2) {
       const news = await generatePersonalizedNews(userId || null, balance);
       res.json({
         news: news.sort((a, b) => b.relevanceScore - a.relevanceScore),
-        generatedAt: /* @__PURE__ */ new Date().toISOString(),
-        personalized: !!userId,
+        generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        personalized: !!userId
       });
     } catch (error) {
       console.error("Error fetching news:", error);
@@ -1317,27 +1035,22 @@ function registerNewsRoutes(app2) {
     res.json(
       FINANCIAL_NEWS_TOPICS.map((t) => ({
         category: t.category,
-        icon: t.icon,
-      })),
+        icon: t.icon
+      }))
     );
   });
 }
 
 // shared/presets.ts
-let DEFAULT_PRESETS = [];
+var DEFAULT_PRESETS = [];
 
 // server/routes.ts
-function generateRandomTransaction(
-  userId,
-  currentBalance,
-  purchasedBalance,
-  userSettings,
-) {
+function generateRandomTransaction(userId, currentBalance, purchasedBalance, userSettings) {
   const now = /* @__PURE__ */ new Date();
   const isExpense = true;
   const excludeDescriptions = [
     ...userSettings.deletedPresets,
-    ...userSettings.disabledPresets,
+    ...userSettings.disabledPresets
   ];
   let availablePresets = DEFAULT_PRESETS.filter((p) => {
     if (p.type !== "expense") return false;
@@ -1345,23 +1058,19 @@ function generateRandomTransaction(
     return true;
   });
   const customExpensePresets = userSettings.customPresets.filter(
-    (p) => p.type === "expense",
+    (p) => p.type === "expense"
   );
   availablePresets = [...availablePresets, ...customExpensePresets];
   if (availablePresets.length === 0) {
     return null;
   }
-  const preset =
-    availablePresets[Math.floor(Math.random() * availablePresets.length)];
+  const preset = availablePresets[Math.floor(Math.random() * availablePresets.length)];
   let amount;
   if (preset.fixedAmounts && preset.fixedAmounts.length > 0) {
-    amount =
-      preset.fixedAmounts[
-        Math.floor(Math.random() * preset.fixedAmounts.length)
-      ];
+    amount = preset.fixedAmounts[Math.floor(Math.random() * preset.fixedAmounts.length)];
   } else {
     amount = Math.round(
-      Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount,
+      Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount
     );
   }
   const wasCapped = false;
@@ -1378,7 +1087,7 @@ function generateRandomTransaction(
     isSimulated: true,
     date: new Date(now),
     wasCapped,
-    cappedMessage,
+    cappedMessage
   };
 }
 async function registerRoutes(app2) {
@@ -1386,7 +1095,7 @@ async function registerRoutes(app2) {
     if (req.path === "/server-date") return next();
     if (!process.env.DATABASE_URL) {
       return res.status(503).json({
-        error: "Server non configurato: DATABASE_URL mancante",
+        error: "Server non configurato: DATABASE_URL mancante"
       });
     }
     next();
@@ -1403,7 +1112,7 @@ async function registerRoutes(app2) {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-      hour12: false,
+      hour12: false
     });
     const parts = romeFormatter.formatToParts(now);
     const romeDateStr = `${parts.find((p) => p.type === "year")?.value}-${parts.find((p) => p.type === "month")?.value}-${parts.find((p) => p.type === "day")?.value}T${parts.find((p) => p.type === "hour")?.value}:${parts.find((p) => p.type === "minute")?.value}:${parts.find((p) => p.type === "second")?.value}`;
@@ -1413,12 +1122,12 @@ async function registerRoutes(app2) {
       timestamp: now.getTime(),
       timezone: "Europe/Rome",
       currentMonth: parseInt(
-        parts.find((p) => p.type === "month")?.value || "1",
+        parts.find((p) => p.type === "month")?.value || "1"
       ),
       currentYear: parseInt(
-        parts.find((p) => p.type === "year")?.value || "2026",
+        parts.find((p) => p.type === "year")?.value || "2026"
       ),
-      currentDay: parseInt(parts.find((p) => p.type === "day")?.value || "1"),
+      currentDay: parseInt(parts.find((p) => p.type === "day")?.value || "1")
     });
   });
   app2.post("/api/auth/login", async (req, res) => {
@@ -1429,36 +1138,23 @@ async function registerRoutes(app2) {
     let user = await storage.getUserByUsername(username);
     let isNewUser = false;
     if (!user) {
-      const rechargeUsername =
-        username
-          .toLowerCase()
-          .replace(/\s+/g, "_")
-          .replace(/[^a-z0-9_]/g, "")
-          .substring(0, 15) +
-        "_" +
-        Math.floor(Math.random() * 1e3)
-          .toString()
-          .padStart(3, "0");
+      const rechargeUsername = username.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").substring(0, 15) + "_" + Math.floor(Math.random() * 1e3).toString().padStart(3, "0");
       user = await storage.createUser({
         username,
         pin: "00000",
         hasSetPin: false,
         fullName: username.toUpperCase(),
-        accountNumber: `1000/${Math.floor(Math.random() * 1e5)
-          .toString()
-          .padStart(8, "0")}`,
+        accountNumber: `1000/${Math.floor(Math.random() * 1e5).toString().padStart(8, "0")}`,
         balance: "10.00",
         purchasedBalance: "0.00",
         realPurchasedBalance: "0.00",
-        cardLastFour: Math.floor(Math.random() * 1e4)
-          .toString()
-          .padStart(4, "0"),
-        rechargeUsername,
+        cardLastFour: Math.floor(Math.random() * 1e4).toString().padStart(4, "0"),
+        rechargeUsername
       });
       isNewUser = true;
       if (referralCode && referralCode.trim()) {
         const referrer = await storage.getUserByReferralCode(
-          referralCode.trim(),
+          referralCode.trim()
         );
         if (referrer && referrer.id !== user.id) {
           await storage.updateUserReferredBy(user.id, referrer.id);
@@ -1468,7 +1164,7 @@ async function registerRoutes(app2) {
     return res.json({
       userId: user.id,
       username: user.username,
-      needsSetup: isNewUser || !user.hasSetPin,
+      needsSetup: isNewUser || !user.hasSetPin
     });
   });
   app2.post("/api/auth/setup-pin", async (req, res) => {
@@ -1495,26 +1191,22 @@ async function registerRoutes(app2) {
         accountNumber: updatedUser.accountNumber,
         balance: updatedUser.balance,
         purchasedBalance: updatedUser.purchasedBalance,
-        cardLastFour: updatedUser.cardLastFour,
-      },
+        cardLastFour: updatedUser.cardLastFour
+      }
     });
   });
   app2.post("/api/auth/set-recharge-username", async (req, res) => {
     const { userId, rechargeUsername } = req.body;
     if (!userId || !rechargeUsername) {
-      return res
-        .status(400)
-        .json({ error: "UserId e username di ricarica richiesti" });
+      return res.status(400).json({ error: "UserId e username di ricarica richiesti" });
     }
     const trimmedUsername = rechargeUsername.trim().toLowerCase();
     if (trimmedUsername.length < 3) {
-      return res
-        .status(400)
-        .json({ error: "L'username deve essere di almeno 3 caratteri" });
+      return res.status(400).json({ error: "L'username deve essere di almeno 3 caratteri" });
     }
     if (!/^[a-z0-9_]+$/.test(trimmedUsername)) {
       return res.status(400).json({
-        error: "L'username puo contenere solo lettere, numeri e underscore",
+        error: "L'username puo contenere solo lettere, numeri e underscore"
       });
     }
     const user = await storage.getUser(userId);
@@ -1523,12 +1215,10 @@ async function registerRoutes(app2) {
     }
     if (user.rechargeUsername) {
       return res.status(400).json({
-        error:
-          "L'username di ricarica e gia stato impostato e non puo essere modificato",
+        error: "L'username di ricarica e gia stato impostato e non puo essere modificato"
       });
     }
-    const existingUser =
-      await storage.getUserByRechargeUsername(trimmedUsername);
+    const existingUser = await storage.getUserByRechargeUsername(trimmedUsername);
     if (existingUser) {
       return res.status(400).json({ error: "Questo username e gia in uso" });
     }
@@ -1541,8 +1231,7 @@ async function registerRoutes(app2) {
       return res.status(400).json({ available: false });
     }
     const trimmedUsername = rechargeUsername.trim().toLowerCase();
-    const existingUser =
-      await storage.getUserByRechargeUsername(trimmedUsername);
+    const existingUser = await storage.getUserByRechargeUsername(trimmedUsername);
     return res.json({ available: !existingUser });
   });
   app2.post("/api/auth/verify-pin", async (req, res) => {
@@ -1571,8 +1260,8 @@ async function registerRoutes(app2) {
         realPurchasedBalance: user.realPurchasedBalance,
         customMonthlyExpenses: user.customMonthlyExpenses,
         customMonthlyIncome: user.customMonthlyIncome,
-        cardLastFour: user.cardLastFour,
-      },
+        cardLastFour: user.cardLastFour
+      }
     });
   });
   app2.get("/api/user/:userId", async (req, res) => {
@@ -1593,7 +1282,7 @@ async function registerRoutes(app2) {
       realPurchasedBalance: user.realPurchasedBalance,
       customMonthlyExpenses: user.customMonthlyExpenses,
       customMonthlyIncome: user.customMonthlyIncome,
-      cardLastFour: user.cardLastFour,
+      cardLastFour: user.cardLastFour
     });
   });
   app2.put("/api/user/:userId/balance", async (req, res) => {
@@ -1608,7 +1297,7 @@ async function registerRoutes(app2) {
     }
     return res.json({
       id: user.id,
-      balance: user.balance,
+      balance: user.balance
     });
   });
   app2.put("/api/user/:userId/name", async (req, res) => {
@@ -1623,7 +1312,7 @@ async function registerRoutes(app2) {
     }
     return res.json({
       id: user.id,
-      fullName: user.fullName,
+      fullName: user.fullName
     });
   });
   app2.put("/api/user/:userId/account-number", async (req, res) => {
@@ -1638,7 +1327,7 @@ async function registerRoutes(app2) {
     }
     return res.json({
       id: user.id,
-      accountNumber: user.accountNumber,
+      accountNumber: user.accountNumber
     });
   });
   app2.put("/api/user/:userId/display-name", async (req, res) => {
@@ -1646,14 +1335,14 @@ async function registerRoutes(app2) {
     const { displayName } = req.body;
     const user = await storage.updateUserDisplayName(
       userId,
-      displayName || null,
+      displayName || null
     );
     if (!user) {
       return res.status(404).json({ error: "Utente non trovato" });
     }
     return res.json({
       id: user.id,
-      displayName: user.displayName,
+      displayName: user.displayName
     });
   });
   app2.put("/api/user/:userId/monthly-values", async (req, res) => {
@@ -1662,7 +1351,7 @@ async function registerRoutes(app2) {
     const user = await storage.updateUserMonthlyValues(
       userId,
       customMonthlyExpenses || null,
-      customMonthlyIncome || null,
+      customMonthlyIncome || null
     );
     if (!user) {
       return res.status(404).json({ error: "Utente non trovato" });
@@ -1670,7 +1359,7 @@ async function registerRoutes(app2) {
     return res.json({
       id: user.id,
       customMonthlyExpenses: user.customMonthlyExpenses,
-      customMonthlyIncome: user.customMonthlyIncome,
+      customMonthlyIncome: user.customMonthlyIncome
     });
   });
   app2.get("/api/transactions/:userId", async (req, res) => {
@@ -1685,20 +1374,18 @@ async function registerRoutes(app2) {
       return res.status(404).json({ error: "Utente non trovato" });
     }
     const dbCustomPresets = await storage.getCustomPresets(userId);
-    const customPresetsForRandom = dbCustomPresets
-      .filter((p) => p.isEnabled && p.type === "expense")
-      .map((p) => ({
-        description: p.description,
-        type: p.type,
-        category: p.category,
-        minAmount: p.minAmount,
-        maxAmount: p.maxAmount,
-        isCustom: true,
-      }));
+    const customPresetsForRandom = dbCustomPresets.filter((p) => p.isEnabled && p.type === "expense").map((p) => ({
+      description: p.description,
+      type: p.type,
+      category: p.category,
+      minAmount: p.minAmount,
+      maxAmount: p.maxAmount,
+      isCustom: true
+    }));
     const userSettings = {
       deletedPresets: [],
       disabledPresets: [],
-      customPresets: customPresetsForRandom,
+      customPresets: customPresetsForRandom
     };
     const currentBalance = parseFloat(user.balance || "0");
     const purchasedBalance = parseFloat(user.purchasedBalance || "0");
@@ -1706,46 +1393,39 @@ async function registerRoutes(app2) {
       userId,
       currentBalance,
       purchasedBalance,
-      userSettings,
+      userSettings
     );
     if (!transaction) {
       return res.json({
         transaction: null,
         newBalance: user.balance,
-        message:
-          "Nessun preset disponibile. Crea dei preset per generare transazioni casuali.",
+        message: "Nessun preset disponibile. Crea dei preset per generare transazioni casuali."
       });
     }
     const { wasCapped, cappedMessage, ...transactionData } = transaction;
     const created = await storage.createTransaction(transactionData);
     const amountValue = parseFloat(transaction.amount);
-    const balanceChange =
-      transaction.type === "expense" ? -amountValue : amountValue;
-    const newBalance =
-      Math.round(currentBalance + balanceChange).toFixed(0) + ".00";
+    const balanceChange = transaction.type === "expense" ? -amountValue : amountValue;
+    const newBalance = Math.round(currentBalance + balanceChange).toFixed(0) + ".00";
     const newPurchasedBalance = Math.max(
       0,
-      purchasedBalance + balanceChange,
+      purchasedBalance + balanceChange
     ).toFixed(2);
     await storage.updateUserBalanceWithPurchased(
       userId,
       newBalance,
-      newPurchasedBalance,
+      newPurchasedBalance
     );
     return res.json({
       transaction: created,
       newBalance,
       wasCapped,
-      cappedMessage,
+      cappedMessage
     });
   });
   app2.post("/api/transactions", async (req, res) => {
     const transaction = req.body;
-    if (
-      !transaction.userId ||
-      !transaction.description ||
-      !transaction.amount
-    ) {
+    if (!transaction.userId || !transaction.description || !transaction.amount) {
       return res.status(400).json({ error: "Dati transazione incompleti" });
     }
     const user = await storage.getUser(transaction.userId);
@@ -1757,7 +1437,7 @@ async function registerRoutes(app2) {
     const realPurchasedBalance = parseFloat(user.realPurchasedBalance || "0");
     const recoveryAvailability = Math.max(
       0,
-      realPurchasedBalance - currentBalance,
+      realPurchasedBalance - currentBalance
     );
     let amount = Math.abs(parseFloat(transaction.amount));
     let wasCapped = false;
@@ -1765,7 +1445,7 @@ async function registerRoutes(app2) {
       if (recoveryAvailability <= 0) {
         return res.status(403).json({
           error: "Saldo gi\xE0 al massimo. Non puoi aggiungere altre entrate.",
-          recoveryAvailability: 0,
+          recoveryAvailability: 0
         });
       }
       if (amount > recoveryAvailability) {
@@ -1781,28 +1461,25 @@ async function registerRoutes(app2) {
     transaction.isSimulated = true;
     const created = await storage.createTransaction(transaction);
     const balanceChange = transaction.type === "expense" ? -amount : amount;
-    const newBalance =
-      Math.floor(currentBalance + balanceChange).toFixed(0) + ".00";
+    const newBalance = Math.floor(currentBalance + balanceChange).toFixed(0) + ".00";
     const newPurchasedBalance = Math.max(
       0,
-      purchasedBalance + balanceChange,
+      purchasedBalance + balanceChange
     ).toFixed(2);
     await storage.updateUserBalanceWithPurchased(
       user.id,
       newBalance,
-      newPurchasedBalance,
+      newPurchasedBalance
     );
     return res.json({
       transaction: created,
       newBalance,
       wasCapped,
-      cappedMessage: wasCapped
-        ? "Importo limitato al saldo reale disponibile"
-        : void 0,
+      cappedMessage: wasCapped ? "Importo limitato al saldo reale disponibile" : void 0,
       recoveryAvailability: Math.max(
         0,
-        realPurchasedBalance - parseFloat(newBalance),
-      ),
+        realPurchasedBalance - parseFloat(newBalance)
+      )
     });
   });
   app2.post("/api/transactions/certified-expense", async (req, res) => {
@@ -1822,19 +1499,17 @@ async function registerRoutes(app2) {
     const purchasedBalance = parseFloat(user.purchasedBalance || "0");
     const realPurchased = parseFloat(user.realPurchasedBalance || "0");
     if (currentBalance <= 0) {
-      return res
-        .status(400)
-        .json({ error: "Saldo insufficiente per registrare l'uscita." });
+      return res.status(400).json({ error: "Saldo insufficiente per registrare l'uscita." });
     }
     const actualExpense = Math.min(expenseAmount, Math.floor(currentBalance));
     const newBalance = Math.max(0, currentBalance - actualExpense).toFixed(2);
     const newPurchased = Math.max(0, purchasedBalance - actualExpense).toFixed(
-      2,
+      2
     );
     await storage.updateUserBalanceWithPurchased(
       userId,
       newBalance,
-      newPurchased,
+      newPurchased
     );
     const updatedUser = await storage.getUser(userId);
     const transaction = await storage.createTransaction({
@@ -1844,17 +1519,17 @@ async function registerRoutes(app2) {
       type: "expense",
       category: category || "Altre uscite",
       isContabilizzato: true,
-      isSimulated: false,
+      isSimulated: false
     });
     const newRecoveryMargin = Math.max(
       0,
-      realPurchased - parseFloat(newBalance),
+      realPurchased - parseFloat(newBalance)
     );
     return res.json({
       success: true,
       transaction,
       user: updatedUser,
-      recoveryMargin: newRecoveryMargin,
+      recoveryMargin: newRecoveryMargin
     });
   });
   app2.get("/api/transactions/:userId/expense-templates", async (req, res) => {
@@ -1865,7 +1540,7 @@ async function registerRoutes(app2) {
     }
     const transactions3 = await storage.getTransactions(userId);
     const manualExpenses = transactions3.filter(
-      (t) => t.type === "expense" && t.isSimulated === false,
+      (t) => t.type === "expense" && t.isSimulated === false
     );
     const templates = /* @__PURE__ */ new Map();
     for (const tx of manualExpenses) {
@@ -1874,7 +1549,7 @@ async function registerRoutes(app2) {
         templates.set(key, {
           description: tx.description,
           category: tx.category || "Altre uscite",
-          avgAmount: Math.abs(parseFloat(tx.amount || "0")),
+          avgAmount: Math.abs(parseFloat(tx.amount || "0"))
         });
       }
     }
@@ -1892,45 +1567,40 @@ async function registerRoutes(app2) {
     const realPurchased = parseFloat(user.realPurchasedBalance || "0");
     if (realPurchased <= 0) {
       return res.status(400).json({
-        error: "Saldo Certificato esaurito. Ricarica per continuare.",
+        error: "Saldo Certificato esaurito. Ricarica per continuare."
       });
     }
     const transactions3 = await storage.getTransactions(userId);
     const manualExpenses = transactions3.filter(
-      (t) => t.type === "expense" && t.isSimulated === false,
+      (t) => t.type === "expense" && t.isSimulated === false
     );
     if (manualExpenses.length === 0) {
       return res.status(400).json({
-        error:
-          "Nessun modello disponibile. Crea prima delle uscite manuali nella Console.",
+        error: "Nessun modello disponibile. Crea prima delle uscite manuali nella Console."
       });
     }
-    const template =
-      manualExpenses[Math.floor(Math.random() * manualExpenses.length)];
+    const template = manualExpenses[Math.floor(Math.random() * manualExpenses.length)];
     const baseAmount = Math.abs(parseFloat(template.amount || "0"));
     const variation = 0.3;
     const minAmount = Math.max(1, Math.floor(baseAmount * (1 - variation)));
     const maxAmount = Math.floor(baseAmount * (1 + variation));
-    let randomAmount =
-      Math.floor(Math.random() * (maxAmount - minAmount + 1)) + minAmount;
+    let randomAmount = Math.floor(Math.random() * (maxAmount - minAmount + 1)) + minAmount;
     randomAmount = Math.min(randomAmount, Math.floor(realPurchased));
     if (randomAmount <= 0) {
-      return res
-        .status(400)
-        .json({ error: "Saldo Certificato insufficiente." });
+      return res.status(400).json({ error: "Saldo Certificato insufficiente." });
     }
     const currentBalance = parseFloat(user.balance || "0");
     const purchasedBalance = parseFloat(user.purchasedBalance || "0");
     const newBalance = Math.max(0, currentBalance - randomAmount).toFixed(2);
     const newPurchased = Math.max(0, purchasedBalance - randomAmount).toFixed(
-      2,
+      2
     );
     const newRealPurchased = (realPurchased - randomAmount).toFixed(2);
     const updatedUser = await storage.updateUserAllBalances(
       userId,
       newBalance,
       newPurchased,
-      newRealPurchased,
+      newRealPurchased
     );
     const transaction = await storage.createTransaction({
       userId,
@@ -1939,7 +1609,7 @@ async function registerRoutes(app2) {
       type: "expense",
       category: template.category || "Altre uscite",
       isContabilizzato: true,
-      isSimulated: false,
+      isSimulated: false
     });
     return res.json({
       success: true,
@@ -1947,7 +1617,7 @@ async function registerRoutes(app2) {
       user: updatedUser,
       templateUsed: template.description,
       originalAmount: baseAmount,
-      generatedAmount: randomAmount,
+      generatedAmount: randomAmount
     });
   });
   app2.put("/api/transactions/:transactionId", async (req, res) => {
@@ -1970,13 +1640,13 @@ async function registerRoutes(app2) {
       return res.json({
         deletedPresets: [],
         disabledPresets: [],
-        customPresets: [],
+        customPresets: []
       });
     }
     return res.json({
       deletedPresets: JSON.parse(settings.deletedPresets),
       disabledPresets: JSON.parse(settings.disabledPresets),
-      customPresets: JSON.parse(settings.customPresets),
+      customPresets: JSON.parse(settings.customPresets)
     });
   });
   app2.post("/api/users/:userId/preset-settings", async (req, res) => {
@@ -1985,12 +1655,12 @@ async function registerRoutes(app2) {
     const settings = await storage.savePresetSettings(userId, {
       deletedPresets,
       disabledPresets,
-      customPresets,
+      customPresets
     });
     return res.json({
       deletedPresets: JSON.parse(settings.deletedPresets),
       disabledPresets: JSON.parse(settings.disabledPresets),
-      customPresets: JSON.parse(settings.customPresets),
+      customPresets: JSON.parse(settings.customPresets)
     });
   });
   app2.get("/api/users/:userId/custom-presets", async (req, res) => {
@@ -2001,12 +1671,7 @@ async function registerRoutes(app2) {
   app2.post("/api/users/:userId/custom-presets", async (req, res) => {
     const { userId } = req.params;
     const { description, type, category, minAmount, maxAmount } = req.body;
-    if (
-      !description ||
-      !category ||
-      minAmount === void 0 ||
-      maxAmount === void 0
-    ) {
+    if (!description || !category || minAmount === void 0 || maxAmount === void 0) {
       return res.status(400).json({ error: "Dati mancanti" });
     }
     const preset = await storage.createCustomPreset({
@@ -2016,14 +1681,13 @@ async function registerRoutes(app2) {
       category,
       minAmount: parseInt(minAmount),
       maxAmount: parseInt(maxAmount),
-      isEnabled: true,
+      isEnabled: true
     });
     return res.json(preset);
   });
   app2.put("/api/users/:userId/custom-presets/:presetId", async (req, res) => {
     const { userId, presetId } = req.params;
-    const { description, type, category, minAmount, maxAmount, isEnabled } =
-      req.body;
+    const { description, type, category, minAmount, maxAmount, isEnabled } = req.body;
     const existing = await storage.getCustomPreset(parseInt(presetId));
     if (!existing) {
       return res.status(404).json({ error: "Preset non trovato" });
@@ -2037,7 +1701,7 @@ async function registerRoutes(app2) {
       category,
       minAmount: minAmount !== void 0 ? parseInt(minAmount) : void 0,
       maxAmount: maxAmount !== void 0 ? parseInt(maxAmount) : void 0,
-      isEnabled,
+      isEnabled
     });
     return res.json(updated);
   });
@@ -2054,7 +1718,7 @@ async function registerRoutes(app2) {
       }
       await storage.deleteCustomPreset(parseInt(presetId));
       return res.json({ success: true });
-    },
+    }
   );
   app2.post(
     "/api/users/:userId/custom-presets/:presetId/trigger",
@@ -2062,7 +1726,7 @@ async function registerRoutes(app2) {
       const { userId, presetId } = req.params;
       const result = await storage.triggerPresetTransaction(
         userId,
-        parseInt(presetId),
+        parseInt(presetId)
       );
       if (!result.success) {
         return res.status(400).json({ error: result.error });
@@ -2070,9 +1734,9 @@ async function registerRoutes(app2) {
       return res.json({
         success: true,
         transaction: result.transaction,
-        user: result.user,
+        user: result.user
       });
-    },
+    }
   );
   app2.get("/api/users", async (req, res) => {
     const allUsers = await storage.getAllUsers();
@@ -2081,23 +1745,20 @@ async function registerRoutes(app2) {
       username: user.username,
       fullName: user.fullName,
       accountNumber: user.accountNumber,
-      balance: user.balance,
+      balance: user.balance
     }));
     return res.json(sanitizedUsers);
   });
   app2.get("/api/users/list", async (req, res) => {
     const { exclude } = req.query;
     const allUsers = await storage.getAllUsers();
-    const filteredUsers = allUsers
-      .filter((u) => !u.isBlocked)
-      .filter((u) => (exclude ? u.id !== exclude : true))
-      .map((u) => ({
-        id: u.id,
-        username: u.rechargeUsername || u.username,
-        fullName: u.fullName,
-        displayName: u.displayName,
-        accountNumber: u.accountNumber,
-      }));
+    const filteredUsers = allUsers.filter((u) => !u.isBlocked).filter((u) => exclude ? u.id !== exclude : true).map((u) => ({
+      id: u.id,
+      username: u.rechargeUsername || u.username,
+      fullName: u.fullName,
+      displayName: u.displayName,
+      accountNumber: u.accountNumber
+    }));
     return res.json(filteredUsers);
   });
   app2.get("/api/users/search/:username", async (req, res) => {
@@ -2107,18 +1768,14 @@ async function registerRoutes(app2) {
       return res.status(400).json({ error: "Username richiesto" });
     }
     if (partial === "true") {
-      const users3 = await storage.searchUsersByPartialUsername(
-        username.trim(),
-      );
-      const filtered = users3
-        .filter((u) => !u.isBlocked)
-        .map((u) => ({
-          id: u.id,
-          username: u.rechargeUsername || u.username,
-          fullName: u.fullName,
-          displayName: u.displayName,
-          accountNumber: u.accountNumber,
-        }));
+      const users3 = await storage.searchUsersByPartialUsername(username.trim());
+      const filtered = users3.filter((u) => !u.isBlocked).map((u) => ({
+        id: u.id,
+        username: u.rechargeUsername || u.username,
+        fullName: u.fullName,
+        displayName: u.displayName,
+        accountNumber: u.accountNumber
+      }));
       return res.json(filtered);
     }
     const user = await storage.getUserByUsername(username.trim());
@@ -2126,15 +1783,13 @@ async function registerRoutes(app2) {
       return res.status(404).json({ error: "Utente non trovato" });
     }
     if (user.isBlocked) {
-      return res
-        .status(403)
-        .json({ error: "Questo utente non pu\xF2 ricevere trasferimenti" });
+      return res.status(403).json({ error: "Questo utente non pu\xF2 ricevere trasferimenti" });
     }
     return res.json({
       id: user.id,
       username: user.username,
       fullName: user.fullName,
-      accountNumber: user.accountNumber,
+      accountNumber: user.accountNumber
     });
   });
   app2.post("/api/transfer", async (req, res) => {
@@ -2146,31 +1801,27 @@ async function registerRoutes(app2) {
     if (isNaN(amountNum) || amountNum <= 0 || !Number.isInteger(amountNum)) {
       return res.status(400).json({
         success: false,
-        error: "L'importo deve essere un numero intero positivo",
+        error: "L'importo deve essere un numero intero positivo"
       });
     }
     if (fromUserId === toUserId) {
       return res.status(400).json({
         success: false,
-        error: "Non puoi trasferire denaro a te stesso",
+        error: "Non puoi trasferire denaro a te stesso"
       });
     }
     const fromUser = await storage.getUser(fromUserId);
     if (!fromUser) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Utente non trovato" });
+      return res.status(404).json({ success: false, error: "Utente non trovato" });
     }
     const serverBalance = parseFloat(fromUser.balance || "0");
     if (amountNum > serverBalance) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Saldo insufficiente" });
+      return res.status(400).json({ success: false, error: "Saldo insufficiente" });
     }
     const result = await storage.transferBalance(
       fromUserId,
       toUserId,
-      amountNum,
+      amountNum
     );
     if (!result.success) {
       return res.status(400).json(result);
@@ -2186,7 +1837,7 @@ async function registerRoutes(app2) {
       accountNumber: toUser?.accountNumber || null,
       isContabilizzato: true,
       isSimulated: false,
-      date: now,
+      date: now
     });
     await storage.createTransaction({
       userId: toUserId,
@@ -2197,7 +1848,7 @@ async function registerRoutes(app2) {
       accountNumber: fromUser.accountNumber || null,
       isContabilizzato: true,
       isSimulated: false,
-      date: now,
+      date: now
     });
     return res.json(result);
   });
@@ -2213,16 +1864,14 @@ async function registerRoutes(app2) {
     const cleanUsername = username.trim().replace(/^@/, "");
     const user = await storage.getUserByUsername(cleanUsername);
     if (!user) {
-      return res
-        .status(404)
-        .json({ error: "Utente non trovato con questo username" });
+      return res.status(404).json({ error: "Utente non trovato con questo username" });
     }
     return res.json({
       id: user.id,
       username: user.username,
       accountNumber: user.accountNumber,
       fullName: user.fullName,
-      balance: user.balance,
+      balance: user.balance
     });
   });
   app2.post("/api/admin/topup", async (req, res) => {
@@ -2236,9 +1885,7 @@ async function registerRoutes(app2) {
     }
     const amountNum = parseInt(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      return res
-        .status(400)
-        .json({ error: "L'importo deve essere un numero intero positivo" });
+      return res.status(400).json({ error: "L'importo deve essere un numero intero positivo" });
     }
     const cleanUsername = username.trim().replace(/^@/, "");
     const user = await storage.getUserByUsername(cleanUsername);
@@ -2251,14 +1898,14 @@ async function registerRoutes(app2) {
     const previousTotalRecharged = parseFloat(user.totalRecharged || "0");
     const newBalance = (currentBalance + amountNum).toFixed(2);
     const newPurchasedBalance = (currentPurchasedBalance + amountNum).toFixed(
-      2,
+      2
     );
     const newRealPurchased = (currentRealPurchased + amountNum).toFixed(2);
     await storage.updateUserAllBalances(
       user.id,
       newBalance,
       newPurchasedBalance,
-      newRealPurchased,
+      newRealPurchased
     );
     await storage.updateUserTotalRecharged(user.id, amountNum);
     await storage.createTransaction({
@@ -2270,17 +1917,12 @@ async function registerRoutes(app2) {
       accountNumber: null,
       isContabilizzato: true,
       isSimulated: false,
-      date: /* @__PURE__ */ new Date(),
+      date: /* @__PURE__ */ new Date()
     });
     const newTotalRecharged = previousTotalRecharged + amountNum;
     let referralBonusAwarded = false;
     let referrerName = "";
-    if (
-      previousTotalRecharged < 2 &&
-      newTotalRecharged >= 2 &&
-      user.referredBy &&
-      !user.referralActivated
-    ) {
+    if (previousTotalRecharged < 2 && newTotalRecharged >= 2 && user.referredBy && !user.referralActivated) {
       const referrer = await storage.getUser(user.referredBy);
       if (referrer) {
         const bonusStr = await storage.getAppSetting("referral_bonus");
@@ -2288,20 +1930,18 @@ async function registerRoutes(app2) {
         const referrerBalance = parseFloat(referrer.balance || "0");
         const referrerPurchased = parseFloat(referrer.purchasedBalance || "0");
         const referrerRealPurchased = parseFloat(
-          referrer.realPurchasedBalance || "0",
+          referrer.realPurchasedBalance || "0"
         );
         const newReferrerBalance = (referrerBalance + bonusAmount).toFixed(2);
         const newReferrerPurchased = (referrerPurchased + bonusAmount).toFixed(
-          2,
+          2
         );
-        const newReferrerRealPurchased = (
-          referrerRealPurchased + bonusAmount
-        ).toFixed(2);
+        const newReferrerRealPurchased = (referrerRealPurchased + bonusAmount).toFixed(2);
         await storage.updateUserAllBalances(
           referrer.id,
           newReferrerBalance,
           newReferrerPurchased,
-          newReferrerRealPurchased,
+          newReferrerRealPurchased
         );
         await storage.createTransaction({
           userId: referrer.id,
@@ -2312,12 +1952,12 @@ async function registerRoutes(app2) {
           accountNumber: null,
           isContabilizzato: true,
           isSimulated: false,
-          date: /* @__PURE__ */ new Date(),
+          date: /* @__PURE__ */ new Date()
         });
         await storage.createReferralActivation(
           referrer.id,
           user.id,
-          bonusAmount,
+          bonusAmount
         );
         await storage.activateReferral(user.id);
         referralBonusAwarded = true;
@@ -2332,10 +1972,10 @@ async function registerRoutes(app2) {
         rechargeUsername: updatedUser.rechargeUsername,
         newBalance: updatedUser.balance,
         purchasedBalance: updatedUser.purchasedBalance,
-        totalRecharged: updatedUser.totalRecharged,
+        totalRecharged: updatedUser.totalRecharged
       },
       referralBonusAwarded,
-      referrerName: referralBonusAwarded ? referrerName : void 0,
+      referrerName: referralBonusAwarded ? referrerName : void 0
     });
   });
   app2.get("/api/admin/referral-settings", async (req, res) => {
@@ -2355,9 +1995,7 @@ async function registerRoutes(app2) {
     }
     const bonus = parseInt(referralBonus);
     if (isNaN(bonus) || bonus < 0) {
-      return res
-        .status(400)
-        .json({ error: "Il bonus deve essere un numero positivo" });
+      return res.status(400).json({ error: "Il bonus deve essere un numero positivo" });
     }
     await storage.setAppSetting("referral_bonus", bonus.toString());
     return res.json({ success: true, referralBonus: bonus });
@@ -2391,7 +2029,7 @@ async function registerRoutes(app2) {
       totalRecharged: user.totalRecharged,
       isBlocked: user.isBlocked,
       blockedReason: user.blockedReason,
-      createdAt: user.createdAt,
+      createdAt: user.createdAt
     }));
     return res.json(sanitizedUsers);
   });
@@ -2410,7 +2048,7 @@ async function registerRoutes(app2) {
     }
     return res.json({
       success: true,
-      user: { id: user.id, username: user.username, isBlocked: user.isBlocked },
+      user: { id: user.id, username: user.username, isBlocked: user.isBlocked }
     });
   });
   app2.post("/api/admin/unblock-user", async (req, res) => {
@@ -2428,7 +2066,7 @@ async function registerRoutes(app2) {
     }
     return res.json({
       success: true,
-      user: { id: user.id, username: user.username, isBlocked: user.isBlocked },
+      user: { id: user.id, username: user.username, isBlocked: user.isBlocked }
     });
   });
   app2.post("/api/admin/delete-user", async (req, res) => {
@@ -2442,13 +2080,11 @@ async function registerRoutes(app2) {
     }
     const success = await storage.deleteUser(userId);
     if (!success) {
-      return res
-        .status(500)
-        .json({ error: "Errore durante l'eliminazione dell'utente" });
+      return res.status(500).json({ error: "Errore durante l'eliminazione dell'utente" });
     }
     return res.json({
       success: true,
-      message: "Utente eliminato con successo",
+      message: "Utente eliminato con successo"
     });
   });
   app2.get("/api/admin/user-transfers/:userId", async (req, res) => {
@@ -2460,7 +2096,7 @@ async function registerRoutes(app2) {
     const { userId } = req.params;
     const allTransactions = await storage.getTransactions(userId);
     const transfers = allTransactions.filter(
-      (tx) => tx.category === "Trasferimenti" && tx.isSimulated === false,
+      (tx) => tx.category === "Trasferimenti" && tx.isSimulated === false
     );
     transfers.sort((a, b) => {
       const dateA = new Date(a.date || a.createdAt || 0);
@@ -2476,15 +2112,11 @@ async function registerRoutes(app2) {
       return res.status(401).json({ error: "Password admin non valida" });
     }
     if (!userId || newBalance === void 0) {
-      return res
-        .status(400)
-        .json({ error: "ID utente e nuovo saldo richiesti" });
+      return res.status(400).json({ error: "ID utente e nuovo saldo richiesti" });
     }
     const balanceNum = parseFloat(newBalance);
     if (isNaN(balanceNum) || balanceNum < 0) {
-      return res
-        .status(400)
-        .json({ error: "Il saldo deve essere un numero positivo" });
+      return res.status(400).json({ error: "Il saldo deve essere un numero positivo" });
     }
     const existingUser = await storage.getUser(userId);
     if (!existingUser) {
@@ -2495,12 +2127,10 @@ async function registerRoutes(app2) {
       userId,
       balanceStr,
       balanceStr,
-      balanceStr,
+      balanceStr
     );
     if (!updatedUser) {
-      return res
-        .status(500)
-        .json({ error: "Errore durante l'aggiornamento del saldo" });
+      return res.status(500).json({ error: "Errore durante l'aggiornamento del saldo" });
     }
     return res.json({
       success: true,
@@ -2508,8 +2138,8 @@ async function registerRoutes(app2) {
         id: updatedUser.id,
         username: updatedUser.username,
         balance: updatedUser.balance,
-        realPurchasedBalance: updatedUser.realPurchasedBalance,
-      },
+        realPurchasedBalance: updatedUser.realPurchasedBalance
+      }
     });
   });
   app2.get("/api/admin/transfers", async (req, res) => {
@@ -2525,14 +2155,13 @@ async function registerRoutes(app2) {
       enrichedTransfers.push({
         ...transfer,
         username: user?.username || "Sconosciuto",
-        fullName: user?.fullName || "Sconosciuto",
+        fullName: user?.fullName || "Sconosciuto"
       });
     }
     return res.json(enrichedTransfers);
   });
   app2.post("/api/bonifico", async (req, res) => {
-    const { userId, destinatario, iban, amount, causale, bonificoIstantaneo } =
-      req.body;
+    const { userId, destinatario, iban, amount, causale, bonificoIstantaneo } = req.body;
     if (!userId || !destinatario || !iban || !amount) {
       return res.status(400).json({ error: "Dati mancanti per il bonifico" });
     }
@@ -2549,7 +2178,7 @@ async function registerRoutes(app2) {
     const activeBalance = parseFloat(user.balance || "0");
     if (totalCost > activeBalance) {
       return res.status(400).json({
-        error: `Saldo Attivo insufficiente. Disponibile: ${activeBalance.toFixed(2)} EUR, Richiesto: ${totalCost.toFixed(2)} EUR`,
+        error: `Saldo Attivo insufficiente. Disponibile: ${activeBalance.toFixed(2)} EUR, Richiesto: ${totalCost.toFixed(2)} EUR`
       });
     }
     const purchasedBalance = parseFloat(user.purchasedBalance || "0");
@@ -2561,21 +2190,19 @@ async function registerRoutes(app2) {
       userId,
       newBalance,
       newPurchasedBalance,
-      newRealPurchasedBalance,
+      newRealPurchasedBalance
     );
     const now = /* @__PURE__ */ new Date();
     const italianFormatter = new Intl.DateTimeFormat("it-IT", {
       timeZone: "Europe/Rome",
       day: "2-digit",
       month: "2-digit",
-      year: "numeric",
+      year: "numeric"
     });
     const formattedDate = italianFormatter.format(now);
     const dateForFilename = formattedDate.replace(/\//g, ".");
     const operationNumber = `INTER${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}BOSBE${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-    const trn = `0${Math.floor(Math.random() * 1e18)
-      .toString()
-      .substring(0, 18)}`;
+    const trn = `0${Math.floor(Math.random() * 1e18).toString().substring(0, 18)}`;
     const transactionDescription = causale || `Bonifico a ${destinatario}`;
     await storage.createTransaction({
       userId,
@@ -2586,7 +2213,7 @@ async function registerRoutes(app2) {
       accountNumber: iban,
       isContabilizzato: true,
       isSimulated: false,
-      date: now,
+      date: now
     });
     await storage.createTransaction({
       userId,
@@ -2597,13 +2224,13 @@ async function registerRoutes(app2) {
       accountNumber: null,
       isContabilizzato: true,
       isSimulated: false,
-      date: now,
+      date: now
     });
     const receiptDateFormatter = new Intl.DateTimeFormat("it-IT", {
       timeZone: "Europe/Rome",
       day: "numeric",
       month: "short",
-      year: "numeric",
+      year: "numeric"
     });
     const receiptDate = receiptDateFormatter.format(now).toUpperCase();
     const receipt = {
@@ -2621,20 +2248,24 @@ async function registerRoutes(app2) {
       causale: causale || "Bonifico",
       bonificoIstantaneo,
       banca: "EQUISBANK SPA",
-      bicSwift: "BCTITMM1XXX",
+      bicSwift: "BCTITMM1XXX"
     };
     return res.json({
       success: true,
       receipt,
       newBalance,
-      newRealPurchasedBalance,
+      newRealPurchasedBalance
     });
   });
   const httpServer = createServer(app2);
   return httpServer;
 }
-let app = express();
-let log = console.log;
+
+// server/index.ts
+import * as fs from "fs";
+import * as path from "path";
+var app = express();
+var log = console.log;
 function setupCors(app2) {
   app2.use((req, res, next) => {
     const origins = /* @__PURE__ */ new Set();
@@ -2650,15 +2281,15 @@ function setupCors(app2) {
       origins.add(process.env.EXPO_PUBLIC_DOMAIN);
     }
     origins.add("http://localhost:8081");
-    origins.add("http://localhost:5000");
+    origins.add("http://localhost:5001");
     origins.add("http://127.0.0.1:8081");
-    origins.add("http://127.0.0.1:5000");
+    origins.add("http://127.0.0.1:5001");
     const origin = req.header("origin");
     if (origin && origins.has(origin)) {
       res.header("Access-Control-Allow-Origin", origin);
       res.header(
         "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS",
+        "GET, POST, PUT, DELETE, OPTIONS"
       );
       res.header("Access-Control-Allow-Headers", "Content-Type");
       res.header("Access-Control-Allow-Credentials", "true");
@@ -2674,8 +2305,8 @@ function setupBodyParsing(app2) {
     express.json({
       verify: (req, _res, buf) => {
         req.rawBody = buf;
-      },
-    }),
+      }
+    })
   );
   app2.use(express.urlencoded({ extended: false }));
 }
@@ -2685,7 +2316,7 @@ function setupRequestLogging(app2) {
     const path2 = req.path;
     let capturedJsonResponse = void 0;
     const originalResJson = res.json;
-    res.json = function (bodyJson, ...args) {
+    res.json = function(bodyJson, ...args) {
       capturedJsonResponse = bodyJson;
       return originalResJson.apply(res, [bodyJson, ...args]);
     };
@@ -2719,12 +2350,10 @@ function serveExpoManifest(platform, res) {
     process.cwd(),
     "static-build",
     platform,
-    "manifest.json",
+    "manifest.json"
   );
   if (!fs.existsSync(manifestPath)) {
-    return res
-      .status(404)
-      .json({ error: `Manifest not found for platform: ${platform}` });
+    return res.status(404).json({ error: `Manifest not found for platform: ${platform}` });
   }
   res.setHeader("expo-protocol-version", "1");
   res.setHeader("expo-sfv-version", "0");
@@ -2732,7 +2361,12 @@ function serveExpoManifest(platform, res) {
   const manifest = fs.readFileSync(manifestPath, "utf-8");
   res.send(manifest);
 }
-function serveLandingPage({ req, res, landingPageTemplate, appName }) {
+function serveLandingPage({
+  req,
+  res,
+  landingPageTemplate,
+  appName
+}) {
   const forwardedProto = req.header("x-forwarded-proto");
   const protocol = forwardedProto || req.protocol || "https";
   const forwardedHost = req.header("x-forwarded-host");
@@ -2741,10 +2375,7 @@ function serveLandingPage({ req, res, landingPageTemplate, appName }) {
   const expsUrl = `${host}`;
   log(`baseUrl`, baseUrl);
   log(`expsUrl`, expsUrl);
-  const html = landingPageTemplate
-    .replace(/BASE_URL_PLACEHOLDER/g, baseUrl)
-    .replace(/EXPS_URL_PLACEHOLDER/g, expsUrl)
-    .replace(/APP_NAME_PLACEHOLDER/g, appName);
+  const html = landingPageTemplate.replace(/BASE_URL_PLACEHOLDER/g, baseUrl).replace(/EXPS_URL_PLACEHOLDER/g, expsUrl).replace(/APP_NAME_PLACEHOLDER/g, appName);
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.status(200).send(html);
 }
@@ -2753,13 +2384,13 @@ function configureExpoAndLanding(app2) {
     process.cwd(),
     "server",
     "templates",
-    "landing-page.html",
+    "landing-page.html"
   );
   const adminTemplatePath = path.resolve(
     process.cwd(),
     "server",
     "templates",
-    "admin.html",
+    "admin.html"
   );
   const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
   const adminPageTemplate = fs.readFileSync(adminTemplatePath, "utf-8");
@@ -2785,7 +2416,7 @@ function configureExpoAndLanding(app2) {
         req,
         res,
         landingPageTemplate,
-        appName,
+        appName
       });
     }
     next();
@@ -2810,7 +2441,7 @@ function setupErrorHandler(app2) {
   configureExpoAndLanding(app);
   const server = await registerRoutes(app);
   setupErrorHandler(app);
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = parseInt(process.env.PORT || "5001", 10);
   server.listen(port, "0.0.0.0", () => {
     log(`express server serving on port ${port}`);
   });
