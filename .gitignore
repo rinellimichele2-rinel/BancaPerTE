@@ -31,6 +31,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -41,3 +42,13 @@ app-example
 # generated native folders
 /ios
 /android
+
+# SQLite database (development only)
+*.db
+
+# Build outputs
+server_dist/
+static-build/
+
+# Migrations (if you want to exclude them)
+# migrations/
