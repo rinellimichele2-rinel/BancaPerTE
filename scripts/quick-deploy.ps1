@@ -145,4 +145,5 @@ Write-Host "📱 Dopo aver completato i passi su Render:" -ForegroundColor Yello
 Write-Host "1. Aggiorna .env locale con l'URL Render" -ForegroundColor White
 Write-Host "2. Testa l'app: npm run expo:dev`n" -ForegroundColor White
 
-Read-Host "Premi Invio per chiudere"
+Write-Host "`nScript completato. Premi Ctrl+C per chiudere." -ForegroundColor Green
+Start-Sleep -Seconds 5
