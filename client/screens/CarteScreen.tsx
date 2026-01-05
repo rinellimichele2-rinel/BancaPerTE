@@ -16,20 +16,31 @@ import { Icon } from "@/components/Icon";
 import { useAuth } from "@/lib/auth-context";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 
-const QuickActionButton = ({ 
-  icon, 
-  label, 
-}: { 
-  icon: string; 
-  label: string; 
+const QuickActionButton = ({
+  icon,
+  label,
+}: {
+  icon: string;
+  label: string;
 }) => (
-  <Pressable style={({ pressed }) => [styles.quickActionBtn, pressed && styles.quickActionPressed]}>
+  <Pressable
+    style={({ pressed }) => [
+      styles.quickActionBtn,
+      pressed && styles.quickActionPressed,
+    ]}
+  >
     <Icon name={icon} size={18} color={BankColors.white} />
     <Text style={styles.quickActionLabel}>{label}</Text>
   </Pressable>
 );
 
-const MonthlyExpenseItem = ({ month, amount }: { month: string; amount: string }) => (
+const MonthlyExpenseItem = ({
+  month,
+  amount,
+}: {
+  month: string;
+  amount: string;
+}) => (
   <Pressable style={styles.monthlyItem}>
     <View style={styles.monthlyLeft}>
       <View style={styles.monthlyIcon}>
@@ -44,10 +55,15 @@ const MonthlyExpenseItem = ({ month, amount }: { month: string; amount: string }
   </Pressable>
 );
 
-const TransactionItem = ({ date, description, category, amount }: { 
-  date: string; 
-  description: string; 
-  category: string; 
+const TransactionItem = ({
+  date,
+  description,
+  category,
+  amount,
+}: {
+  date: string;
+  description: string;
+  category: string;
   amount: string;
 }) => (
   <Pressable style={styles.transactionItem}>
@@ -91,7 +107,11 @@ export default function CarteScreen() {
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
         <LinearGradient
-          colors={[BankColors.primaryLight, BankColors.primary, BankColors.primaryDark]}
+          colors={[
+            BankColors.primaryLight,
+            BankColors.primary,
+            BankColors.primaryDark,
+          ]}
           style={[styles.header, { paddingTop: insets.top + Spacing.md }]}
         >
           <View style={styles.headerTop}>
@@ -112,7 +132,9 @@ export default function CarteScreen() {
 
           <View style={styles.cardSelector}>
             <Pressable style={styles.cardSelectorBtn}>
-              <Text style={styles.cardSelectorText}>Carta di debito - **** {user?.cardLastFour || "3796"}</Text>
+              <Text style={styles.cardSelectorText}>
+                Carta di debito - **** {user?.cardLastFour || "3796"}
+              </Text>
             </Pressable>
             <Pressable style={styles.cardSelectorBtn}>
               <Text style={styles.cardSelectorText}>Richiedi nuova</Text>
@@ -132,18 +154,29 @@ export default function CarteScreen() {
               <View style={styles.cardBottom}>
                 <Pressable onPress={handleEditName}>
                   <Text style={styles.cardLabel}>DEBIT</Text>
-                  <Text style={styles.cardHolderName}>{user?.fullName || "COGNOME NOME"}</Text>
+                  <Text style={styles.cardHolderName}>
+                    {user?.fullName || "COGNOME NOME"}
+                  </Text>
                   <View style={styles.cardActiveTag}>
                     <Text style={styles.cardActiveText}>ATTIVATA</Text>
                   </View>
                 </Pressable>
                 <View style={styles.cardLogos}>
                   <View style={styles.pagoBancomatLogo}>
-                    <Text style={styles.pagoBancomatText}>PAGO{"\n"}BANCOMAT</Text>
+                    <Text style={styles.pagoBancomatText}>
+                      PAGO{"\n"}BANCOMAT
+                    </Text>
                   </View>
                   <View style={styles.mastercardLogo}>
-                    <View style={[styles.mcCircle, { backgroundColor: "#EB001B" }]} />
-                    <View style={[styles.mcCircle, { backgroundColor: "#F79E1B", marginLeft: -8 }]} />
+                    <View
+                      style={[styles.mcCircle, { backgroundColor: "#EB001B" }]}
+                    />
+                    <View
+                      style={[
+                        styles.mcCircle,
+                        { backgroundColor: "#F79E1B", marginLeft: -8 },
+                      ]}
+                    />
                   </View>
                 </View>
               </View>
@@ -151,8 +184,8 @@ export default function CarteScreen() {
             <Text style={styles.cardDescription}>Carta digitale e fisica</Text>
           </View>
 
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.quickActionsScroll}
             contentContainerStyle={styles.quickActionsContainer}
@@ -173,8 +206,12 @@ export default function CarteScreen() {
           </View>
 
           <View style={styles.disponibilitaCard}>
-            <Text style={styles.disponibilitaLabel}>Disponibilita pagamenti di questo mese</Text>
-            <Text style={styles.disponibilitaAmount}>3.771,69 {"\u20AC"} su 5.000,00 {"\u20AC"}</Text>
+            <Text style={styles.disponibilitaLabel}>
+              Disponibilita pagamenti di questo mese
+            </Text>
+            <Text style={styles.disponibilitaAmount}>
+              3.771,69 {"\u20AC"} su 5.000,00 {"\u20AC"}
+            </Text>
             <View style={styles.progressBar}>
               <View style={[styles.progressFill, { width: "75%" }]} />
             </View>
@@ -202,31 +239,37 @@ export default function CarteScreen() {
             </Pressable>
           </View>
 
-          <TransactionItem 
-            date="18.12.2025" 
-            description="AL SOLITO POSTO" 
-            category="ALTRE" 
-            amount="- 5,00 €" 
+          <TransactionItem
+            date="18.12.2025"
+            description="AL SOLITO POSTO"
+            category="ALTRE"
+            amount="- 5,00 €"
           />
-          <TransactionItem 
-            date="18.12.2025" 
-            description="DOK" 
-            category="ALTRE" 
-            amount="- 16,06 €" 
+          <TransactionItem
+            date="18.12.2025"
+            description="DOK"
+            category="ALTRE"
+            amount="- 16,06 €"
           />
-          <TransactionItem 
-            date="18.12.2025" 
-            description="AL SOLITO POSTO" 
-            category="ALTRE" 
-            amount="- 4,10 €" 
+          <TransactionItem
+            date="18.12.2025"
+            description="AL SOLITO POSTO"
+            category="ALTRE"
+            amount="- 4,10 €"
           />
         </View>
       </ScrollView>
 
       <Modal visible={showEditName} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditName(false)} />
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowEditName(false)}
+          />
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>Modifica Nome</Text>
             <TextInput
               style={styles.modalInput}
@@ -237,7 +280,10 @@ export default function CarteScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditName(false)}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditName(false)}
+              >
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
               <Pressable style={styles.modalSaveBtn} onPress={handleSaveName}>

@@ -51,7 +51,7 @@ function formatTimeAgo(dateStr: string): string {
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  
+
   if (diffMins < 60) {
     return `${diffMins} min fa`;
   } else if (diffHours < 24) {
@@ -66,25 +66,37 @@ function NewsCard({ article }: { article: NewsArticle }) {
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.newsCard, pressed && styles.newsCardPressed]}
+      style={({ pressed }) => [
+        styles.newsCard,
+        pressed && styles.newsCardPressed,
+      ]}
       onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
     >
       <View style={styles.newsHeader}>
-        <View style={[styles.categoryBadge, { backgroundColor: categoryColor + "20" }]}>
+        <View
+          style={[
+            styles.categoryBadge,
+            { backgroundColor: categoryColor + "20" },
+          ]}
+        >
           <Icon name={article.icon} size={14} color={categoryColor} />
-          <Text style={[styles.categoryText, { color: categoryColor }]}>{article.category}</Text>
+          <Text style={[styles.categoryText, { color: categoryColor }]}>
+            {article.category}
+          </Text>
         </View>
         <Text style={styles.timeAgo}>{formatTimeAgo(article.publishedAt)}</Text>
       </View>
-      
+
       <Text style={styles.newsTitle}>{article.title}</Text>
       <Text style={styles.newsSummary}>{article.summary}</Text>
-      
+
       <View style={styles.newsFooter}>
         <Text style={styles.newsSource}>{article.source}</Text>
         <View style={styles.relevanceContainer}>
           <Icon name="target" size={12} color={BankColors.gray400} />
-          <Text style={styles.relevanceText}>{article.relevanceScore}% rilevante</Text>
+          <Text style={styles.relevanceText}>
+            {article.relevanceScore}% rilevante
+          </Text>
         </View>
       </View>
     </Pressable>
@@ -123,7 +135,10 @@ export default function NewsScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: headerHeight + Spacing.md, paddingBottom: insets.bottom + Spacing.xl },
+          {
+            paddingTop: headerHeight + Spacing.md,
+            paddingBottom: insets.bottom + Spacing.xl,
+          },
         ]}
         refreshControl={
           <RefreshControl
@@ -145,7 +160,9 @@ export default function NewsScreen() {
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={BankColors.primary} />
-            <Text style={styles.loadingText}>Caricamento notizie personalizzate...</Text>
+            <Text style={styles.loadingText}>
+              Caricamento notizie personalizzate...
+            </Text>
           </View>
         ) : news.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -161,7 +178,11 @@ export default function NewsScreen() {
 
         {data?.generatedAt ? (
           <Text style={styles.generatedAt}>
-            Aggiornato: {new Date(data.generatedAt).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+            Aggiornato:{" "}
+            {new Date(data.generatedAt).toLocaleTimeString("it-IT", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </Text>
         ) : null}
       </ScrollView>

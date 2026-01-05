@@ -14,9 +14,12 @@ export function useServerDate() {
   });
 }
 
-export function formatServerDate(isoDate: string, format: "short" | "long" | "full" = "short"): string {
+export function formatServerDate(
+  isoDate: string,
+  format: "short" | "long" | "full" = "short",
+): string {
   const date = new Date(isoDate);
-  
+
   switch (format) {
     case "full":
       return date.toLocaleDateString("it-IT", {
@@ -50,6 +53,8 @@ export function isToday(isoDate: string, serverDate: string): boolean {
 export function isThisMonth(isoDate: string, serverDate: string): boolean {
   const transaction = new Date(isoDate);
   const current = new Date(serverDate);
-  return transaction.getMonth() === current.getMonth() && 
-         transaction.getFullYear() === current.getFullYear();
+  return (
+    transaction.getMonth() === current.getMonth() &&
+    transaction.getFullYear() === current.getFullYear()
+  );
 }

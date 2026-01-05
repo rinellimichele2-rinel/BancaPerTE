@@ -12,7 +12,12 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth-context";
 import { Icon } from "@/components/Icon";
-import { BankColors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import {
+  BankColors,
+  Spacing,
+  BorderRadius,
+  Typography,
+} from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -29,7 +34,7 @@ export default function PinEntryScreen() {
 
   const handleNumberPress = async (num: string) => {
     if (pin.length >= PIN_LENGTH) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newPin = pin + num;
     setPin(newPin);
@@ -39,9 +44,10 @@ export default function PinEntryScreen() {
       setIsLoading(true);
       const success = await verifyPin(newPin);
       setIsLoading(false);
-      
+
       if (success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        navigation.navigate("Main");
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setError(true);
@@ -141,10 +147,12 @@ export default function PinEntryScreen() {
       <View style={styles.header}>
         <View style={styles.headerBar} />
       </View>
-      
-      <View style={[styles.content, { paddingTop: insets.top + Spacing["4xl"] }]}>
+
+      <View
+        style={[styles.content, { paddingTop: insets.top + Spacing["4xl"] }]}
+      >
         <Text style={styles.title}>Inserisci PIN</Text>
-        
+
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={BankColors.primary} />
@@ -152,13 +160,13 @@ export default function PinEntryScreen() {
         ) : (
           renderPinDots()
         )}
-        
+
         {error && (
           <Text style={styles.errorText}>PIN non valido. Riprova.</Text>
         )}
-        
+
         {renderKeypad()}
-        
+
         <View style={styles.forgotContainer}>
           <Text style={styles.forgotText}>Hai dimenticato il tuo PIN?</Text>
           <Pressable>
@@ -166,9 +174,12 @@ export default function PinEntryScreen() {
           </Pressable>
         </View>
       </View>
-      
+
       <Pressable
-        style={[styles.cancelButton, { paddingBottom: insets.bottom + Spacing.lg }]}
+        style={[
+          styles.cancelButton,
+          { paddingBottom: insets.bottom + Spacing.lg },
+        ]}
         onPress={handleCancel}
       >
         <Text style={styles.cancelText}>Annulla</Text>

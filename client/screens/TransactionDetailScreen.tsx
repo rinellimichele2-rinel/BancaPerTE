@@ -19,7 +19,10 @@ import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { Transaction } from "@shared/schema";
 import type { HomeStackParamList } from "@/navigation/MainTabNavigator";
 
-type TransactionDetailRouteProp = RouteProp<HomeStackParamList, "TransactionDetail">;
+type TransactionDetailRouteProp = RouteProp<
+  HomeStackParamList,
+  "TransactionDetail"
+>;
 
 export default function TransactionDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -38,7 +41,7 @@ export default function TransactionDetailScreen() {
   const amountValue = Math.abs(parseFloat(transaction.amount));
   const formattedAmount = `${isExpense ? "-" : "+"}${amountValue.toFixed(2).replace(".", ",")} \u20AC`;
 
-  const dateStr = transaction.date 
+  const dateStr = transaction.date
     ? new Date(transaction.date).toLocaleDateString("it-IT", {
         weekday: "long",
         day: "numeric",
@@ -49,11 +52,17 @@ export default function TransactionDetailScreen() {
 
   const updateMutation = useMutation({
     mutationFn: async (updates: { amount?: string; description?: string }) => {
-      const response = await apiRequest("PUT", `/api/transactions/${transaction.id}`, updates);
+      const response = await apiRequest(
+        "PUT",
+        `/api/transactions/${transaction.id}`,
+        updates,
+      );
       return response.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/transactions", userId],
+      });
       await refreshUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
@@ -62,7 +71,9 @@ export default function TransactionDetailScreen() {
   const handleSaveAmount = async () => {
     const cleanAmount = newAmount.replace(",", ".");
     if (!isNaN(parseFloat(cleanAmount)) && parseFloat(cleanAmount) > 0) {
-      await updateMutation.mutateAsync({ amount: parseFloat(cleanAmount).toFixed(2) });
+      await updateMutation.mutateAsync({
+        amount: parseFloat(cleanAmount).toFixed(2),
+      });
       setShowEditAmount(false);
     }
   };
@@ -106,7 +117,10 @@ export default function TransactionDetailScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Icon name="chevron-left" size={24} color={BankColors.primary} />
           <Text style={styles.backText}>Indietro</Text>
         </Pressable>
@@ -119,11 +133,16 @@ export default function TransactionDetailScreen() {
 
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <View style={[styles.iconCircle, isExpense ? styles.expenseIcon : styles.incomeIcon]}>
-            <Icon 
-              name={getCategoryIcon()} 
-              size={32} 
-              color={isExpense ? BankColors.primary : BankColors.success} 
+          <View
+            style={[
+              styles.iconCircle,
+              isExpense ? styles.expenseIcon : styles.incomeIcon,
+            ]}
+          >
+            <Icon
+              name={getCategoryIcon()}
+              size={32}
+              color={isExpense ? BankColors.primary : BankColors.success}
             />
           </View>
         </View>
@@ -140,18 +159,23 @@ export default function TransactionDetailScreen() {
 
         <View style={styles.detailsContainer}>
           <View style={styles.detailRow}>
-            <Pressable style={styles.descriptionRow} onPress={() => setShowEditDescription(true)}>
+            <Pressable
+              style={styles.descriptionRow}
+              onPress={() => setShowEditDescription(true)}
+            >
               <Text style={styles.description}>{transaction.description}</Text>
             </Pressable>
             <Text style={styles.dateText}>{dateStr}</Text>
           </View>
-          
+
           {!transaction.isContabilizzato ? (
             <Text style={styles.nonContabilizzato}>NON CONTABILIZZATO</Text>
           ) : null}
 
           {transaction.accountNumber ? (
-            <Text style={styles.accountNumber}>{transaction.accountNumber}</Text>
+            <Text style={styles.accountNumber}>
+              {transaction.accountNumber}
+            </Text>
           ) : null}
         </View>
 
@@ -167,8 +191,14 @@ export default function TransactionDetailScreen() {
 
       <Modal visible={showEditAmount} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditAmount(false)} />
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowEditAmount(false)}
+          />
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>Modifica Importo</Text>
             <TextInput
               style={styles.modalInput}
@@ -179,11 +209,14 @@ export default function TransactionDetailScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditAmount(false)}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditAmount(false)}
+              >
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
-              <Pressable 
-                style={styles.modalSaveBtn} 
+              <Pressable
+                style={styles.modalSaveBtn}
                 onPress={handleSaveAmount}
                 disabled={updateMutation.isPending}
               >
@@ -200,8 +233,14 @@ export default function TransactionDetailScreen() {
 
       <Modal visible={showEditDescription} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditDescription(false)} />
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowEditDescription(false)}
+          />
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>Modifica Descrizione</Text>
             <TextInput
               style={styles.modalInput}
@@ -211,11 +250,14 @@ export default function TransactionDetailScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditDescription(false)}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditDescription(false)}
+              >
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
-              <Pressable 
-                style={styles.modalSaveBtn} 
+              <Pressable
+                style={styles.modalSaveBtn}
                 onPress={handleSaveDescription}
                 disabled={updateMutation.isPending}
               >

@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
@@ -20,8 +14,11 @@ interface OperationItemProps {
 }
 
 const OperationItem = ({ title, onPress }: OperationItemProps) => (
-  <Pressable 
-    style={({ pressed }) => [styles.operationItem, pressed && styles.operationItemPressed]}
+  <Pressable
+    style={({ pressed }) => [
+      styles.operationItem,
+      pressed && styles.operationItemPressed,
+    ]}
     onPress={onPress}
   >
     <Text style={styles.operationItemText}>{title}</Text>
@@ -38,7 +35,12 @@ interface SectionHeaderProps {
 const SectionHeader = ({ icon, iconColor, title }: SectionHeaderProps) => (
   <View style={styles.sectionHeader}>
     {icon ? (
-      <View style={[styles.sectionIcon, iconColor ? { backgroundColor: iconColor } : null]}>
+      <View
+        style={[
+          styles.sectionIcon,
+          iconColor ? { backgroundColor: iconColor } : null,
+        ]}
+      >
         <Icon name={icon} size={18} color={BankColors.white} />
       </View>
     ) : null}
@@ -88,22 +90,36 @@ export default function OperazioniScreen() {
           <View style={styles.card}>
             <OperationItem title="Bonifico" onPress={handleBonificoPress} />
             <OperationItem title="Prelievo cardless" />
-            <OperationItem title="Scambia denaro" onPress={handleTransferPress} />
+            <OperationItem
+              title="Scambia denaro"
+              onPress={handleTransferPress}
+            />
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Tutte le operazioni</Text>
-          
-          <SectionHeader icon="send" iconColor={BankColors.primary} title="Bonifici e giroconti" />
+
+          <SectionHeader
+            icon="send"
+            iconColor={BankColors.primary}
+            title="Bonifici e giroconti"
+          />
           <View style={styles.card}>
             <OperationItem title="Bonifico" onPress={handleBonificoPress} />
             <OperationItem title="Bonifico per agevolazioni fiscali" />
           </View>
 
-          <SectionHeader icon="credit-card" iconColor="#4CAF50" title="BANCOMAT Pay" />
+          <SectionHeader
+            icon="credit-card"
+            iconColor="#4CAF50"
+            title="BANCOMAT Pay"
+          />
           <View style={styles.card}>
-            <OperationItem title="Scambia denaro" onPress={handleTransferPress} />
+            <OperationItem
+              title="Scambia denaro"
+              onPress={handleTransferPress}
+            />
             <OperationItem title="Paga in negozio" />
             <OperationItem title="Addebiti ricorrenti" />
           </View>
@@ -115,13 +131,21 @@ export default function OperazioniScreen() {
             <OperationItem title="F24" />
           </View>
 
-          <SectionHeader icon="smartphone" iconColor="#FF9800" title="Ricariche" />
+          <SectionHeader
+            icon="smartphone"
+            iconColor="#FF9800"
+            title="Ricariche"
+          />
           <View style={styles.card}>
             <OperationItem title="Ricarica telefonica" />
             <OperationItem title="Ricarica carta prepagata" />
           </View>
 
-          <SectionHeader icon="file-text" iconColor="#2196F3" title="Pagamenti" />
+          <SectionHeader
+            icon="file-text"
+            iconColor="#2196F3"
+            title="Pagamenti"
+          />
           <View style={styles.card}>
             <OperationItem title="CBILL/pagoPA" />
             <OperationItem title="Bollo auto" />

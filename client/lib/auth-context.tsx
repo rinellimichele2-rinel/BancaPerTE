@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
 
@@ -32,7 +38,10 @@ interface AuthContextType {
   updateName: (newName: string) => Promise<void>;
   updateAccountNumber: (newAccountNumber: string) => Promise<void>;
   updateDisplayName: (displayName: string) => Promise<void>;
-  updateMonthlyValues: (expenses: string | null, income: string | null) => Promise<void>;
+  updateMonthlyValues: (
+    expenses: string | null,
+    income: string | null,
+  ) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,7 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
-        const { userId: storedUserId, needsSetup: storedNeedsSetup } = JSON.parse(stored);
+        const { userId: storedUserId, needsSetup: storedNeedsSetup } =
+          JSON.parse(stored);
         if (storedUserId) {
           setUserId(storedUserId);
           setNeedsSetup(storedNeedsSetup || false);
@@ -66,16 +76,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (username: string): Promise<{ userId: string; needsSetup: boolean }> => {
+  const login = async (
+    username: string,
+  ): Promise<{ userId: string; needsSetup: boolean }> => {
     const response = await apiRequest("POST", "/api/auth/login", { username });
     const data = await response.json();
-    
-    await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ 
-      userId: data.userId,
-      username: data.username,
-      needsSetup: data.needsSetup
-    }));
-    
+
+    await AsyncStorage.setItem(
+      AUTH_STORAGE_KEY,
+      JSON.stringify({
+        userId: data.userId,
+        username: data.username,
+        needsSetup: data.needsSetup,
+      }),
+    );
+
     setUserId(data.userId);
     setNeedsSetup(data.needsSetup);
     return { userId: data.userId, needsSetup: data.needsSetup };
@@ -83,21 +98,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setupPin = async (pin: string): Promise<boolean> => {
     if (!userId) return false;
-    
+
     try {
-      const response = await apiRequest("POST", "/api/auth/setup-pin", { userId, pin });
+      const response = await apiRequest("POST", "/api/auth/setup-pin", {
+        userId,
+        pin,
+      });
       const data = await response.json();
-      
+
       if (data.success && data.user) {
         setUser(data.user);
         setNeedsSetup(false);
         const stored = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
         const currentData = stored ? JSON.parse(stored) : {};
-        await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ 
-          ...currentData,
-          userId,
-          needsSetup: false
-        }));
+        await AsyncStorage.setItem(
+          AUTH_STORAGE_KEY,
+          JSON.stringify({
+            ...currentData,
+            userId,
+            needsSetup: false,
+          }),
+        );
         return true;
       }
       return false;
@@ -109,11 +130,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyPin = async (pin: string): Promise<boolean> => {
     if (!userId) return false;
-    
+
     try {
-      const response = await apiRequest("POST", "/api/auth/verify-pin", { userId, pin });
+      const response = await apiRequest("POST", "/api/auth/verify-pin", {
+        userId,
+        pin,
+      });
       const data = await response.json();
-      
+
       if (data.success && data.user) {
         setUser(data.user);
         return true;
@@ -133,9 +157,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     if (!userId) return;
-    
+
     try {
-      const response = await fetch(new URL(`/api/user/${userId}`, getApiUrl()).toString());
+      const response = await fetch(
+        new URL(`/api/user/${userId}`, getApiUrl()).toString(),
+      );
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
@@ -147,9 +173,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateBalance = async (newBalance: string) => {
     if (!userId) return;
-    
+
     try {
-      await apiRequest("PUT", `/api/user/${userId}/balance`, { balance: newBalance });
+      await apiRequest("PUT", `/api/user/${userId}/balance`, {
+        balance: newBalance,
+      });
       await refreshUser();
     } catch (error) {
       console.error("Error updating balance:", error);
@@ -158,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateName = async (newName: string) => {
     if (!userId) return;
-    
+
     try {
       await apiRequest("PUT", `/api/user/${userId}/name`, { name: newName });
       await refreshUser();
@@ -169,9 +197,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateAccountNumber = async (newAccountNumber: string) => {
     if (!userId) return;
-    
+
     try {
-      await apiRequest("PUT", `/api/user/${userId}/account-number`, { accountNumber: newAccountNumber });
+      await apiRequest("PUT", `/api/user/${userId}/account-number`, {
+        accountNumber: newAccountNumber,
+      });
       await refreshUser();
     } catch (error) {
       console.error("Error updating account number:", error);
@@ -180,22 +210,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateDisplayName = async (displayName: string) => {
     if (!userId) return;
-    
+
     try {
-      await apiRequest("PUT", `/api/user/${userId}/display-name`, { displayName });
+      await apiRequest("PUT", `/api/user/${userId}/display-name`, {
+        displayName,
+      });
       await refreshUser();
     } catch (error) {
       console.error("Error updating display name:", error);
     }
   };
 
-  const updateMonthlyValues = async (expenses: string | null, income: string | null) => {
+  const updateMonthlyValues = async (
+    expenses: string | null,
+    income: string | null,
+  ) => {
     if (!userId) return;
-    
+
     try {
-      await apiRequest("PUT", `/api/user/${userId}/monthly-values`, { 
-        customMonthlyExpenses: expenses, 
-        customMonthlyIncome: income 
+      await apiRequest("PUT", `/api/user/${userId}/monthly-values`, {
+        customMonthlyExpenses: expenses,
+        customMonthlyIncome: income,
       });
       await refreshUser();
     } catch (error) {

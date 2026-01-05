@@ -33,14 +33,14 @@ export default function RootStackNavigator() {
       {isAuthenticated ? (
         <Stack.Screen name="Main" component={MainTabNavigator} />
       ) : userId && needsSetup ? (
-        <Stack.Screen 
-          name="PinSetup" 
+        <Stack.Screen
+          name="PinSetup"
           component={PinSetupScreen}
           options={{ animation: "slide_from_bottom" }}
         />
       ) : userId ? (
-        <Stack.Screen 
-          name="PinEntry" 
+        <Stack.Screen
+          name="PinEntry"
           component={PinEntryScreen}
           options={{ animation: "slide_from_bottom" }}
         />

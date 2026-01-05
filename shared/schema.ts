@@ -1,47 +1,65 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
 
-export const users = pgTable("users", {
-  id: varchar("id")
+export const users = sqliteTable("users", {
+  id: text("id")
     .primaryKey()
-    .default(sql`gen_random_uuid()`),
+    .$defaultFn(() => uuidv4()),
   username: text("username").notNull().unique(),
   rechargeUsername: text("recharge_username").unique(),
   pin: text("pin").notNull(),
-  hasSetPin: boolean("has_set_pin").notNull().default(false),
+  hasSetPin: integer("has_set_pin", { mode: "boolean" })
+    .notNull()
+    .default(false),
   fullName: text("full_name").notNull(),
   accountNumber: text("account_number").notNull(),
-  balance: decimal("balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
-  purchasedBalance: decimal("purchased_balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
-  realPurchasedBalance: decimal("real_purchased_balance", { precision: 12, scale: 2 }).notNull().default("0.00"),
-  totalRecharged: decimal("total_recharged", { precision: 12, scale: 2 }).notNull().default("0.00"),
-  referredBy: varchar("referred_by"),
-  referralActivated: boolean("referral_activated").notNull().default(false),
+  balance: text("balance").notNull().default("0.00"),
+  purchasedBalance: text("purchased_balance").notNull().default("0.00"),
+  realPurchasedBalance: text("real_purchased_balance")
+    .notNull()
+    .default("0.00"),
+  totalRecharged: text("total_recharged").notNull().default("0.00"),
+  referredBy: text("referred_by"),
+  referralActivated: integer("referral_activated", { mode: "boolean" })
+    .notNull()
+    .default(false),
   cardLastFour: text("card_last_four").notNull().default("3796"),
   displayName: text("display_name"),
-  customMonthlyExpenses: decimal("custom_monthly_expenses", { precision: 12, scale: 2 }),
-  customMonthlyIncome: decimal("custom_monthly_income", { precision: 12, scale: 2 }),
-  isBlocked: boolean("is_blocked").notNull().default(false),
+  customMonthlyExpenses: text("custom_monthly_expenses"),
+  customMonthlyIncome: text("custom_monthly_income"),
+  isBlocked: integer("is_blocked", { mode: "boolean" })
+    .notNull()
+    .default(false),
   blockedReason: text("blocked_reason"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
+    () => new Date(),
+  ),
 });
 
-export const transactions = pgTable("transactions", {
-  id: varchar("id")
+export const transactions = sqliteTable("transactions", {
+  id: text("id")
     .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
+    .$defaultFn(() => uuidv4()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
   description: text("description").notNull(),
-  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  amount: text("amount").notNull(),
   type: text("type").notNull(),
   category: text("category").notNull(),
   accountNumber: text("account_number"),
-  isContabilizzato: boolean("is_contabilizzato").notNull().default(false),
-  isSimulated: boolean("is_simulated").notNull().default(true),
-  date: timestamp("date").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
+  isContabilizzato: integer("is_contabilizzato", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  isSimulated: integer("is_simulated", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  date: integer("date", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
+    () => new Date(),
+  ),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -55,6 +73,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   purchasedBalance: true,
   realPurchasedBalance: true,
   cardLastFour: true,
+  displayName: true,
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).pick({
@@ -75,19 +94,25 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 
 // Chat tables for AI financial advisor
-export const conversations = pgTable("conversations", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").references(() => users.id),
+export const conversations = sqliteTable("conversations", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  userId: text("user_id").references(() => users.id),
   title: text("title").notNull(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
 });
 
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  conversationId: integer("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+export const messages = sqliteTable("messages", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  conversationId: integer("conversation_id", { mode: "number" })
+    .notNull()
+    .references(() => conversations.id, { onDelete: "cascade" }),
   role: text("role").notNull(),
   content: text("content").notNull(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
 });
 
 export const insertConversationSchema = createInsertSchema(conversations).omit({
@@ -100,61 +125,57 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   createdAt: true,
 });
 
-export type Conversation = typeof conversations.$inferSelect;
-export type InsertConversation = z.infer<typeof insertConversationSchema>;
-export type Message = typeof messages.$inferSelect;
-export type InsertMessage = z.infer<typeof insertMessageSchema>;
-
-// User preset settings table (for deleted/disabled defaults)
-export const userPresetSettings = pgTable("user_preset_settings", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+export const userPresetSettings = sqliteTable("user_preset_settings", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
   deletedPresets: text("deleted_presets").notNull().default("[]"),
   disabledPresets: text("disabled_presets").notNull().default("[]"),
   customPresets: text("custom_presets").notNull().default("[]"),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
-export type UserPresetSettings = typeof userPresetSettings.$inferSelect;
-
-// User custom presets table (normalized, persistent)
-export const userCustomPresets = pgTable("user_custom_presets", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+export const userCustomPresets = sqliteTable("user_custom_presets", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
   description: text("description").notNull(),
-  type: text("type").notNull().default("expense"),
-  category: text("category").notNull(),
   minAmount: integer("min_amount").notNull(),
   maxAmount: integer("max_amount").notNull(),
-  isEnabled: boolean("is_enabled").notNull().default(true),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  type: text("type").notNull(),
+  category: text("category").notNull(),
+  isEnabled: integer("is_enabled", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
+    () => new Date(),
+  ),
 });
 
-export const insertCustomPresetSchema = createInsertSchema(userCustomPresets).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type UserCustomPreset = typeof userCustomPresets.$inferSelect;
-export type InsertCustomPreset = z.infer<typeof insertCustomPresetSchema>;
-
-// App settings table for admin configuration
-export const appSettings = pgTable("app_settings", {
-  id: serial("id").primaryKey(),
+export const appSettings = sqliteTable("app_settings", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   key: text("key").notNull().unique(),
   value: text("value").notNull(),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+export const referralActivations = sqliteTable("referral_activations", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  referrerId: text("referrer_id")
+    .notNull()
+    .references(() => users.id),
+  referredId: text("referred_id")
+    .notNull()
+    .references(() => users.id),
+  bonusAmount: text("bonus_amount").notNull(),
+  activatedAt: integer("activated_at", { mode: "timestamp" }).$defaultFn(
+    () => new Date(),
+  ),
+});
+
+export const insertCustomPresetSchema = createInsertSchema(
+  userCustomPresets,
+).omit({ id: true, createdAt: true });
+export type InsertCustomPreset = z.infer<typeof insertCustomPresetSchema>;
+export type UserCustomPreset = typeof userCustomPresets.$inferSelect;
+export type UserPresetSettings = typeof userPresetSettings.$inferSelect;
 export type AppSettings = typeof appSettings.$inferSelect;
-
-// Referral activations tracking
-export const referralActivations = pgTable("referral_activations", {
-  id: serial("id").primaryKey(),
-  referrerId: varchar("referrer_id").notNull().references(() => users.id),
-  referredId: varchar("referred_id").notNull().references(() => users.id),
-  bonusAmount: decimal("bonus_amount", { precision: 12, scale: 2 }).notNull(),
-  activatedAt: timestamp("activated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
-
 export type ReferralActivation = typeof referralActivations.$inferSelect;

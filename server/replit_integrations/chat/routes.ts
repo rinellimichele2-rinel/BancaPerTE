@@ -3,7 +3,8 @@ import OpenAI from "openai";
 import { chatStorage } from "./storage";
 
 const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  apiKey:
+    process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "dummy-key-for-local-dev",
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
@@ -60,7 +61,10 @@ export function registerChatRoutes(app: Express): void {
   app.post("/api/conversations", async (req: Request, res: Response) => {
     try {
       const { title, userId } = req.body;
-      const conversation = await chatStorage.createConversation(title || "Nuova Conversazione", userId);
+      const conversation = await chatStorage.createConversation(
+        title || "Nuova Conversazione",
+        userId,
+      );
       res.status(201).json(conversation);
     } catch (error) {
       console.error("Error creating conversation:", error);
@@ -81,40 +85,55 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Send message and get AI response (non-streaming for mobile compatibility)
-  app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
-    try {
-      const conversationId = parseInt(req.params.id);
-      const { content, userContext } = req.body;
+  app.post(
+    "/api/conversations/:id/messages",
+    async (req: Request, res: Response) => {
+      try {
+        const conversationId = parseInt(req.params.id);
+        const { content, userContext } = req.body;
 
-      // Save user message
-      await chatStorage.createMessage(conversationId, "user", content);
+        // Save user message
+        await chatStorage.createMessage(conversationId, "user", content);
 
-      // Get conversation history for context
-      const messages = await chatStorage.getMessagesByConversation(conversationId);
-      const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        { role: "system", content: FINANCIAL_ADVISOR_SYSTEM_PROMPT + (userContext ? `\n\nContesto utente: ${userContext}` : "") },
-        ...messages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-      ];
+        // Get conversation history for context
+        const messages =
+          await chatStorage.getMessagesByConversation(conversationId);
+        const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+          {
+            role: "system",
+            content:
+              FINANCIAL_ADVISOR_SYSTEM_PROMPT +
+              (userContext ? `\n\nContesto utente: ${userContext}` : ""),
+          },
+          ...messages.map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })),
+        ];
 
-      // Get response from OpenAI
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: chatMessages,
-        max_tokens: 1024,
-      });
+        // Get response from OpenAI
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: chatMessages,
+          max_tokens: 1024,
+        });
 
-      const assistantResponse = completion.choices[0]?.message?.content || "Mi scuso, non sono riuscito a elaborare una risposta.";
+        const assistantResponse =
+          completion.choices[0]?.message?.content ||
+          "Mi scuso, non sono riuscito a elaborare una risposta.";
 
-      // Save assistant message
-      const savedMessage = await chatStorage.createMessage(conversationId, "assistant", assistantResponse);
+        // Save assistant message
+        const savedMessage = await chatStorage.createMessage(
+          conversationId,
+          "assistant",
+          assistantResponse,
+        );
 
-      res.json({ message: savedMessage });
-    } catch (error) {
-      console.error("Error sending message:", error);
-      res.status(500).json({ error: "Failed to send message" });
-    }
-  });
+        res.json({ message: savedMessage });
+      } catch (error) {
+        console.error("Error sending message:", error);
+        res.status(500).json({ error: "Failed to send message" });
+      }
+    },
+  );
 }

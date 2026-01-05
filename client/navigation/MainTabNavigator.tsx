@@ -46,10 +46,13 @@ function HomeStackNavigator() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
-      <HomeStack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+      <HomeStack.Screen
+        name="TransactionDetail"
+        component={TransactionDetailScreen}
+      />
       <HomeStack.Screen name="Analisi" component={AnalisiScreen} />
-      <HomeStack.Screen 
-        name="Advisor" 
+      <HomeStack.Screen
+        name="Advisor"
         component={AdvisorScreen}
         options={{
           headerShown: true,
@@ -59,8 +62,8 @@ function HomeStackNavigator() {
           headerBackTitle: "Indietro",
         }}
       />
-      <HomeStack.Screen 
-        name="News" 
+      <HomeStack.Screen
+        name="News"
         component={NewsScreen}
         options={{
           headerShown: true,
@@ -77,16 +80,24 @@ function HomeStackNavigator() {
 function OperazioniStackNavigator() {
   return (
     <OperazioniStack.Navigator screenOptions={{ headerShown: false }}>
-      <OperazioniStack.Screen name="OperazioniMain" component={OperazioniScreen} />
+      <OperazioniStack.Screen
+        name="OperazioniMain"
+        component={OperazioniScreen}
+      />
       <OperazioniStack.Screen name="Transfer" component={TransferScreen} />
       <OperazioniStack.Screen name="Bonifico" component={BonificoScreen} />
     </OperazioniStack.Navigator>
   );
 }
 
-function TabBarIcon({ name, color, focused, badge }: { 
-  name: string; 
-  color: string; 
+function TabBarIcon({
+  name,
+  color,
+  focused,
+  badge,
+}: {
+  name: string;
+  color: string;
   focused: boolean;
   badge?: number;
 }) {

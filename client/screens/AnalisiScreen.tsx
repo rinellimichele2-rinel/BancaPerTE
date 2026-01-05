@@ -1,11 +1,5 @@
 import React, { useState, useMemo } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
@@ -16,12 +10,26 @@ import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { Transaction } from "@shared/schema";
 
 type TabType = "Uscite" | "Entrate";
-type PeriodType = "MONTH" | "ULTIMI 12 MESI" | "TUTTO IL 2025" | "TUTTO IL 2026";
+type PeriodType =
+  | "MONTH"
+  | "ULTIMI 12 MESI"
+  | "TUTTO IL 2025"
+  | "TUTTO IL 2026";
 
 // Italian month names
 const ITALIAN_MONTHS = [
-  "GEN", "FEB", "MAR", "APR", "MAG", "GIU",
-  "LUG", "AGO", "SET", "OTT", "NOV", "DIC"
+  "GEN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAG",
+  "GIU",
+  "LUG",
+  "AGO",
+  "SET",
+  "OTT",
+  "NOV",
+  "DIC",
 ];
 
 const EXPENSE_CATEGORIES = [
@@ -40,12 +48,12 @@ const INCOME_CATEGORIES = [
   { id: "Rimborsi spese e storni", color: "#6495ED", icon: "rotate-ccw" },
 ];
 
-function DonutChart({ 
-  data, 
-  total, 
+function DonutChart({
+  data,
+  total,
   label,
-  isExpense 
-}: { 
+  isExpense,
+}: {
   data: { category: string; amount: number; color: string }[];
   total: number;
   label: string;
@@ -73,7 +81,12 @@ function DonutChart({
     return `${isExpense ? "-" : "+"}${intPart},${parts[1]}`;
   };
 
-  const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+  const polarToCartesian = (
+    centerX: number,
+    centerY: number,
+    radius: number,
+    angleInDegrees: number,
+  ) => {
     const angleInRadians = (angleInDegrees * Math.PI) / 180.0;
     return {
       x: centerX + radius * Math.cos(angleInRadians),
@@ -81,7 +94,13 @@ function DonutChart({
     };
   };
 
-  const describeArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
+  const describeArc = (
+    x: number,
+    y: number,
+    radius: number,
+    startAngle: number,
+    endAngle: number,
+  ) => {
     const start = polarToCartesian(x, y, radius, endAngle);
     const end = polarToCartesian(x, y, radius, startAngle);
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
@@ -92,12 +111,16 @@ function DonutChart({
     <View style={styles.donutContainer}>
       <View style={styles.legendContainer}>
         {(isExpense ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map((cat) => {
-          const item = data.find(d => d.category === cat.id);
+          const item = data.find((d) => d.category === cat.id);
           if (!item || item.amount === 0) return null;
           return (
             <View key={cat.id} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: cat.color }]} />
-              <Text style={styles.legendText} numberOfLines={1}>{cat.id}</Text>
+              <View
+                style={[styles.legendDot, { backgroundColor: cat.color }]}
+              />
+              <Text style={styles.legendText} numberOfLines={1}>
+                {cat.id}
+              </Text>
             </View>
           );
         })}
@@ -115,11 +138,19 @@ function DonutChart({
           <G>
             {segments.map((segment, index) => {
               if (segment.angle <= 0) return null;
-              const endAngle = segment.startAngle + Math.min(segment.angle - 0.5, segment.angle);
+              const endAngle =
+                segment.startAngle +
+                Math.min(segment.angle - 0.5, segment.angle);
               return (
                 <Path
                   key={index}
-                  d={describeArc(center, center, radius, segment.startAngle, endAngle)}
+                  d={describeArc(
+                    center,
+                    center,
+                    radius,
+                    segment.startAngle,
+                    endAngle,
+                  )}
                   fill="none"
                   stroke={segment.color}
                   strokeWidth={strokeWidth}
@@ -143,15 +174,15 @@ function DonutChart({
   );
 }
 
-function CategoryRow({ 
-  category, 
-  amount, 
-  total, 
-  color, 
+function CategoryRow({
+  category,
+  amount,
+  total,
+  color,
   icon,
   isExpense,
-  onPress 
-}: { 
+  onPress,
+}: {
   category: string;
   amount: number;
   total: number;
@@ -161,7 +192,10 @@ function CategoryRow({
   onPress: () => void;
 }) {
   const percentage = total > 0 ? (amount / total) * 100 : 0;
-  const formattedAmount = `${isExpense ? "-" : "+"}${amount.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} \u20AC`;
+  const formattedAmount = `${isExpense ? "-" : "+"}${amount
+    .toFixed(2)
+    .replace(".", ",")
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ".")} \u20AC`;
 
   return (
     <Pressable style={styles.categoryRow} onPress={onPress}>
@@ -173,11 +207,14 @@ function CategoryRow({
       <View style={styles.categoryInfo}>
         <Text style={styles.categoryName}>{category}</Text>
         <View style={styles.progressBarContainer}>
-          <View 
+          <View
             style={[
-              styles.progressBar, 
-              { width: `${Math.min(percentage, 100)}%`, backgroundColor: color }
-            ]} 
+              styles.progressBar,
+              {
+                width: `${Math.min(percentage, 100)}%`,
+                backgroundColor: color,
+              },
+            ]}
           />
         </View>
       </View>
@@ -197,18 +234,25 @@ export default function AnalisiScreen() {
   const { userId } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("Uscite");
   const [activePeriod, setActivePeriod] = useState<PeriodType>("MONTH");
-  
+
   // Get server date for Europe/Rome timezone
-  const { data: serverDate } = useQuery<{ currentMonth: number; currentYear: number }>({
+  const { data: serverDate } = useQuery<{
+    currentMonth: number;
+    currentYear: number;
+  }>({
     queryKey: ["/api/server-date"],
   });
-  
+
   // Month navigation state (0-indexed for easier date math)
   // Initialize once from server date, then user controls navigation
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
-  
+  const [selectedMonth, setSelectedMonth] = useState(() =>
+    new Date().getMonth(),
+  );
+  const [selectedYear, setSelectedYear] = useState(() =>
+    new Date().getFullYear(),
+  );
+
   // Initialize month state only once when server date first loads
   React.useEffect(() => {
     if (serverDate && !hasInitialized) {
@@ -222,9 +266,9 @@ export default function AnalisiScreen() {
     queryKey: ["/api/transactions", userId],
     enabled: !!userId,
   });
-  
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
+
+  const navigateMonth = (direction: "prev" | "next") => {
+    if (direction === "prev") {
       if (selectedMonth === 0) {
         setSelectedMonth(11);
         setSelectedYear(selectedYear - 1);
@@ -241,7 +285,7 @@ export default function AnalisiScreen() {
     }
     setActivePeriod("MONTH");
   };
-  
+
   const getMonthLabel = () => {
     return `${ITALIAN_MONTHS[selectedMonth]} ${selectedYear}`;
   };
@@ -249,13 +293,16 @@ export default function AnalisiScreen() {
   const { categoryData, total, totalIncome, totalExpense } = useMemo(() => {
     const now = new Date();
 
-    let filteredTransactions = transactions.filter(t => {
+    let filteredTransactions = transactions.filter((t) => {
       const dateValue = t.date || t.createdAt;
       if (!dateValue) return false;
       const date = new Date(dateValue);
       if (activePeriod === "MONTH") {
         // Filter by selected month and year
-        return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
+        return (
+          date.getMonth() === selectedMonth &&
+          date.getFullYear() === selectedYear
+        );
       } else if (activePeriod === "ULTIMI 12 MESI") {
         const oneYearAgo = new Date(now);
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
@@ -269,29 +316,33 @@ export default function AnalisiScreen() {
     });
 
     const isExpenseTab = activeTab === "Uscite";
-    const relevantTransactions = filteredTransactions.filter(
-      t => isExpenseTab ? t.type === "expense" : t.type === "income"
+    const relevantTransactions = filteredTransactions.filter((t) =>
+      isExpenseTab ? t.type === "expense" : t.type === "income",
     );
 
     const categories = isExpenseTab ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
     const categoryMap = new Map<string, number>();
 
-    categories.forEach(cat => categoryMap.set(cat.id, 0));
+    categories.forEach((cat) => categoryMap.set(cat.id, 0));
 
-    relevantTransactions.forEach(t => {
+    relevantTransactions.forEach((t) => {
       const amount = Math.abs(parseFloat(t.amount));
-      const category = t.category || (isExpenseTab ? "Altre uscite" : "Entrate varie");
-      
-      let matchedCategory = categories.find(c => c.id === category);
+      const category =
+        t.category || (isExpenseTab ? "Altre uscite" : "Entrate varie");
+
+      let matchedCategory = categories.find((c) => c.id === category);
       if (!matchedCategory) {
         matchedCategory = categories[categories.length - 1];
       }
-      
-      categoryMap.set(matchedCategory.id, (categoryMap.get(matchedCategory.id) || 0) + amount);
+
+      categoryMap.set(
+        matchedCategory.id,
+        (categoryMap.get(matchedCategory.id) || 0) + amount,
+      );
     });
 
     const data = categories
-      .map(cat => ({
+      .map((cat) => ({
         category: cat.id,
         amount: categoryMap.get(cat.id) || 0,
         color: cat.color,
@@ -302,15 +353,15 @@ export default function AnalisiScreen() {
     const totalAmount = data.reduce((sum, item) => sum + item.amount, 0);
 
     const incomeTotal = filteredTransactions
-      .filter(t => t.type === "income")
+      .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
 
     const expenseTotal = filteredTransactions
-      .filter(t => t.type === "expense")
+      .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
 
-    return { 
-      categoryData: data, 
+    return {
+      categoryData: data,
       total: totalAmount,
       totalIncome: incomeTotal,
       totalExpense: expenseTotal,
@@ -332,7 +383,10 @@ export default function AnalisiScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Icon name="chevron-left" size={24} color={BankColors.primary} />
           <Text style={styles.backText}>Indietro</Text>
         </Pressable>
@@ -343,7 +397,7 @@ export default function AnalisiScreen() {
         </Pressable>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -357,7 +411,12 @@ export default function AnalisiScreen() {
             style={[styles.tab, activeTab === "Uscite" && styles.activeTab]}
             onPress={() => setActiveTab("Uscite")}
           >
-            <Text style={[styles.tabText, activeTab === "Uscite" && styles.activeTabText]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "Uscite" && styles.activeTabText,
+              ]}
+            >
               Uscite
             </Text>
           </Pressable>
@@ -365,7 +424,12 @@ export default function AnalisiScreen() {
             style={[styles.tab, activeTab === "Entrate" && styles.activeTab]}
             onPress={() => setActiveTab("Entrate")}
           >
-            <Text style={[styles.tabText, activeTab === "Entrate" && styles.activeTabText]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "Entrate" && styles.activeTabText,
+              ]}
+            >
               Entrate
             </Text>
           </Pressable>
@@ -383,54 +447,94 @@ export default function AnalisiScreen() {
         </Pressable>
 
         <View style={styles.periodContainer}>
-          <Pressable style={styles.periodArrow} onPress={() => navigateMonth('prev')}>
+          <Pressable
+            style={styles.periodArrow}
+            onPress={() => navigateMonth("prev")}
+          >
             <Icon name="chevron-left" size={24} color={BankColors.gray600} />
           </Pressable>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.periodScrollContent}
           >
             <Pressable
-              style={[styles.periodButton, activePeriod === "MONTH" && styles.activePeriod]}
+              style={[
+                styles.periodButton,
+                activePeriod === "MONTH" && styles.activePeriod,
+              ]}
               onPress={() => setActivePeriod("MONTH")}
             >
-              <Text style={[styles.periodText, activePeriod === "MONTH" && styles.activePeriodText]}>
+              <Text
+                style={[
+                  styles.periodText,
+                  activePeriod === "MONTH" && styles.activePeriodText,
+                ]}
+              >
                 {getMonthLabel()}
               </Text>
             </Pressable>
             <Pressable
-              style={[styles.periodButton, activePeriod === "ULTIMI 12 MESI" && styles.activePeriod]}
+              style={[
+                styles.periodButton,
+                activePeriod === "ULTIMI 12 MESI" && styles.activePeriod,
+              ]}
               onPress={() => setActivePeriod("ULTIMI 12 MESI")}
             >
-              <Text style={[styles.periodText, activePeriod === "ULTIMI 12 MESI" && styles.activePeriodText]}>
+              <Text
+                style={[
+                  styles.periodText,
+                  activePeriod === "ULTIMI 12 MESI" && styles.activePeriodText,
+                ]}
+              >
                 {"ULTIMI\n12 MESI"}
               </Text>
             </Pressable>
             <Pressable
-              style={[styles.periodButton, activePeriod === "TUTTO IL 2025" && styles.activePeriod]}
+              style={[
+                styles.periodButton,
+                activePeriod === "TUTTO IL 2025" && styles.activePeriod,
+              ]}
               onPress={() => setActivePeriod("TUTTO IL 2025")}
             >
-              <Text style={[styles.periodText, activePeriod === "TUTTO IL 2025" && styles.activePeriodText]}>
+              <Text
+                style={[
+                  styles.periodText,
+                  activePeriod === "TUTTO IL 2025" && styles.activePeriodText,
+                ]}
+              >
                 TUTTO IL 2025
               </Text>
             </Pressable>
             <Pressable
-              style={[styles.periodButton, activePeriod === "TUTTO IL 2026" && styles.activePeriod]}
+              style={[
+                styles.periodButton,
+                activePeriod === "TUTTO IL 2026" && styles.activePeriod,
+              ]}
               onPress={() => setActivePeriod("TUTTO IL 2026")}
             >
-              <Text style={[styles.periodText, activePeriod === "TUTTO IL 2026" && styles.activePeriodText]}>
+              <Text
+                style={[
+                  styles.periodText,
+                  activePeriod === "TUTTO IL 2026" && styles.activePeriodText,
+                ]}
+              >
                 TUTTO IL 2026
               </Text>
             </Pressable>
           </ScrollView>
-          <Pressable style={styles.periodArrow} onPress={() => navigateMonth('next')}>
+          <Pressable
+            style={styles.periodArrow}
+            onPress={() => navigateMonth("next")}
+          >
             <Icon name="chevron-right" size={24} color={BankColors.gray600} />
           </Pressable>
         </View>
 
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>{isExpense ? "Uscite" : "Entrate"}</Text>
+          <Text style={styles.totalLabel}>
+            {isExpense ? "Uscite" : "Entrate"}
+          </Text>
           <Text style={[styles.totalAmount, isExpense && styles.expenseText]}>
             {formatCurrency(total, isExpense)}
           </Text>
@@ -447,18 +551,20 @@ export default function AnalisiScreen() {
             </Pressable>
           </View>
 
-          {categoryData.filter(item => item.amount > 0).map((item) => (
-            <CategoryRow
-              key={item.category}
-              category={item.category}
-              amount={item.amount}
-              total={total}
-              color={item.color}
-              icon={item.icon}
-              isExpense={isExpense}
-              onPress={() => {}}
-            />
-          ))}
+          {categoryData
+            .filter((item) => item.amount > 0)
+            .map((item) => (
+              <CategoryRow
+                key={item.category}
+                category={item.category}
+                amount={item.amount}
+                total={total}
+                color={item.color}
+                icon={item.icon}
+                isExpense={isExpense}
+                onPress={() => {}}
+              />
+            ))}
         </View>
 
         <View style={{ height: 100 }} />

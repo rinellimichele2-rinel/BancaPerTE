@@ -23,7 +23,11 @@ import { useAuth } from "@/lib/auth-context";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import { DEFAULT_PRESETS, TRANSACTION_CATEGORIES, type PresetTransaction } from "@shared/presets";
+import {
+  DEFAULT_PRESETS,
+  TRANSACTION_CATEGORIES,
+  type PresetTransaction,
+} from "@shared/presets";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -47,8 +51,11 @@ interface MenuItemProps {
 }
 
 const MenuItem = ({ icon, title, badge, onPress }: MenuItemProps) => (
-  <Pressable 
-    style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+  <Pressable
+    style={({ pressed }) => [
+      styles.menuItem,
+      pressed && styles.menuItemPressed,
+    ]}
     onPress={onPress}
   >
     <View style={styles.menuItemLeft}>
@@ -95,36 +102,56 @@ export default function AltroScreen() {
   const [showEditName, setShowEditName] = useState(false);
   const [newName, setNewName] = useState("");
   const [showConsole, setShowConsole] = useState(false);
-  const [consoleTab, setConsoleTab] = useState<"form" | "expense" | "preset">("form");
+  const [consoleTab, setConsoleTab] = useState<"form" | "expense" | "preset">(
+    "form",
+  );
   const [expenseDesc, setExpenseDesc] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
-  const [expenseCategory, setExpenseCategory] = useState(TRANSACTION_CATEGORIES[0]);
+  const [expenseCategory, setExpenseCategory] = useState(
+    TRANSACTION_CATEGORIES[0],
+  );
   const [txDescription, setTxDescription] = useState("");
   const [txAmount, setTxAmount] = useState("");
   const [txType, setTxType] = useState<"expense" | "income">("income");
   const [txCategory, setTxCategory] = useState(TRANSACTION_CATEGORIES[0]);
   const [showPresetEditor, setShowPresetEditor] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [editingPreset, setEditingPreset] = useState<DbCustomPreset | null>(null);
+  const [editingPreset, setEditingPreset] = useState<DbCustomPreset | null>(
+    null,
+  );
   const [presetDesc, setPresetDesc] = useState("");
   const [presetMinAmount, setPresetMinAmount] = useState("");
   const [presetMaxAmount, setPresetMaxAmount] = useState("");
   const [presetType, setPresetType] = useState<"expense" | "income">("expense");
-  const [presetCategory, setPresetCategory] = useState(TRANSACTION_CATEGORIES[0]);
+  const [presetCategory, setPresetCategory] = useState(
+    TRANSACTION_CATEGORIES[0],
+  );
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickDesc, setQuickDesc] = useState("");
   const [quickAmount, setQuickAmount] = useState("");
 
   // Fetch custom presets from database
-  const { data: customPresets = [], refetch: refetchPresets } = useQuery<DbCustomPreset[]>({
+  const { data: customPresets = [], refetch: refetchPresets } = useQuery<
+    DbCustomPreset[]
+  >({
     queryKey: [`/api/users/${userId}/custom-presets`],
     enabled: !!userId,
   });
 
   // Create preset mutation
   const createPresetMutation = useMutation({
-    mutationFn: async (data: { description: string; type: string; category: string; minAmount: number; maxAmount: number }) => {
-      const response = await apiRequest("POST", `/api/users/${userId}/custom-presets`, data);
+    mutationFn: async (data: {
+      description: string;
+      type: string;
+      category: string;
+      minAmount: number;
+      maxAmount: number;
+    }) => {
+      const response = await apiRequest(
+        "POST",
+        `/api/users/${userId}/custom-presets`,
+        data,
+      );
       return response.json();
     },
     onSuccess: () => {
@@ -140,8 +167,18 @@ export default function AltroScreen() {
 
   // Update preset mutation
   const updatePresetMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<DbCustomPreset> }) => {
-      const response = await apiRequest("PUT", `/api/users/${userId}/custom-presets/${id}`, data);
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<DbCustomPreset>;
+    }) => {
+      const response = await apiRequest(
+        "PUT",
+        `/api/users/${userId}/custom-presets/${id}`,
+        data,
+      );
       return response.json();
     },
     onSuccess: () => {
@@ -158,7 +195,10 @@ export default function AltroScreen() {
   // Delete preset mutation
   const deletePresetMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/users/${userId}/custom-presets/${id}`);
+      const response = await apiRequest(
+        "DELETE",
+        `/api/users/${userId}/custom-presets/${id}`,
+      );
       return response.json();
     },
     onSuccess: () => {
@@ -171,7 +211,10 @@ export default function AltroScreen() {
   const triggerPresetMutation = useMutation({
     mutationFn: async (presetId: number) => {
       const timestamp = Date.now();
-      const response = await apiRequest("POST", `/api/users/${userId}/custom-presets/${presetId}/trigger?_t=${timestamp}`);
+      const response = await apiRequest(
+        "POST",
+        `/api/users/${userId}/custom-presets/${presetId}/trigger?_t=${timestamp}`,
+      );
       const result = await response.json();
       if (result.error) {
         throw new Error(result.error);
@@ -180,33 +223,42 @@ export default function AltroScreen() {
     },
     onSuccess: async (data) => {
       // Force invalidate all caches to ensure iOS shows fresh data
-      await queryClient.invalidateQueries({ queryKey: [`/api/transactions/${userId}`] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
-      await queryClient.refetchQueries({ queryKey: [`/api/transactions/${userId}`] });
-      
+      await queryClient.invalidateQueries({
+        queryKey: [`/api/transactions/${userId}`],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/transactions", userId],
+      });
+      await queryClient.refetchQueries({
+        queryKey: [`/api/transactions/${userId}`],
+      });
+
       // Force refresh user data from server
       await refreshUser();
-      
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (data.transaction) {
         const amount = Math.abs(parseFloat(data.transaction.amount));
         const newBalance = data.user?.realPurchasedBalance || "0";
         Alert.alert(
           "Spesa dal Saldo Certificato",
-          `${data.transaction.description}: -${amount.toFixed(0)} EUR\nNuovo saldo: ${parseFloat(newBalance).toFixed(0)} EUR`
+          `${data.transaction.description}: -${amount.toFixed(0)} EUR\nNuovo saldo: ${parseFloat(newBalance).toFixed(0)} EUR`,
         );
       }
     },
     onError: (error: any) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Errore", error.message || "Impossibile eseguire la transazione");
+      Alert.alert(
+        "Errore",
+        error.message || "Impossibile eseguire la transazione",
+      );
     },
   });
 
   // Convert database presets to local format for display
   const allPresets: (PresetTransaction & { dbId?: number })[] = [
     ...DEFAULT_PRESETS,
-    ...customPresets.map(p => ({
+    ...customPresets.map((p) => ({
       description: p.description,
       type: p.type as "expense" | "income",
       category: p.category,
@@ -214,12 +266,14 @@ export default function AltroScreen() {
       maxAmount: p.maxAmount,
       isCustom: true,
       dbId: p.id,
-    }))
+    })),
   ];
 
-  const confirmDeletePreset = (preset: PresetTransaction & { dbId?: number }) => {
+  const confirmDeletePreset = (
+    preset: PresetTransaction & { dbId?: number },
+  ) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     if (preset.isCustom && preset.dbId) {
       Alert.alert(
         "Gestisci Preset",
@@ -227,8 +281,12 @@ export default function AltroScreen() {
         [
           { text: "Annulla", style: "cancel" },
           { text: "Modifica", onPress: () => openEditPresetById(preset.dbId!) },
-          { text: "Elimina", style: "destructive", onPress: () => deletePresetMutation.mutate(preset.dbId!) },
-        ]
+          {
+            text: "Elimina",
+            style: "destructive",
+            onPress: () => deletePresetMutation.mutate(preset.dbId!),
+          },
+        ],
       );
     }
   };
@@ -244,7 +302,7 @@ export default function AltroScreen() {
   };
 
   const openEditPresetById = (id: number) => {
-    const preset = customPresets.find(p => p.id === id);
+    const preset = customPresets.find((p) => p.id === id);
     if (preset) {
       setEditingPreset(preset);
       setPresetDesc(preset.description);
@@ -265,22 +323,31 @@ export default function AltroScreen() {
       Alert.alert("Errore", "Inserisci gli importi minimo e massimo");
       return;
     }
-    
+
     const cleanMin = presetMinAmount.replace(/[^0-9]/g, "");
     const cleanMax = presetMaxAmount.replace(/[^0-9]/g, "");
     const min = parseInt(cleanMin);
     const max = parseInt(cleanMax);
-    
+
     if (isNaN(min) || min <= 0) {
-      Alert.alert("Errore", "L'importo minimo deve essere un numero maggiore di zero");
+      Alert.alert(
+        "Errore",
+        "L'importo minimo deve essere un numero maggiore di zero",
+      );
       return;
     }
     if (isNaN(max) || max <= 0) {
-      Alert.alert("Errore", "L'importo massimo deve essere un numero maggiore di zero");
+      Alert.alert(
+        "Errore",
+        "L'importo massimo deve essere un numero maggiore di zero",
+      );
       return;
     }
     if (max < min) {
-      Alert.alert("Errore", "L'importo massimo deve essere maggiore o uguale al minimo");
+      Alert.alert(
+        "Errore",
+        "L'importo massimo deve essere maggiore o uguale al minimo",
+      );
       return;
     }
 
@@ -310,7 +377,7 @@ export default function AltroScreen() {
       Alert.alert("Errore", "Inserisci un importo valido");
       return;
     }
-    
+
     createPresetMutation.mutate({
       description: quickDesc.trim(),
       type: "expense",
@@ -318,14 +385,19 @@ export default function AltroScreen() {
       minAmount: amount,
       maxAmount: amount,
     });
-    
+
     setQuickDesc("");
     setQuickAmount("");
     setShowQuickAdd(false);
   };
 
   const createTransactionMutation = useMutation({
-    mutationFn: async (data: { description: string; amount: string; type: string; category: string }) => {
+    mutationFn: async (data: {
+      description: string;
+      amount: string;
+      type: string;
+      category: string;
+    }) => {
       const response = await apiRequest("POST", "/api/transactions", {
         userId,
         description: data.description,
@@ -338,27 +410,42 @@ export default function AltroScreen() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/transactions", userId],
+      });
       refreshUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (data.wasCapped) {
-        Alert.alert("Saldo riportato al massimo", data.cappedMessage || "L'importo e stato limitato per raggiungere il saldo massimo pagato.");
+        Alert.alert(
+          "Saldo riportato al massimo",
+          data.cappedMessage ||
+            "L'importo e stato limitato per raggiungere il saldo massimo pagato.",
+        );
       }
     },
   });
 
   const generateRandomMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/transactions/${userId}/generate-random`);
+      const response = await apiRequest(
+        "POST",
+        `/api/transactions/${userId}/generate-random`,
+      );
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/transactions", userId],
+      });
       refreshUser();
       if (data.transaction) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         if (data.wasCapped) {
-          Alert.alert("Saldo riportato al massimo", data.cappedMessage || "L'importo e stato limitato per raggiungere il saldo massimo pagato.");
+          Alert.alert(
+            "Saldo riportato al massimo",
+            data.cappedMessage ||
+              "L'importo e stato limitato per raggiungere il saldo massimo pagato.",
+          );
         }
       } else if (data.message) {
         Alert.alert("Info", data.message);
@@ -367,14 +454,22 @@ export default function AltroScreen() {
   });
 
   const createExpenseMutation = useMutation({
-    mutationFn: async (data: { description: string; amount: number; category: string }) => {
+    mutationFn: async (data: {
+      description: string;
+      amount: number;
+      category: string;
+    }) => {
       const timestamp = Date.now();
-      const response = await apiRequest("POST", `/api/transactions/certified-expense?_t=${timestamp}`, {
-        userId,
-        description: data.description,
-        amount: data.amount,
-        category: data.category,
-      });
+      const response = await apiRequest(
+        "POST",
+        `/api/transactions/certified-expense?_t=${timestamp}`,
+        {
+          userId,
+          description: data.description,
+          amount: data.amount,
+          category: data.category,
+        },
+      );
       const result = await response.json();
       if (result.error) {
         throw new Error(result.error);
@@ -382,7 +477,9 @@ export default function AltroScreen() {
       return result;
     },
     onSuccess: async (data) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/transactions", userId],
+      });
       await refreshUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const newBalance = parseFloat(data.user?.balance || "0");
@@ -390,7 +487,7 @@ export default function AltroScreen() {
       const margin = Math.max(0, certified - newBalance);
       Alert.alert(
         "Uscita Registrata",
-        `${data.transaction?.description}: -${Math.abs(parseFloat(data.transaction?.amount || "0")).toFixed(0)} EUR\nMargine di recupero: ${margin.toFixed(0)} EUR`
+        `${data.transaction?.description}: -${Math.abs(parseFloat(data.transaction?.amount || "0")).toFixed(0)} EUR\nMargine di recupero: ${margin.toFixed(0)} EUR`,
       );
     },
     onError: (error: Error) => {
@@ -402,10 +499,10 @@ export default function AltroScreen() {
   const handleAddTransaction = async () => {
     if (!txDescription.trim() || !txAmount.trim()) return;
     // Normalize Italian number format: remove thousand separators (dots), convert decimal comma to dot
-    const normalizedAmount = txAmount.replace(/\./g, '').replace(',', '.');
+    const normalizedAmount = txAmount.replace(/\./g, "").replace(",", ".");
     const amount = parseFloat(normalizedAmount);
     if (isNaN(amount) || amount <= 0) return;
-    
+
     // Manual form is always income (certification of entries)
     try {
       await createTransactionMutation.mutateAsync({
@@ -431,26 +528,28 @@ export default function AltroScreen() {
       return;
     }
     // Normalize Italian number format: remove thousand separators (dots), convert decimal comma to dot
-    const normalizedAmount = expenseAmount.replace(/\./g, '').replace(',', '.');
+    const normalizedAmount = expenseAmount.replace(/\./g, "").replace(",", ".");
     const amount = parseFloat(normalizedAmount);
     if (isNaN(amount) || amount <= 0) {
       Alert.alert("Errore", "Inserisci un importo valido");
       return;
     }
-    
+
     createExpenseMutation.mutate({
       description: expenseDesc.trim(),
       amount: parseFloat(amount.toFixed(2)),
       category: expenseCategory,
     });
-    
+
     setExpenseDesc("");
     setExpenseAmount("");
   };
 
   const handlePresetTransaction = async (preset: PresetTransaction) => {
-    const amount = Math.floor(Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount);
-    
+    const amount = Math.floor(
+      Math.random() * (preset.maxAmount - preset.minAmount) + preset.minAmount,
+    );
+
     try {
       await createTransactionMutation.mutateAsync({
         description: preset.description,
@@ -460,7 +559,10 @@ export default function AltroScreen() {
       });
     } catch (error: any) {
       if (error?.message?.includes("Saldo gia al massimo")) {
-        Alert.alert("Saldo al massimo", "Il saldo e gia al massimo pagato. Non puoi aggiungere altre entrate simulate.");
+        Alert.alert(
+          "Saldo al massimo",
+          "Il saldo e gia al massimo pagato. Non puoi aggiungere altre entrate simulate.",
+        );
       }
     }
   };
@@ -521,19 +623,31 @@ export default function AltroScreen() {
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileLabel}>Il mio profilo</Text>
-            <Text style={styles.profileName}>{user?.fullName || "MICHELE RINELLI"}</Text>
+            <Text style={styles.profileName}>
+              {user?.fullName || "MICHELE RINELLI"}
+            </Text>
             <Text style={styles.profileBank}>EquisCash</Text>
             {user?.rechargeUsername ? (
-              <Text style={styles.profileRechargeUsername}>Username ricarica: @{user.rechargeUsername}</Text>
+              <Text style={styles.profileRechargeUsername}>
+                Username ricarica: @{user.rechargeUsername}
+              </Text>
             ) : null}
           </View>
           <Icon name="chevron-right" size={24} color={BankColors.gray400} />
         </Pressable>
 
         <View style={styles.menuSection}>
-          <MenuItem icon="settings" title="Impostazioni e privacy" onPress={() => setShowSettings(true)} />
+          <MenuItem
+            icon="settings"
+            title="Impostazioni e privacy"
+            onPress={() => setShowSettings(true)}
+          />
           <MenuItem icon="shield" title="Sicurezza" />
-          <MenuItem icon="message-circle" title="Parla con noi" onPress={() => Linking.openURL("https://wa.me/393293293177")} />
+          <MenuItem
+            icon="message-circle"
+            title="Parla con noi"
+            onPress={() => Linking.openURL("https://wa.me/393293293177")}
+          />
         </View>
 
         <View style={styles.menuSection}>
@@ -545,14 +659,15 @@ export default function AltroScreen() {
 
         <View style={styles.menuSection}>
           <MenuItem icon="file-text" title="Documenti" />
-          <MenuItem icon="info" title="Informazioni" onPress={() => setShowConsole(true)} />
+          <MenuItem
+            icon="info"
+            title="Informazioni"
+            onPress={() => setShowConsole(true)}
+          />
           <MenuItem icon="help-circle" title="FAQ e Tutorial" />
         </View>
 
-        <Pressable 
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
+        <Pressable style={styles.logoutButton} onPress={handleLogout}>
           <Icon name="log-out" size={20} color={BankColors.error} />
           <Text style={styles.logoutText}>Esci</Text>
         </Pressable>
@@ -560,8 +675,14 @@ export default function AltroScreen() {
 
       <Modal visible={showEditName} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditName(false)} />
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowEditName(false)}
+          />
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>Modifica Nome</Text>
             <TextInput
               style={styles.modalInput}
@@ -572,7 +693,10 @@ export default function AltroScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditName(false)}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditName(false)}
+              >
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
               <Pressable style={styles.modalSaveBtn} onPress={handleSaveName}>
@@ -583,9 +707,9 @@ export default function AltroScreen() {
         </View>
       </Modal>
 
-      <Modal 
-        visible={showConsole} 
-        transparent 
+      <Modal
+        visible={showConsole}
+        transparent
         animationType="slide"
         onRequestClose={() => setShowConsole(false)}
         onDismiss={() => setShowConsole(false)}
@@ -595,7 +719,10 @@ export default function AltroScreen() {
           <View style={[styles.consoleContainer, { paddingTop: insets.top }]}>
             <View style={styles.consoleHeader}>
               <Text style={styles.consoleTitle}>Console Transazioni</Text>
-              <Pressable style={styles.consoleCloseBtn} onPress={() => setShowConsole(false)}>
+              <Pressable
+                style={styles.consoleCloseBtn}
+                onPress={() => setShowConsole(false)}
+              >
                 <Icon name="x" size={24} color={BankColors.gray700} />
               </Pressable>
             </View>
@@ -605,49 +732,83 @@ export default function AltroScreen() {
                 <Icon name="shield" size={18} color={BankColors.primary} />
                 <Text style={styles.certLabel}>Saldo Certificato:</Text>
                 <Text style={styles.certValue}>
-                  {parseFloat(user?.realPurchasedBalance || "0").toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  {parseFloat(user?.realPurchasedBalance || "0").toLocaleString(
+                    "it-IT",
+                    { minimumFractionDigits: 0, maximumFractionDigits: 0 },
+                  )}
                 </Text>
               </View>
               <View style={styles.certRow}>
-                <Icon name="trending-up" size={18} color={BankColors.cardBlue} />
+                <Icon
+                  name="trending-up"
+                  size={18}
+                  color={BankColors.cardBlue}
+                />
                 <Text style={styles.certLabel}>Margine di recupero:</Text>
                 <Text style={[styles.certValue, styles.certValueRecovery]}>
                   {(() => {
                     const currentBalance = parseFloat(user?.balance || "0");
-                    const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
-                    const recovery = Math.max(0, Math.floor(certifiedBalance - currentBalance));
-                    return `€${recovery.toLocaleString('it-IT')}`;
+                    const certifiedBalance = parseFloat(
+                      user?.realPurchasedBalance || "0",
+                    );
+                    const recovery = Math.max(
+                      0,
+                      Math.floor(certifiedBalance - currentBalance),
+                    );
+                    return `€${recovery.toLocaleString("it-IT")}`;
                   })()}
                 </Text>
               </View>
             </View>
 
             <View style={styles.consoleTabs}>
-              <Pressable 
-                style={[styles.consoleTab, consoleTab === "form" && styles.consoleTabActive]}
+              <Pressable
+                style={[
+                  styles.consoleTab,
+                  consoleTab === "form" && styles.consoleTabActive,
+                ]}
                 onPress={() => setConsoleTab("form")}
               >
-                <Text style={[styles.consoleTabText, consoleTab === "form" && styles.consoleTabTextActive]}>
+                <Text
+                  style={[
+                    styles.consoleTabText,
+                    consoleTab === "form" && styles.consoleTabTextActive,
+                  ]}
+                >
                   Entrata
                 </Text>
               </Pressable>
-              <Pressable 
-                style={[styles.consoleTab, consoleTab === "expense" && styles.consoleTabActive]}
+              <Pressable
+                style={[
+                  styles.consoleTab,
+                  consoleTab === "expense" && styles.consoleTabActive,
+                ]}
                 onPress={() => setConsoleTab("expense")}
               >
-                <Text style={[styles.consoleTabText, consoleTab === "expense" && styles.consoleTabTextActive]}>
+                <Text
+                  style={[
+                    styles.consoleTabText,
+                    consoleTab === "expense" && styles.consoleTabTextActive,
+                  ]}
+                >
                   Uscita
                 </Text>
               </Pressable>
             </View>
 
-            <ScrollView style={styles.consoleBody} contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.xl }}>
+            <ScrollView
+              style={styles.consoleBody}
+              contentContainerStyle={{
+                paddingBottom: insets.bottom + Spacing.xl,
+              }}
+            >
               {consoleTab === "form" ? (
                 <View style={styles.consoleForm}>
                   <Text style={styles.incomeFormHint}>
-                    Inserisci un'entrata per recuperare il saldo fino al massimo certificato.
+                    Inserisci un’entrata per recuperare il saldo fino al massimo
+                    certificato.
                   </Text>
-                  
+
                   <Text style={styles.formLabel}>Descrizione Entrata</Text>
                   <TextInput
                     style={styles.formInput}
@@ -657,25 +818,43 @@ export default function AltroScreen() {
                     placeholderTextColor={BankColors.gray400}
                   />
 
-                  <Text style={styles.formLabel}>Importo (EUR) - Max: {(() => {
-                    const currentBalance = parseFloat(user?.balance || "0");
-                    const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
-                    const recovery = Math.max(0, certifiedBalance - currentBalance);
-                    return recovery.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                  })()}</Text>
+                  <Text style={styles.formLabel}>
+                    Importo (EUR) - Max:{" "}
+                    {(() => {
+                      const currentBalance = parseFloat(user?.balance || "0");
+                      const certifiedBalance = parseFloat(
+                        user?.realPurchasedBalance || "0",
+                      );
+                      const recovery = Math.max(
+                        0,
+                        certifiedBalance - currentBalance,
+                      );
+                      return recovery.toLocaleString("it-IT", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      });
+                    })()}
+                  </Text>
                   <TextInput
                     style={styles.formInput}
                     value={txAmount}
                     onChangeText={(text) => {
                       const currentBalance = parseFloat(user?.balance || "0");
-                      const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
-                      const maxRecovery = Math.max(0, certifiedBalance - currentBalance);
-                      const cleanedText = text.replace(/[^0-9,\.]/g, '').replace(',', '.');
+                      const certifiedBalance = parseFloat(
+                        user?.realPurchasedBalance || "0",
+                      );
+                      const maxRecovery = Math.max(
+                        0,
+                        certifiedBalance - currentBalance,
+                      );
+                      const cleanedText = text
+                        .replace(/[^0-9,\.]/g, "")
+                        .replace(",", ".");
                       const numValue = parseFloat(cleanedText);
                       if (!isNaN(numValue) && numValue > maxRecovery) {
-                        setTxAmount(maxRecovery.toFixed(2).replace('.', ','));
+                        setTxAmount(maxRecovery.toFixed(2).replace(".", ","));
                       } else {
-                        setTxAmount(text.replace(/[^0-9,\.]/g, ''));
+                        setTxAmount(text.replace(/[^0-9,\.]/g, ""));
                       }
                     }}
                     placeholder="Es: 100,50"
@@ -684,47 +863,78 @@ export default function AltroScreen() {
                   />
 
                   <Text style={styles.formLabel}>Categoria</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.categoryScroll}
+                  >
                     {TRANSACTION_CATEGORIES.map((cat) => (
-                      <Pressable 
+                      <Pressable
                         key={cat}
-                        style={[styles.categoryChip, txCategory === cat && styles.categoryChipActive]}
+                        style={[
+                          styles.categoryChip,
+                          txCategory === cat && styles.categoryChipActive,
+                        ]}
                         onPress={() => setTxCategory(cat)}
                       >
-                        <Text style={[styles.categoryChipText, txCategory === cat && styles.categoryChipTextActive]}>
+                        <Text
+                          style={[
+                            styles.categoryChipText,
+                            txCategory === cat && styles.categoryChipTextActive,
+                          ]}
+                        >
                           {cat}
                         </Text>
                       </Pressable>
                     ))}
                   </ScrollView>
 
-                  <Pressable 
-                    style={[styles.submitBtn, createTransactionMutation.isPending && styles.submitBtnDisabled, (() => {
-                      const currentBalance = parseFloat(user?.balance || "0");
-                      const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
-                      return certifiedBalance <= currentBalance ? styles.submitBtnDisabled : {};
-                    })()]}
+                  <Pressable
+                    style={[
+                      styles.submitBtn,
+                      createTransactionMutation.isPending &&
+                        styles.submitBtnDisabled,
+                      (() => {
+                        const currentBalance = parseFloat(user?.balance || "0");
+                        const certifiedBalance = parseFloat(
+                          user?.realPurchasedBalance || "0",
+                        );
+                        return certifiedBalance <= currentBalance
+                          ? styles.submitBtnDisabled
+                          : {};
+                      })(),
+                    ]}
                     onPress={handleAddTransaction}
-                    disabled={createTransactionMutation.isPending || (() => {
-                      const currentBalance = parseFloat(user?.balance || "0");
-                      const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
-                      return certifiedBalance <= currentBalance;
-                    })()}
+                    disabled={
+                      createTransactionMutation.isPending ||
+                      (() => {
+                        const currentBalance = parseFloat(user?.balance || "0");
+                        const certifiedBalance = parseFloat(
+                          user?.realPurchasedBalance || "0",
+                        );
+                        return certifiedBalance <= currentBalance;
+                      })()
+                    }
                   >
                     {createTransactionMutation.isPending ? (
                       <ActivityIndicator color={BankColors.white} />
                     ) : (
-                      <Text style={styles.submitBtnText}>Certifica Entrata</Text>
+                      <Text style={styles.submitBtnText}>
+                        Certifica Entrata
+                      </Text>
                     )}
                   </Pressable>
-                  
+
                   {(() => {
                     const currentBalance = parseFloat(user?.balance || "0");
-                    const certifiedBalance = parseFloat(user?.realPurchasedBalance || "0");
+                    const certifiedBalance = parseFloat(
+                      user?.realPurchasedBalance || "0",
+                    );
                     if (certifiedBalance <= currentBalance) {
                       return (
                         <Text style={styles.noRecoveryHint}>
-                          Il saldo attuale e gia al massimo certificato. Genera uscite per creare margine di recupero.
+                          Il saldo attuale e gia al massimo certificato. Genera
+                          uscite per creare margine di recupero.
                         </Text>
                       );
                     }
@@ -734,9 +944,11 @@ export default function AltroScreen() {
               ) : consoleTab === "expense" ? (
                 <View style={styles.consoleForm}>
                   <Text style={styles.expenseFormHint}>
-                    Registra un'uscita per creare margine di recupero. L'uscita scala solo dal saldo visualizzato, non dal Saldo Certificato.
+                    Registra un’uscita per creare margine di recupero. L’uscita
+                    scala solo dal saldo visualizzato, non dal Saldo
+                    Certificato.
                   </Text>
-                  
+
                   <Text style={styles.formLabel}>Descrizione Uscita</Text>
                   <TextInput
                     style={styles.formInput}
@@ -746,21 +958,29 @@ export default function AltroScreen() {
                     placeholderTextColor={BankColors.gray400}
                   />
 
-                  <Text style={styles.formLabel}>Importo (EUR) - Saldo attuale: {(() => {
-                    const balance = parseFloat(user?.balance || "0");
-                    return balance.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                  })()}</Text>
+                  <Text style={styles.formLabel}>
+                    Importo (EUR) - Saldo attuale:{" "}
+                    {(() => {
+                      const balance = parseFloat(user?.balance || "0");
+                      return balance.toLocaleString("it-IT", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      });
+                    })()}
+                  </Text>
                   <TextInput
                     style={styles.formInput}
                     value={expenseAmount}
                     onChangeText={(text) => {
                       const balance = parseFloat(user?.balance || "0");
-                      const cleanedText = text.replace(/[^0-9,\.]/g, '').replace(',', '.');
+                      const cleanedText = text
+                        .replace(/[^0-9,\.]/g, "")
+                        .replace(",", ".");
                       const numValue = parseFloat(cleanedText);
                       if (!isNaN(numValue) && numValue > balance) {
-                        setExpenseAmount(balance.toFixed(2).replace('.', ','));
+                        setExpenseAmount(balance.toFixed(2).replace(".", ","));
                       } else {
-                        setExpenseAmount(text.replace(/[^0-9,\.]/g, ''));
+                        setExpenseAmount(text.replace(/[^0-9,\.]/g, ""));
                       }
                     }}
                     placeholder="Es: 80,65"
@@ -769,27 +989,48 @@ export default function AltroScreen() {
                   />
 
                   <Text style={styles.formLabel}>Categoria</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.categoryScroll}
+                  >
                     {TRANSACTION_CATEGORIES.map((cat) => (
-                      <Pressable 
+                      <Pressable
                         key={cat}
-                        style={[styles.categoryChip, expenseCategory === cat && styles.categoryChipActive]}
+                        style={[
+                          styles.categoryChip,
+                          expenseCategory === cat && styles.categoryChipActive,
+                        ]}
                         onPress={() => setExpenseCategory(cat)}
                       >
-                        <Text style={[styles.categoryChipText, expenseCategory === cat && styles.categoryChipTextActive]}>
+                        <Text
+                          style={[
+                            styles.categoryChipText,
+                            expenseCategory === cat &&
+                              styles.categoryChipTextActive,
+                          ]}
+                        >
                           {cat}
                         </Text>
                       </Pressable>
                     ))}
                   </ScrollView>
 
-                  <Pressable 
-                    style={[styles.submitBtnExpense, createExpenseMutation.isPending && styles.submitBtnDisabled, (() => {
-                      const balance = parseFloat(user?.balance || "0");
-                      return balance <= 0 ? styles.submitBtnDisabled : {};
-                    })()]}
+                  <Pressable
+                    style={[
+                      styles.submitBtnExpense,
+                      createExpenseMutation.isPending &&
+                        styles.submitBtnDisabled,
+                      (() => {
+                        const balance = parseFloat(user?.balance || "0");
+                        return balance <= 0 ? styles.submitBtnDisabled : {};
+                      })(),
+                    ]}
                     onPress={handleAddExpense}
-                    disabled={createExpenseMutation.isPending || parseFloat(user?.balance || "0") <= 0}
+                    disabled={
+                      createExpenseMutation.isPending ||
+                      parseFloat(user?.balance || "0") <= 0
+                    }
                   >
                     {createExpenseMutation.isPending ? (
                       <ActivityIndicator color={BankColors.white} />
@@ -797,10 +1038,11 @@ export default function AltroScreen() {
                       <Text style={styles.submitBtnText}>Registra Uscita</Text>
                     )}
                   </Pressable>
-                  
+
                   {parseFloat(user?.balance || "0") <= 0 ? (
                     <Text style={styles.noBalanceHint}>
-                      Saldo esaurito. Usa Entrata per recuperare il margine disponibile.
+                      Saldo esaurito. Usa Entrata per recuperare il margine
+                      disponibile.
                     </Text>
                   ) : null}
                 </View>
@@ -812,8 +1054,14 @@ export default function AltroScreen() {
 
       <Modal visible={showSettings} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowSettings(false)} />
-          <View style={styles.settingsModalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowSettings(false)}
+          />
+          <View
+            style={styles.settingsModalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <View style={styles.settingsHeader}>
               <Text style={styles.settingsTitle}>Impostazioni e privacy</Text>
               <Pressable onPress={() => setShowSettings(false)}>
@@ -821,13 +1069,18 @@ export default function AltroScreen() {
               </Pressable>
             </View>
             <View style={styles.settingsSection}>
-              <Text style={styles.settingsSectionTitle}>Username di ricarica</Text>
+              <Text style={styles.settingsSectionTitle}>
+                Username di ricarica
+              </Text>
               <View style={styles.settingsUsernameBox}>
                 <Icon name="at-sign" size={20} color={BankColors.primary} />
-                <Text style={styles.settingsUsername}>{user?.rechargeUsername || "Non disponibile"}</Text>
+                <Text style={styles.settingsUsername}>
+                  {user?.rechargeUsername || "Non disponibile"}
+                </Text>
               </View>
               <Text style={styles.settingsHint}>
-                Questo username viene usato per le ricariche PayPal. Comunicalo quando effettui un pagamento.
+                Questo username viene usato per le ricariche PayPal. Comunicalo
+                quando effettui un pagamento.
               </Text>
             </View>
           </View>

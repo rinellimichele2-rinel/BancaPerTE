@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
@@ -26,6 +27,16 @@ function setupCors(app: express.Application) {
         origins.add(`https://${d.trim()}`);
       });
     }
+
+    if (process.env.EXPO_PUBLIC_DOMAIN) {
+      origins.add(process.env.EXPO_PUBLIC_DOMAIN);
+    }
+
+    // Allow localhost for local development
+    origins.add("http://localhost:8081");
+    origins.add("http://localhost:5000");
+    origins.add("http://127.0.0.1:8081");
+    origins.add("http://127.0.0.1:5000");
 
     const origin = req.header("origin");
 
@@ -240,14 +251,7 @@ function setupErrorHandler(app: express.Application) {
   setupErrorHandler(app);
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`express server serving on port ${port}`);
-    },
-  );
+  server.listen(port, "0.0.0.0", () => {
+    log(`express server serving on port ${port}`);
+  });
 })();

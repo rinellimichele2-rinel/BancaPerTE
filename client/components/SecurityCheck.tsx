@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Modal, Pressable, StyleSheet, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import * as Device from "expo-device";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import { Icon } from "@/components/Icon";
@@ -20,7 +27,7 @@ export function SecurityCheck({ children }: SecurityCheckProps) {
     try {
       const isEmulator = !Device.isDevice;
       const isRootedIndicators = await detectRootIndicators();
-      
+
       if (isRootedIndicators && !isEmulator) {
         setShowWarning(true);
       }
@@ -38,7 +45,7 @@ export function SecurityCheck({ children }: SecurityCheckProps) {
       const deviceName = Device.deviceName?.toLowerCase() || "";
       const modelName = Device.modelName?.toLowerCase() || "";
       const brand = Device.brand?.toLowerCase() || "";
-      
+
       const suspiciousPatterns = [
         "rooted",
         "magisk",
@@ -49,9 +56,9 @@ export function SecurityCheck({ children }: SecurityCheckProps) {
         "lineage",
         "cyanogen",
       ];
-      
+
       const combinedInfo = `${deviceName} ${modelName} ${brand}`;
-      
+
       for (const pattern of suspiciousPatterns) {
         if (combinedInfo.includes(pattern)) {
           return true;
@@ -62,7 +69,7 @@ export function SecurityCheck({ children }: SecurityCheckProps) {
     if (Platform.OS === "ios") {
       const osName = Device.osName?.toLowerCase() || "";
       const deviceName = Device.deviceName?.toLowerCase() || "";
-      
+
       const jailbreakIndicators = [
         "jailbroken",
         "cydia",
@@ -70,9 +77,9 @@ export function SecurityCheck({ children }: SecurityCheckProps) {
         "unc0ver",
         "checkra1n",
       ];
-      
+
       const combinedInfo = `${osName} ${deviceName}`;
-      
+
       for (const indicator of jailbreakIndicators) {
         if (combinedInfo.includes(indicator)) {
           return true;
@@ -96,14 +103,21 @@ export function SecurityCheck({ children }: SecurityCheckProps) {
           <View style={styles.overlay}>
             <View style={styles.warningCard}>
               <View style={styles.iconContainer}>
-                <Icon name="alert-triangle" size={48} color={BankColors.error} />
+                <Icon
+                  name="alert-triangle"
+                  size={48}
+                  color={BankColors.error}
+                />
               </View>
               <Text style={styles.title}>Avviso di Sicurezza</Text>
               <Text style={styles.message}>
-                Abbiamo rilevato che il tuo dispositivo potrebbe essere stato modificato (root/jailbreak).
+                Abbiamo rilevato che il tuo dispositivo potrebbe essere stato
+                modificato (root/jailbreak).
               </Text>
               <Text style={styles.submessage}>
-                Per la tua sicurezza, alcune funzionalita potrebbero essere limitate. Ti consigliamo di utilizzare un dispositivo non modificato.
+                Per la tua sicurezza, alcune funzionalita potrebbero essere
+                limitate. Ti consigliamo di utilizzare un dispositivo non
+                modificato.
               </Text>
               <Pressable style={styles.button} onPress={handleDismiss}>
                 <Text style={styles.buttonText}>Ho capito, continua</Text>

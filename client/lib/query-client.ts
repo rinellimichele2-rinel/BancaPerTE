@@ -5,15 +5,37 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
  * @returns {string} The API base URL
  */
 export function getApiUrl(): string {
-  let host = process.env.EXPO_PUBLIC_DOMAIN;
-
-  if (!host) {
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
+  // Priority 1: Check standard Expo env var for API URL
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
   }
 
-  let url = new URL(`https://${host}`);
+  // Priority 2: Check standard Vite env var (if used in web context)
+  // @ts-ignore - process.env might not be typed for VITE_
+  if (process.env.VITE_API_URL) {
+    // @ts-ignore
+    return process.env.VITE_API_URL;
+  }
 
-  return url.href;
+  const host = process.env.EXPO_PUBLIC_DOMAIN;
+  if (host && host.trim()) {
+    if (host.startsWith("http://") || host.startsWith("https://")) {
+      return host;
+    }
+    if (host.includes("localhost") || host.includes("127.0.0.1")) {
+      return `http://${host}`;
+    }
+    const url = new URL(`https://${host}`);
+    return url.href;
+  }
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin;
+    if (origin.includes("localhost:8081")) {
+      return "http://localhost:5000";
+    }
+    return origin;
+  }
+  return "http://localhost:5000";
 }
 
 async function throwIfResNotOk(res: Response) {

@@ -12,7 +12,12 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth-context";
 import { Icon } from "@/components/Icon";
-import { BankColors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import {
+  BankColors,
+  Spacing,
+  BorderRadius,
+  Typography,
+} from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -32,27 +37,27 @@ export default function PinSetupScreen() {
   const handleNumberPress = async (num: string) => {
     const currentPin = step === "create" ? pin : confirmPin;
     if (currentPin.length >= PIN_LENGTH) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newPin = currentPin + num;
-    
+
     if (step === "create") {
       setPin(newPin);
       setError("");
-      
+
       if (newPin.length === PIN_LENGTH) {
         setStep("confirm");
       }
     } else {
       setConfirmPin(newPin);
       setError("");
-      
+
       if (newPin.length === PIN_LENGTH) {
         if (newPin === pin) {
           setIsLoading(true);
           const success = await setupPin(newPin);
           setIsLoading(false);
-          
+
           if (success) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           } else {
@@ -102,7 +107,9 @@ export default function PinSetupScreen() {
             ]}
           >
             {index < currentPin.length ? (
-              <View style={[styles.dotInner, error ? styles.dotInnerError : null]} />
+              <View
+                style={[styles.dotInner, error ? styles.dotInnerError : null]}
+              />
             ) : (
               <Text style={styles.dotPlaceholder}>_</Text>
             )}
@@ -167,18 +174,19 @@ export default function PinSetupScreen() {
       <View style={styles.header}>
         <View style={styles.headerBar} />
       </View>
-      
-      <View style={[styles.content, { paddingTop: insets.top + Spacing["4xl"] }]}>
+
+      <View
+        style={[styles.content, { paddingTop: insets.top + Spacing["4xl"] }]}
+      >
         <Text style={styles.title}>
           {step === "create" ? "Crea il tuo PIN" : "Conferma il tuo PIN"}
         </Text>
         <Text style={styles.subtitle}>
-          {step === "create" 
+          {step === "create"
             ? "Inserisci un PIN di 5 cifre per proteggere il tuo conto"
-            : "Inserisci nuovamente il PIN per confermare"
-          }
+            : "Inserisci nuovamente il PIN per confermare"}
         </Text>
-        
+
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={BankColors.primary} />
@@ -186,16 +194,17 @@ export default function PinSetupScreen() {
         ) : (
           renderPinDots()
         )}
-        
-        {error ? (
-          <Text style={styles.errorText}>{error}</Text>
-        ) : null}
-        
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
         {renderKeypad()}
       </View>
-      
+
       <Pressable
-        style={[styles.cancelButton, { paddingBottom: insets.bottom + Spacing.lg }]}
+        style={[
+          styles.cancelButton,
+          { paddingBottom: insets.bottom + Spacing.lg },
+        ]}
         onPress={handleCancel}
       >
         <Text style={styles.cancelText}>Annulla</Text>

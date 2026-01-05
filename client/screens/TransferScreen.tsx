@@ -32,7 +32,7 @@ export default function TransferScreen() {
   const navigation = useNavigation();
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
-  
+
   const [searchUsername, setSearchUsername] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserInfo | null>(null);
   const [amount, setAmount] = useState("");
@@ -40,34 +40,49 @@ export default function TransferScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<UserInfo[]>([]);
-  
+
   // Fetch all users for listing - with cache busting for fresh data
-  const { data: allUsers = [], isLoading: isLoadingUsers, refetch: refetchUsers } = useQuery<UserInfo[]>({
+  const {
+    data: allUsers = [],
+    isLoading: isLoadingUsers,
+    refetch: refetchUsers,
+  } = useQuery<UserInfo[]>({
     queryKey: ["/api/users/list", user?.id],
     queryFn: async () => {
       const timestamp = Date.now();
       const response = await fetch(
-        new URL(`/api/users/list?exclude=${user?.id}&_t=${timestamp}`, getApiUrl()).toString()
+        new URL(
+          `/api/users/list?exclude=${user?.id}&_t=${timestamp}`,
+          getApiUrl(),
+        ).toString(),
       );
       if (!response.ok) return [];
       const data = await response.json();
-      console.log("[TransferScreen] Users fetched from API:", JSON.stringify(data));
+      console.log(
+        "[TransferScreen] Users fetched from API:",
+        JSON.stringify(data),
+      );
       return data;
     },
     enabled: !!user?.id,
     staleTime: 0,
     gcTime: 0,
   });
-  
+
   // Filter users in real-time as user types - search by exact username string
   const filteredUsers = React.useMemo(() => {
-    console.log("[TransferScreen] allUsers:", JSON.stringify(allUsers.map(u => u.username)));
+    console.log(
+      "[TransferScreen] allUsers:",
+      JSON.stringify(allUsers.map((u) => u.username)),
+    );
     if (!searchUsername.trim()) return allUsers;
     const search = searchUsername.trim().toLowerCase().replace(/^@/, "");
-    return allUsers.filter(u => {
+    return allUsers.filter((u) => {
       const usernameMatch = u.username.toLowerCase().includes(search);
-      const fullNameMatch = u.fullName && u.fullName.toLowerCase().includes(search);
-      const displayNameMatch = u.displayName && u.displayName.toLowerCase().includes(search);
+      const fullNameMatch =
+        u.fullName && u.fullName.toLowerCase().includes(search);
+      const displayNameMatch =
+        u.displayName && u.displayName.toLowerCase().includes(search);
       return usernameMatch || fullNameMatch || displayNameMatch;
     });
   }, [searchUsername, allUsers]);
@@ -80,7 +95,7 @@ export default function TransferScreen() {
     }
 
     const usernameToSearch = searchUsername.trim().replace(/^@/, "");
-    
+
     if (usernameToSearch.toLowerCase() === user?.username.toLowerCase()) {
       setSearchError("Non puoi inviare denaro a te stesso");
       return;
@@ -94,9 +109,12 @@ export default function TransferScreen() {
     try {
       // Use partial matching to find users
       const response = await fetch(
-        new URL(`/api/users/search/${encodeURIComponent(usernameToSearch)}?partial=true`, getApiUrl()).toString()
+        new URL(
+          `/api/users/search/${encodeURIComponent(usernameToSearch)}?partial=true`,
+          getApiUrl(),
+        ).toString(),
       );
-      
+
       if (response.ok) {
         const results = await response.json();
         // Filter out current user
@@ -125,7 +143,7 @@ export default function TransferScreen() {
     setSearchError(null);
     setAmount("");
   };
-  
+
   const selectUser = (u: UserInfo) => {
     setSelectedUser(u);
     setSearchResults([]);
@@ -166,46 +184,62 @@ export default function TransferScreen() {
               const data = await response.json();
               if (data.success) {
                 await refreshUser();
-                await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                await queryClient.invalidateQueries({ queryKey: [`/api/transactions/${user.id}`] });
-                
+                await queryClient.invalidateQueries({
+                  queryKey: ["/api/users"],
+                });
+                await queryClient.invalidateQueries({
+                  queryKey: [`/api/transactions/${user.id}`],
+                });
+
                 Alert.alert(
                   "Trasferimento Completato",
                   `Hai trasferito ${amountNum.toFixed(0)} EUR a @${selectedUser.username}`,
-                  [{ text: "OK", onPress: () => navigation.goBack() }]
+                  [{ text: "OK", onPress: () => navigation.goBack() }],
                 );
               } else {
-                Alert.alert("Errore", data.error || "Errore durante il trasferimento");
+                Alert.alert(
+                  "Errore",
+                  data.error || "Errore durante il trasferimento",
+                );
               }
             } catch (error: any) {
               if (error.securityViolation) {
                 Alert.alert(
                   "Sicurezza",
                   "Rilevata modifica non autorizzata. L'operazione è stata bloccata.",
-                  [{ text: "OK" }]
+                  [{ text: "OK" }],
                 );
               } else {
-                Alert.alert("Errore", error.message || "Errore durante il trasferimento");
+                Alert.alert(
+                  "Errore",
+                  error.message || "Errore durante il trasferimento",
+                );
               }
             } finally {
               setIsTransferring(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
   const formatBalance = (balance: string | null | undefined) => {
     if (!balance) return "0";
     const num = parseFloat(balance);
-    return num.toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return num.toLocaleString("it-IT", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
   };
 
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + Spacing.md }]}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Icon name="arrow-left" size={24} color={BankColors.white} />
         </Pressable>
         <Text style={styles.headerTitle}>Scambia Denaro</Text>
@@ -214,16 +248,18 @@ export default function TransferScreen() {
 
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Il tuo saldo disponibile</Text>
-        <Text style={styles.balanceAmount}>{formatBalance(user?.balance)} EUR</Text>
+        <Text style={styles.balanceAmount}>
+          {formatBalance(user?.balance)} EUR
+        </Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Cerca destinatario</Text>
-          <Pressable 
+          <Pressable
             style={styles.refreshButton}
             onPress={() => refetchUsers()}
           >
@@ -231,7 +267,7 @@ export default function TransferScreen() {
             <Text style={styles.refreshButtonText}>Aggiorna</Text>
           </Pressable>
         </View>
-        
+
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
             <Icon name="at-sign" size={20} color={BankColors.gray500} />
@@ -255,8 +291,11 @@ export default function TransferScreen() {
               </Pressable>
             ) : null}
           </View>
-          <Pressable 
-            style={[styles.searchButton, isSearching && styles.searchButtonDisabled]}
+          <Pressable
+            style={[
+              styles.searchButton,
+              isSearching && styles.searchButtonDisabled,
+            ]}
             onPress={handleSearch}
             disabled={isSearching}
           >
@@ -281,7 +320,7 @@ export default function TransferScreen() {
               <Icon name="check-circle" size={16} color={BankColors.primary} />
               <Text style={styles.foundUserText}>Destinatario selezionato</Text>
             </View>
-            <Pressable 
+            <Pressable
               style={[styles.userCard, styles.userCardSelected]}
               onPress={clearSearch}
             >
@@ -293,7 +332,10 @@ export default function TransferScreen() {
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>@{selectedUser.username}</Text>
                 <Text style={styles.userAccount}>
-                  {selectedUser.displayName || selectedUser.fullName || selectedUser.accountNumber || "Tocca per cambiare"}
+                  {selectedUser.displayName ||
+                    selectedUser.fullName ||
+                    selectedUser.accountNumber ||
+                    "Tocca per cambiare"}
                 </Text>
               </View>
               <Icon name="check-circle" size={24} color={BankColors.primary} />
@@ -302,22 +344,39 @@ export default function TransferScreen() {
         ) : (
           <View style={styles.usersList}>
             <View style={styles.foundUserLabel}>
-              <Icon name="users" size={16} color={searchUsername ? BankColors.primary : BankColors.gray500} />
-              <Text style={[styles.foundUserText, { color: searchUsername ? BankColors.primary : BankColors.gray600 }]}>
-                {isLoadingUsers ? "Caricamento..." : 
-                  searchUsername ? `${filteredUsers.length} risultati` : 
-                  `${allUsers.length} utenti disponibili`}
+              <Icon
+                name="users"
+                size={16}
+                color={searchUsername ? BankColors.primary : BankColors.gray500}
+              />
+              <Text
+                style={[
+                  styles.foundUserText,
+                  {
+                    color: searchUsername
+                      ? BankColors.primary
+                      : BankColors.gray600,
+                  },
+                ]}
+              >
+                {isLoadingUsers
+                  ? "Caricamento..."
+                  : searchUsername
+                    ? `${filteredUsers.length} risultati`
+                    : `${allUsers.length} utenti disponibili`}
               </Text>
             </View>
             {filteredUsers.length === 0 && searchUsername ? (
               <View style={styles.noResultsContainer}>
                 <Icon name="user-x" size={32} color={BankColors.gray400} />
                 <Text style={styles.noResultsText}>Nessun utente trovato</Text>
-                <Text style={styles.noResultsHint}>Prova con un altro username</Text>
+                <Text style={styles.noResultsHint}>
+                  Prova con un altro username
+                </Text>
               </View>
             ) : (
               filteredUsers.map((u) => (
-                <Pressable 
+                <Pressable
                   key={u.id}
                   style={styles.userCard}
                   onPress={() => selectUser(u)}
@@ -333,7 +392,11 @@ export default function TransferScreen() {
                       {u.displayName || u.fullName || u.accountNumber || ""}
                     </Text>
                   </View>
-                  <Icon name="chevron-right" size={20} color={BankColors.gray400} />
+                  <Icon
+                    name="chevron-right"
+                    size={20}
+                    color={BankColors.gray400}
+                  />
                 </Pressable>
               ))
             )}
@@ -342,7 +405,18 @@ export default function TransferScreen() {
 
         {selectedUser ? (
           <View style={styles.transferForm}>
-            <Text style={[styles.sectionTitle, { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.sm }]}>Importo da trasferire</Text>
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  paddingHorizontal: Spacing.lg,
+                  paddingTop: Spacing.lg,
+                  paddingBottom: Spacing.sm,
+                },
+              ]}
+            >
+              Importo da trasferire
+            </Text>
             <View style={styles.amountInputContainer}>
               <Text style={styles.currencySymbol}>EUR</Text>
               <TextInput

@@ -20,25 +20,31 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/lib/auth-context";
-import { apiRequest } from "@/lib/query-client";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { Icon } from "@/components/Icon";
 import { BankColors, Spacing, BorderRadius } from "@/constants/theme";
 import type { Transaction } from "@shared/schema";
 import type { HomeStackParamList } from "@/navigation/MainTabNavigator";
 
-type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, "HomeMain">;
+type HomeScreenNavigationProp = NativeStackNavigationProp<
+  HomeStackParamList,
+  "HomeMain"
+>;
 
-const QuickActionButton = ({ 
-  icon, 
-  label, 
-  onPress 
-}: { 
-  icon: string; 
-  label: string; 
+const QuickActionButton = ({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: string;
+  label: string;
   onPress?: () => void;
 }) => (
-  <Pressable 
-    style={({ pressed }) => [styles.quickActionBtn, pressed && styles.quickActionPressed]}
+  <Pressable
+    style={({ pressed }) => [
+      styles.quickActionBtn,
+      pressed && styles.quickActionPressed,
+    ]}
     onPress={onPress}
   >
     <Icon name={icon} size={18} color={BankColors.white} />
@@ -46,30 +52,40 @@ const QuickActionButton = ({
   </Pressable>
 );
 
-const TransactionItem = ({ transaction, onPress }: { transaction: Transaction; onPress: () => void }) => {
+const TransactionItem = ({
+  transaction,
+  onPress,
+}: {
+  transaction: Transaction;
+  onPress: () => void;
+}) => {
   const isExpense = transaction.type === "expense";
   const amountValue = Math.abs(parseFloat(transaction.amount));
   const formattedAmount = `${isExpense ? "-" : "+"} ${amountValue.toFixed(2).replace(".", ",")} \u20AC`;
-  const dateStr = transaction.date ? new Date(transaction.date).toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }) : "";
+  const dateStr = transaction.date
+    ? new Date(transaction.date).toLocaleDateString("it-IT", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <Pressable style={styles.transactionItem} onPress={onPress}>
       <View style={styles.transactionIcon}>
-        <Icon 
-          name={isExpense ? "arrow-down-left" : "arrow-up-right"} 
-          size={20} 
-          color={BankColors.gray600} 
+        <Icon
+          name={isExpense ? "arrow-down-left" : "arrow-up-right"}
+          size={20}
+          color={BankColors.gray600}
         />
       </View>
       <View style={styles.transactionInfo}>
         <Text style={styles.transactionDate}>{dateStr}</Text>
         <Text style={styles.transactionDesc}>{transaction.description}</Text>
         {transaction.accountNumber ? (
-          <Text style={styles.transactionAccount}>{transaction.accountNumber}</Text>
+          <Text style={styles.transactionAccount}>
+            {transaction.accountNumber}
+          </Text>
         ) : null}
       </View>
       <View style={styles.transactionAmountContainer}>
@@ -77,7 +93,12 @@ const TransactionItem = ({ transaction, onPress }: { transaction: Transaction; o
           <Text style={styles.nonContabilizzato}>NON CONTABILIZZATO</Text>
         ) : null}
         <View style={styles.transactionAmountRow}>
-          <Text style={[styles.transactionAmount, isExpense && styles.expenseAmount]}>
+          <Text
+            style={[
+              styles.transactionAmount,
+              isExpense && styles.expenseAmount,
+            ]}
+          >
             {formattedAmount}
           </Text>
           <Icon name="chevron-right" size={20} color={BankColors.gray400} />
@@ -92,7 +113,15 @@ export default function HomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const queryClient = useQueryClient();
-  const { user, userId, refreshUser, updateBalance, updateAccountNumber, updateDisplayName, updateMonthlyValues } = useAuth();
+  const {
+    user,
+    userId,
+    refreshUser,
+    updateBalance,
+    updateAccountNumber,
+    updateDisplayName,
+    updateMonthlyValues,
+  } = useAuth();
   const [showBalance, setShowBalance] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showEditBalance, setShowEditBalance] = useState(false);
@@ -107,17 +136,22 @@ export default function HomeScreen() {
   const [showEditIncome, setShowEditIncome] = useState(false);
   const [newIncome, setNewIncome] = useState("");
 
-  const { data: transactions = [], isLoading: loadingTransactions } = useQuery<Transaction[]>({
+  const { data: transactions = [], isLoading: loadingTransactions } = useQuery<
+    Transaction[]
+  >({
     queryKey: ["/api/transactions", userId],
     enabled: !!userId,
   });
 
   const generateFromTemplateMutation = useMutation({
     mutationFn: async () => {
-      const baseUrl = process.env.EXPO_PUBLIC_DOMAIN;
-      const url = `https://${baseUrl}/api/transactions/generate-from-template`;
-      const response = await fetch(url, {
+      const url = new URL(
+        "/api/transactions/generate-from-template",
+        getApiUrl(),
+      );
+      const response = await fetch(url.toString(), {
         method: "POST",
+
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
       });
@@ -128,13 +162,15 @@ export default function HomeScreen() {
       return data;
     },
     onSuccess: async (data) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/transactions", userId],
+      });
       await refreshUser();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (data.templateUsed && data.generatedAmount) {
         Alert.alert(
           "Uscita Generata",
-          `${data.templateUsed}: -${data.generatedAmount} EUR`
+          `${data.templateUsed}: -${data.generatedAmount} EUR`,
         );
       }
     },
@@ -153,7 +189,9 @@ export default function HomeScreen() {
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     await refreshUser();
-    await queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+    await queryClient.invalidateQueries({
+      queryKey: ["/api/transactions", userId],
+    });
     setIsRefreshing(false);
   }, [refreshUser, queryClient, userId]);
 
@@ -255,30 +293,38 @@ export default function HomeScreen() {
     return { integer: integer.replace(/\B(?=(\d{3})+(?!\d))/g, "."), decimal };
   };
 
-  const balanceFormatted = user?.balance ? formatBalance(user.balance) : { integer: "0", decimal: "00" };
+  const balanceFormatted = user?.balance
+    ? formatBalance(user.balance)
+    : { integer: "0", decimal: "00" };
 
   // Get server date for Europe/Rome timezone (filter current month/year only)
-  const { data: serverDate } = useQuery<{ currentMonth: number; currentYear: number }>({
+  const { data: serverDate } = useQuery<{
+    currentMonth: number;
+    currentYear: number;
+  }>({
     queryKey: ["/api/server-date"],
   });
-  
+
   const currentMonth = serverDate?.currentMonth || new Date().getMonth() + 1;
   const currentYear = serverDate?.currentYear || new Date().getFullYear();
 
   // Filter transactions for current month only - auto-resets at month start
-  const currentMonthTransactions = transactions.filter(t => {
+  const currentMonthTransactions = transactions.filter((t) => {
     const dateValue = t.date || t.createdAt;
     if (!dateValue) return false;
     const txDate = new Date(dateValue);
-    return txDate.getMonth() + 1 === currentMonth && txDate.getFullYear() === currentYear;
+    return (
+      txDate.getMonth() + 1 === currentMonth &&
+      txDate.getFullYear() === currentYear
+    );
   });
 
   const totalExpenses = currentMonthTransactions
-    .filter(t => t.type === "expense")
+    .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
 
   const totalIncome = currentMonthTransactions
-    .filter(t => t.type === "income")
+    .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
   // Display totals are now based only on current month transactions
@@ -289,7 +335,7 @@ export default function HomeScreen() {
   // Filter transactions from last 7 days
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const weeklyTransactions = transactions.filter(t => {
+  const weeklyTransactions = transactions.filter((t) => {
     if (!t.date) return false;
     const txDate = new Date(t.date);
     return txDate >= sevenDaysAgo;
@@ -300,7 +346,7 @@ export default function HomeScreen() {
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (date.toDateString() === today.toDateString()) return "Oggi";
     if (date.toDateString() === yesterday.toDateString()) return "Ieri";
     return date.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
@@ -317,7 +363,11 @@ export default function HomeScreen() {
         scrollIndicatorInsets={{ bottom: insets.bottom }}
       >
         <LinearGradient
-          colors={[BankColors.primaryLight, BankColors.primary, BankColors.primaryDark]}
+          colors={[
+            BankColors.primaryLight,
+            BankColors.primary,
+            BankColors.primaryDark,
+          ]}
           style={[styles.header, { paddingTop: insets.top + Spacing.md }]}
         >
           <View style={styles.headerTop}>
@@ -343,7 +393,9 @@ export default function HomeScreen() {
 
           <View style={styles.greetingContainer}>
             <Pressable onPress={handleEditDisplayName}>
-              <Text style={styles.greeting}>Ciao {user?.displayName || user?.username || "Utente"}</Text>
+              <Text style={styles.greeting}>
+                Ciao {user?.displayName || user?.username || "Utente"}
+              </Text>
             </Pressable>
             <Pressable onPress={handleEditDisplayName}>
               <Text style={styles.personalizeLink}>Modifica</Text>
@@ -351,24 +403,36 @@ export default function HomeScreen() {
           </View>
 
           <Pressable onPress={handleEditAccountNumber}>
-            <Text style={styles.accountNumber}>Conto {user?.accountNumber || "1000/00002521"}</Text>
+            <Text style={styles.accountNumber}>
+              Conto {user?.accountNumber || "1000/00002521"}
+            </Text>
           </Pressable>
 
-          <Pressable style={styles.balanceRow} onPress={handleOpenPayPal} onLongPress={handleEditBalance}>
+          <Pressable
+            style={styles.balanceRow}
+            onPress={handleOpenPayPal}
+            onLongPress={handleEditBalance}
+          >
             {showBalance ? (
               <Text style={styles.balanceAmount}>
-                {balanceFormatted.integer}<Text style={styles.balanceDecimal}>,{balanceFormatted.decimal}</Text> {"\u20AC"}
+                {balanceFormatted.integer}
+                <Text style={styles.balanceDecimal}>
+                  ,{balanceFormatted.decimal}
+                </Text>{" "}
+                {"\u20AC"}
               </Text>
             ) : (
               <Text style={styles.balanceAmount}>******* {"\u20AC"}</Text>
             )}
             <Pressable style={styles.showHideBtn} onPress={handleToggleBalance}>
-              <Icon 
-                name={showBalance ? "eye-off" : "eye"} 
-                size={20} 
-                color={BankColors.white} 
+              <Icon
+                name={showBalance ? "eye-off" : "eye"}
+                size={20}
+                color={BankColors.white}
               />
-              <Text style={styles.showHideText}>{showBalance ? "Nascondi" : "Mostra"}</Text>
+              <Text style={styles.showHideText}>
+                {showBalance ? "Nascondi" : "Mostra"}
+              </Text>
             </Pressable>
           </Pressable>
 
@@ -376,8 +440,8 @@ export default function HomeScreen() {
             <Text style={styles.detailLink}>Dettaglio</Text>
           </Pressable>
 
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.quickActionsScroll}
             contentContainerStyle={styles.quickActionsContainer}
@@ -386,57 +450,93 @@ export default function HomeScreen() {
             <QuickActionButton icon="credit-card" label="Carta virtuale" />
             <QuickActionButton icon="file-text" label="CBILL/pagoPA" />
             <QuickActionButton icon="smartphone" label="Ricarica" />
-            <QuickActionButton icon="message-circle" label="Consulente AI" onPress={() => navigation.navigate("Advisor")} />
-            <QuickActionButton icon="rss" label="Notizie" onPress={() => navigation.navigate("News")} />
+            <QuickActionButton
+              icon="message-circle"
+              label="Consulente AI"
+              onPress={() => navigation.navigate("Advisor")}
+            />
+            <QuickActionButton
+              icon="rss"
+              label="Notizie"
+              onPress={() => navigation.navigate("News")}
+            />
           </ScrollView>
         </LinearGradient>
 
         <View style={styles.movimentiSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Movimenti</Text>
-            <Pressable style={styles.viewAllBtn} onPress={() => setShowWeeklyHistory(true)}>
+            <Pressable
+              style={styles.viewAllBtn}
+              onPress={() => setShowWeeklyHistory(true)}
+            >
               <Text style={styles.viewAllText}>Visualizza tutti</Text>
               <Icon name="chevron-right" size={16} color={BankColors.primary} />
             </Pressable>
           </View>
 
           <View style={styles.expenseSummary}>
-            <Text style={styles.expenseSummaryLabel}>Uscite nei prossimi 30 giorni:</Text>
-            <Text style={styles.expenseSummaryAmount}>- {totalExpenses.toFixed(2).replace(".", ",")} {"\u20AC"}</Text>
-            <Text style={styles.expenseSummaryCount}>{transactions.filter(t => t.type === "expense").length} operazione</Text>
+            <Text style={styles.expenseSummaryLabel}>
+              Uscite nei prossimi 30 giorni:
+            </Text>
+            <Text style={styles.expenseSummaryAmount}>
+              - {totalExpenses.toFixed(2).replace(".", ",")} {"\u20AC"}
+            </Text>
+            <Text style={styles.expenseSummaryCount}>
+              {transactions.filter((t) => t.type === "expense").length}{" "}
+              operazione
+            </Text>
             <Pressable onPress={() => setShowWeeklyHistory(true)}>
               <Text style={styles.detailLinkGreen}>Dettagli</Text>
             </Pressable>
           </View>
 
           {loadingTransactions ? (
-            <ActivityIndicator style={styles.loader} color={BankColors.primary} />
+            <ActivityIndicator
+              style={styles.loader}
+              color={BankColors.primary}
+            />
           ) : (
-            transactions.slice(0, 5).map((transaction) => (
-              <TransactionItem 
-                key={transaction.id} 
-                transaction={transaction} 
-                onPress={() => navigation.navigate("TransactionDetail", { transaction })}
-              />
-            ))
+            transactions
+              .slice(0, 5)
+              .map((transaction) => (
+                <TransactionItem
+                  key={transaction.id}
+                  transaction={transaction}
+                  onPress={() =>
+                    navigation.navigate("TransactionDetail", { transaction })
+                  }
+                />
+              ))
           )}
         </View>
 
         <View style={styles.analisiSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Analisi delle spese</Text>
-            <Pressable style={styles.viewAllBtn} onPress={() => navigation.navigate("Analisi")}>
+            <Pressable
+              style={styles.viewAllBtn}
+              onPress={() => navigation.navigate("Analisi")}
+            >
               <Text style={styles.viewAllText}>Vai alla sezione</Text>
               <Icon name="chevron-right" size={16} color={BankColors.primary} />
             </Pressable>
           </View>
 
           <View style={styles.analisiCard}>
-            <Pressable style={styles.analisiRow} onLongPress={handleEditExpenses}>
+            <Pressable
+              style={styles.analisiRow}
+              onLongPress={handleEditExpenses}
+            >
               <Text style={styles.analisiLabel}>Uscite del mese</Text>
               <View style={styles.analisiAmountRow}>
                 <Text style={styles.analisiAmountNegative}>
-                  - {displayExpenses.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
+                  -{" "}
+                  {displayExpenses
+                    .toFixed(2)
+                    .replace(".", ",")
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ".")}{" "}
+                  {"\u20AC"}
                 </Text>
                 <Icon name="arrow-down" size={16} color={BankColors.error} />
               </View>
@@ -446,7 +546,12 @@ export default function HomeScreen() {
               <Text style={styles.analisiLabel}>Entrate del mese</Text>
               <View style={styles.analisiAmountRow}>
                 <Text style={styles.analisiAmountPositive}>
-                  + {displayIncome.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} {"\u20AC"}
+                  +{" "}
+                  {displayIncome
+                    .toFixed(2)
+                    .replace(".", ",")
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ".")}{" "}
+                  {"\u20AC"}
                 </Text>
                 <Icon name="arrow-up" size={16} color={BankColors.success} />
               </View>
@@ -457,8 +562,14 @@ export default function HomeScreen() {
 
       <Modal visible={showEditBalance} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditBalance(false)} />
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowEditBalance(false)}
+          />
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>Modifica Saldo</Text>
             <TextInput
               style={styles.modalInput}
@@ -469,10 +580,16 @@ export default function HomeScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditBalance(false)}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditBalance(false)}
+              >
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
-              <Pressable style={styles.modalSaveBtn} onPress={handleSaveBalance}>
+              <Pressable
+                style={styles.modalSaveBtn}
+                onPress={handleSaveBalance}
+              >
                 <Text style={styles.modalSaveText}>Salva</Text>
               </Pressable>
             </View>
@@ -482,8 +599,14 @@ export default function HomeScreen() {
 
       <Modal visible={showEditAccount} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditAccount(false)} />
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowEditAccount(false)}
+          />
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>Modifica Numero Conto</Text>
             <TextInput
               style={styles.modalInput}
@@ -493,10 +616,16 @@ export default function HomeScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditAccount(false)}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditAccount(false)}
+              >
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
-              <Pressable style={styles.modalSaveBtn} onPress={handleSaveAccountNumber}>
+              <Pressable
+                style={styles.modalSaveBtn}
+                onPress={handleSaveAccountNumber}
+              >
                 <Text style={styles.modalSaveText}>Salva</Text>
               </Pressable>
             </View>
@@ -506,8 +635,14 @@ export default function HomeScreen() {
 
       <Modal visible={showEditDisplayName} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditDisplayName(false)} />
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowEditDisplayName(false)}
+          />
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>Modifica Nome</Text>
             <TextInput
               style={styles.modalInput}
@@ -517,10 +652,16 @@ export default function HomeScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditDisplayName(false)}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditDisplayName(false)}
+              >
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
-              <Pressable style={styles.modalSaveBtn} onPress={handleSaveDisplayName}>
+              <Pressable
+                style={styles.modalSaveBtn}
+                onPress={handleSaveDisplayName}
+              >
                 <Text style={styles.modalSaveText}>Salva</Text>
               </Pressable>
             </View>
@@ -530,10 +671,18 @@ export default function HomeScreen() {
 
       <Modal visible={showEditExpenses} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditExpenses(false)} />
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowEditExpenses(false)}
+          />
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>Modifica Uscite del Mese</Text>
-            <Text style={styles.modalSubtitle}>Questa modifica e solo estetica</Text>
+            <Text style={styles.modalSubtitle}>
+              Questa modifica e solo estetica
+            </Text>
             <TextInput
               style={styles.modalInput}
               value={newExpenses}
@@ -543,10 +692,16 @@ export default function HomeScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditExpenses(false)}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditExpenses(false)}
+              >
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
-              <Pressable style={styles.modalSaveBtn} onPress={handleSaveExpenses}>
+              <Pressable
+                style={styles.modalSaveBtn}
+                onPress={handleSaveExpenses}
+              >
                 <Text style={styles.modalSaveText}>Salva</Text>
               </Pressable>
             </View>
@@ -556,10 +711,18 @@ export default function HomeScreen() {
 
       <Modal visible={showEditIncome} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowEditIncome(false)} />
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowEditIncome(false)}
+          />
+          <View
+            style={styles.modalContent}
+            onStartShouldSetResponder={() => true}
+          >
             <Text style={styles.modalTitle}>Modifica Entrate del Mese</Text>
-            <Text style={styles.modalSubtitle}>Questa modifica e solo estetica</Text>
+            <Text style={styles.modalSubtitle}>
+              Questa modifica e solo estetica
+            </Text>
             <TextInput
               style={styles.modalInput}
               value={newIncome}
@@ -569,7 +732,10 @@ export default function HomeScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => setShowEditIncome(false)}>
+              <Pressable
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditIncome(false)}
+              >
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
               <Pressable style={styles.modalSaveBtn} onPress={handleSaveIncome}>
@@ -583,30 +749,41 @@ export default function HomeScreen() {
       <Modal visible={showWeeklyHistory} animationType="slide">
         <View style={styles.weeklyModalContainer}>
           <View style={styles.weeklyModalHeader}>
-            <Pressable onPress={() => setShowWeeklyHistory(false)} style={styles.weeklyCloseBtn}>
+            <Pressable
+              onPress={() => setShowWeeklyHistory(false)}
+              style={styles.weeklyCloseBtn}
+            >
               <Icon name="x" size={24} color={BankColors.gray800} />
             </Pressable>
             <Text style={styles.weeklyModalTitle}>Movimenti Settimanali</Text>
             <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView style={styles.weeklyScrollView} contentContainerStyle={styles.weeklyScrollContent}>
+          <ScrollView
+            style={styles.weeklyScrollView}
+            contentContainerStyle={styles.weeklyScrollContent}
+          >
             <Text style={styles.weeklyLabel}>TRANSAZIONI ULTIMI 7 GIORNI</Text>
-            
+
             {weeklyTransactions.length === 0 ? (
               <View style={styles.weeklyEmptyState}>
                 <Icon name="inbox" size={48} color={BankColors.gray400} />
-                <Text style={styles.weeklyEmptyText}>Nessuna transazione questa settimana</Text>
+                <Text style={styles.weeklyEmptyText}>
+                  Nessuna transazione questa settimana
+                </Text>
               </View>
             ) : (
               weeklyTransactions.map((transaction) => {
                 const isExpense = transaction.type === "expense";
                 const amountValue = Math.abs(parseFloat(transaction.amount));
-                const formattedAmount = `${isExpense ? "-" : "+"} ${amountValue.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")} \u20AC`;
-                
+                const formattedAmount = `${isExpense ? "-" : "+"} ${amountValue
+                  .toFixed(2)
+                  .replace(".", ",")
+                  .replace(/\B(?=(\d{3})+(?!\d))/g, ".")} \u20AC`;
+
                 return (
-                  <Pressable 
-                    key={transaction.id} 
+                  <Pressable
+                    key={transaction.id}
                     style={styles.weeklyTransRow}
                     onPress={() => {
                       setShowWeeklyHistory(false);
@@ -614,22 +791,34 @@ export default function HomeScreen() {
                     }}
                   >
                     <View style={styles.weeklyIconCircle}>
-                      <Icon 
-                        name={isExpense ? "arrow-down-left" : "arrow-up-right"} 
-                        size={20} 
-                        color={isExpense ? BankColors.gray600 : BankColors.primary} 
+                      <Icon
+                        name={isExpense ? "arrow-down-left" : "arrow-up-right"}
+                        size={20}
+                        color={
+                          isExpense ? BankColors.gray600 : BankColors.primary
+                        }
                       />
                     </View>
                     <View style={styles.weeklyTransInfo}>
-                      <Text style={styles.weeklyTransName}>{transaction.description}</Text>
+                      <Text style={styles.weeklyTransName}>
+                        {transaction.description}
+                      </Text>
                       <Text style={styles.weeklyTransDate}>
-                        {transaction.date ? formatTransactionDate(transaction.date) : ""}
+                        {transaction.date
+                          ? formatTransactionDate(transaction.date)
+                          : ""}
                       </Text>
                     </View>
-                    <Text style={[
-                      styles.weeklyTransAmount,
-                      { color: isExpense ? BankColors.gray800 : BankColors.primary }
-                    ]}>
+                    <Text
+                      style={[
+                        styles.weeklyTransAmount,
+                        {
+                          color: isExpense
+                            ? BankColors.gray800
+                            : BankColors.primary,
+                        },
+                      ]}
+                    >
                       {formattedAmount}
                     </Text>
                   </Pressable>

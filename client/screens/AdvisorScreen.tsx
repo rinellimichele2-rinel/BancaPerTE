@@ -48,8 +48,10 @@ export default function AdvisorScreen() {
   const queryClient = useQueryClient();
   const { userId, user } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
-  
-  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
+
+  const [activeConversationId, setActiveConversationId] = useState<
+    number | null
+  >(null);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
@@ -57,22 +59,27 @@ export default function AdvisorScreen() {
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations", userId],
     queryFn: async () => {
-      const response = await fetch(`${getApiUrl()}/api/conversations?userId=${userId}`);
+      const response = await fetch(
+        `${getApiUrl()}/api/conversations?userId=${userId}`,
+      );
       return response.json();
     },
     enabled: !!userId,
   });
 
   // Fetch active conversation with messages
-  const { data: activeConversation, isLoading: loadingConversation } = useQuery<Conversation>({
-    queryKey: ["/api/conversations", activeConversationId],
-    queryFn: async () => {
-      const response = await fetch(`${getApiUrl()}/api/conversations/${activeConversationId}`);
-      return response.json();
-    },
-    enabled: !!activeConversationId,
-    refetchInterval: false,
-  });
+  const { data: activeConversation, isLoading: loadingConversation } =
+    useQuery<Conversation>({
+      queryKey: ["/api/conversations", activeConversationId],
+      queryFn: async () => {
+        const response = await fetch(
+          `${getApiUrl()}/api/conversations/${activeConversationId}`,
+        );
+        return response.json();
+      },
+      enabled: !!activeConversationId,
+      refetchInterval: false,
+    });
 
   // Create new conversation
   const createConversationMutation = useMutation({
@@ -85,7 +92,9 @@ export default function AdvisorScreen() {
     },
     onSuccess: (data) => {
       setActiveConversationId(data.id);
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", userId] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/conversations", userId],
+      });
     },
   });
 
@@ -94,18 +103,26 @@ export default function AdvisorScreen() {
     mutationFn: async (content: string) => {
       if (!activeConversationId) return;
       setIsTyping(true);
-      
-      const userContext = user ? `Saldo attuale: €${parseFloat(user.balance || "0").toFixed(2)}, Nome: ${user.fullName}` : "";
-      
-      const response = await apiRequest("POST", `/api/conversations/${activeConversationId}/messages`, {
-        content,
-        userContext,
-      });
+
+      const userContext = user
+        ? `Saldo attuale: €${parseFloat(user.balance || "0").toFixed(2)}, Nome: ${user.fullName}`
+        : "";
+
+      const response = await apiRequest(
+        "POST",
+        `/api/conversations/${activeConversationId}/messages`,
+        {
+          content,
+          userContext,
+        },
+      );
       return response.json();
     },
     onSuccess: () => {
       setIsTyping(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", activeConversationId] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/conversations", activeConversationId],
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: () => {
@@ -125,10 +142,10 @@ export default function AdvisorScreen() {
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
-    
+
     const message = inputMessage.trim();
     setInputMessage("");
-    
+
     // If no active conversation, create one first
     if (!activeConversationId) {
       const newConversation = await createConversationMutation.mutateAsync();
@@ -154,23 +171,31 @@ export default function AdvisorScreen() {
   const messages = activeConversation?.messages || [];
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={headerHeight}
     >
       <View style={[styles.content, { paddingTop: headerHeight + Spacing.md }]}>
         {!activeConversationId && messages.length === 0 ? (
-          <ScrollView 
+          <ScrollView
             style={styles.welcomeScroll}
-            contentContainerStyle={[styles.welcomeContainer, { paddingBottom: insets.bottom + 100 }]}
+            contentContainerStyle={[
+              styles.welcomeContainer,
+              { paddingBottom: insets.bottom + 100 },
+            ]}
           >
             <View style={styles.advisorIcon}>
-              <Icon name="message-circle" size={48} color={BankColors.primary} />
+              <Icon
+                name="message-circle"
+                size={48}
+                color={BankColors.primary}
+              />
             </View>
             <Text style={styles.welcomeTitle}>Assistente EquisCash</Text>
             <Text style={styles.welcomeSubtitle}>
-              Il tuo consulente finanziario personale, sempre disponibile per aiutarti.
+              Il tuo consulente finanziario personale, sempre disponibile per
+              aiutarti.
             </Text>
 
             <Text style={styles.suggestionsLabel}>Domande suggerite:</Text>
@@ -201,11 +226,19 @@ export default function AdvisorScreen() {
                     ]}
                     onPress={() => setActiveConversationId(conv.id)}
                   >
-                    <Icon name="message-square" size={20} color={BankColors.gray500} />
+                    <Icon
+                      name="message-square"
+                      size={20}
+                      color={BankColors.gray500}
+                    />
                     <Text style={styles.recentItemText} numberOfLines={1}>
                       {conv.title}
                     </Text>
-                    <Icon name="chevron-right" size={20} color={BankColors.gray400} />
+                    <Icon
+                      name="chevron-right"
+                      size={20}
+                      color={BankColors.gray400}
+                    />
                   </Pressable>
                 ))}
               </View>
@@ -219,11 +252,14 @@ export default function AdvisorScreen() {
                 <Text style={styles.backBtnText}>Nuova</Text>
               </Pressable>
             </View>
-            
+
             <ScrollView
               ref={scrollViewRef}
               style={styles.messagesScroll}
-              contentContainerStyle={[styles.messagesContainer, { paddingBottom: 20 }]}
+              contentContainerStyle={[
+                styles.messagesContainer,
+                { paddingBottom: 20 },
+              ]}
             >
               {loadingConversation ? (
                 <View style={styles.loadingContainer}>
@@ -235,19 +271,29 @@ export default function AdvisorScreen() {
                     key={msg.id}
                     style={[
                       styles.messageBubble,
-                      msg.role === "user" ? styles.userBubble : styles.assistantBubble,
+                      msg.role === "user"
+                        ? styles.userBubble
+                        : styles.assistantBubble,
                     ]}
                   >
                     {msg.role === "assistant" ? (
                       <View style={styles.assistantHeader}>
-                        <Icon name="message-circle" size={16} color={BankColors.primary} />
-                        <Text style={styles.assistantLabel}>Assistente EquisCash</Text>
+                        <Icon
+                          name="message-circle"
+                          size={16}
+                          color={BankColors.primary}
+                        />
+                        <Text style={styles.assistantLabel}>
+                          Assistente EquisCash
+                        </Text>
                       </View>
                     ) : null}
                     <Text
                       style={[
                         styles.messageText,
-                        msg.role === "user" ? styles.userText : styles.assistantText,
+                        msg.role === "user"
+                          ? styles.userText
+                          : styles.assistantText,
                       ]}
                     >
                       {msg.content}
@@ -255,7 +301,7 @@ export default function AdvisorScreen() {
                   </View>
                 ))
               )}
-              
+
               {isTyping ? (
                 <View style={[styles.messageBubble, styles.assistantBubble]}>
                   <View style={styles.typingIndicator}>
@@ -270,7 +316,12 @@ export default function AdvisorScreen() {
         )}
       </View>
 
-      <View style={[styles.inputContainer, { paddingBottom: insets.bottom + Spacing.sm }]}>
+      <View
+        style={[
+          styles.inputContainer,
+          { paddingBottom: insets.bottom + Spacing.sm },
+        ]}
+      >
         <TextInput
           style={styles.textInput}
           value={inputMessage}
@@ -285,7 +336,8 @@ export default function AdvisorScreen() {
         <Pressable
           style={[
             styles.sendButton,
-            (!inputMessage.trim() || sendMessageMutation.isPending) && styles.sendButtonDisabled,
+            (!inputMessage.trim() || sendMessageMutation.isPending) &&
+              styles.sendButtonDisabled,
           ]}
           onPress={handleSendMessage}
           disabled={!inputMessage.trim() || sendMessageMutation.isPending}

@@ -1,8 +1,7 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { eq, desc, ilike } from "drizzle-orm";
-import pg from "pg";
-import { 
-  users, 
+import { eq, desc, like } from "drizzle-orm";
+import { db } from "./db";
+import {
+  users,
   transactions,
   userPresetSettings,
   userCustomPresets,
@@ -10,60 +9,158 @@ import {
   referralActivations,
   conversations,
   messages,
-  type User, 
-  type InsertUser, 
-  type Transaction, 
+  type User,
+  type InsertUser,
+  type Transaction,
   type InsertTransaction,
   type UserPresetSettings,
   type UserCustomPreset,
   type InsertCustomPreset,
   type AppSettings,
-  type ReferralActivation
+  type ReferralActivation,
 } from "@shared/schema";
-
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-export const db = drizzle(pool);
+import { PostgresStorage } from "./storage.pg";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByRechargeUsername(rechargeUsername: string): Promise<User | undefined>;
+  getUserByRechargeUsername(
+    rechargeUsername: string,
+  ): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
-  updateUserBalance(userId: string, newBalance: string): Promise<User | undefined>;
-  updateUserBalanceWithPurchased(userId: string, newBalance: string, newPurchasedBalance: string): Promise<User | undefined>;
-  updateUserAllBalances(userId: string, newBalance: string, newPurchasedBalance: string, newRealPurchasedBalance: string): Promise<User | undefined>;
+  updateUserBalance(
+    userId: string,
+    newBalance: string,
+  ): Promise<User | undefined>;
+  updateUserBalanceWithPurchased(
+    userId: string,
+    newBalance: string,
+    newPurchasedBalance: string,
+  ): Promise<User | undefined>;
+  updateUserAllBalances(
+    userId: string,
+    newBalance: string,
+    newPurchasedBalance: string,
+    newRealPurchasedBalance: string,
+  ): Promise<User | undefined>;
   updateUserName(userId: string, newName: string): Promise<User | undefined>;
-  updateUserAccountNumber(userId: string, newAccountNumber: string): Promise<User | undefined>;
-  updateUserDisplayName(userId: string, displayName: string | null): Promise<User | undefined>;
-  updateUserMonthlyValues(userId: string, expenses: string | null, income: string | null): Promise<User | undefined>;
+  updateUserAccountNumber(
+    userId: string,
+    newAccountNumber: string,
+  ): Promise<User | undefined>;
+  updateUserDisplayName(
+    userId: string,
+    displayName: string | null,
+  ): Promise<User | undefined>;
+  updateUserMonthlyValues(
+    userId: string,
+    expenses: string | null,
+    income: string | null,
+  ): Promise<User | undefined>;
   updateUserPin(userId: string, newPin: string): Promise<User | undefined>;
-  setUserRechargeUsername(userId: string, rechargeUsername: string): Promise<User | undefined>;
-  transferBalance(fromUserId: string, toUserId: string, amount: number): Promise<{ success: boolean; error?: string; fromUser?: User; toUser?: User }>;
+  setUserRechargeUsername(
+    userId: string,
+    rechargeUsername: string,
+  ): Promise<User | undefined>;
+  transferBalance(
+    fromUserId: string,
+    toUserId: string,
+    amount: number,
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    fromUser?: User;
+    toUser?: User;
+  }>;
   getTransactions(userId: string): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
-  createMultipleTransactions(transactions: InsertTransaction[]): Promise<Transaction[]>;
-  updateTransaction(id: string, updates: { amount?: string; description?: string }): Promise<Transaction | undefined>;
+  createMultipleTransactions(
+    transactions: InsertTransaction[],
+  ): Promise<Transaction[]>;
+  updateTransaction(
+    id: string,
+    updates: { amount?: string; description?: string },
+  ): Promise<Transaction | undefined>;
   deleteUser(userId: string): Promise<boolean>;
+  getPresetSettings(userId: string): Promise<UserPresetSettings | undefined>;
+  savePresetSettings(
+    userId: string,
+    settings: {
+      deletedPresets?: string[];
+      disabledPresets?: string[];
+      customPresets?: any[];
+    },
+  ): Promise<UserPresetSettings>;
+  getAppSetting(key: string): Promise<string | null>;
+  setAppSetting(key: string, value: string): Promise<void>;
+  updateUserReferredBy(
+    userId: string,
+    referredBy: string,
+  ): Promise<User | undefined>;
+  updateUserTotalRecharged(
+    userId: string,
+    amount: number,
+  ): Promise<User | undefined>;
+  activateReferral(userId: string): Promise<User | undefined>;
+  createReferralActivation(
+    referrerId: string,
+    referredId: string,
+    bonusAmount: number,
+  ): Promise<ReferralActivation>;
+  getReferralActivations(): Promise<
+    (ReferralActivation & {
+      referrerUsername?: string;
+      referredUsername?: string;
+    })[]
+  >;
+  getUserByReferralCode(referralCode: string): Promise<User | undefined>;
+  blockUser(userId: string, reason?: string): Promise<User | undefined>;
+  unblockUser(userId: string): Promise<User | undefined>;
+  setUserBalance(userId: string, newBalance: string): Promise<User | undefined>;
+  getTransferHistory(): Promise<Transaction[]>;
+  getAllUsersSorted(sortBy: "balance" | "newest"): Promise<User[]>;
+  getCustomPresets(userId: string): Promise<UserCustomPreset[]>;
+  getCustomPreset(id: number): Promise<UserCustomPreset | undefined>;
+  createCustomPreset(preset: InsertCustomPreset): Promise<UserCustomPreset>;
+  updateCustomPreset(
+    id: number,
+    updates: Partial<InsertCustomPreset>,
+  ): Promise<UserCustomPreset | undefined>;
+  deleteCustomPreset(id: number): Promise<boolean>;
+  triggerPresetTransaction(
+    userId: string,
+    presetId: number,
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    transaction?: Transaction;
+    user?: User;
+  }>;
 }
 
-export class DatabaseStorage implements IStorage {
+export class SQLiteStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(ilike(users.username, username));
+    const result = await db
+      .select()
+      .from(users)
+      .where(like(users.username, username));
     return result[0];
   }
 
-  async getUserByRechargeUsername(rechargeUsername: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.rechargeUsername, rechargeUsername));
+  async getUserByRechargeUsername(
+    rechargeUsername: string,
+  ): Promise<User | undefined> {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.rechargeUsername, rechargeUsername));
     return result[0];
   }
 
@@ -73,7 +170,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchUsersByPartialUsername(partialUsername: string): Promise<User[]> {
-    const result = await db.select().from(users).where(ilike(users.username, `%${partialUsername}%`));
+    const result = await db
+      .select()
+      .from(users)
+      .where(like(users.username, `%${partialUsername}%`));
     return result;
   }
 
@@ -82,7 +182,10 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateUserBalance(userId: string, newBalance: string): Promise<User | undefined> {
+  async updateUserBalance(
+    userId: string,
+    newBalance: string,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ balance: newBalance })
@@ -91,7 +194,11 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateUserBalanceWithPurchased(userId: string, newBalance: string, newPurchasedBalance: string): Promise<User | undefined> {
+  async updateUserBalanceWithPurchased(
+    userId: string,
+    newBalance: string,
+    newPurchasedBalance: string,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ balance: newBalance, purchasedBalance: newPurchasedBalance })
@@ -100,16 +207,28 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateUserAllBalances(userId: string, newBalance: string, newPurchasedBalance: string, newRealPurchasedBalance: string): Promise<User | undefined> {
+  async updateUserAllBalances(
+    userId: string,
+    newBalance: string,
+    newPurchasedBalance: string,
+    newRealPurchasedBalance: string,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
-      .set({ balance: newBalance, purchasedBalance: newPurchasedBalance, realPurchasedBalance: newRealPurchasedBalance })
+      .set({
+        balance: newBalance,
+        purchasedBalance: newPurchasedBalance,
+        realPurchasedBalance: newRealPurchasedBalance,
+      })
       .where(eq(users.id, userId))
       .returning();
     return result[0];
   }
 
-  async updateUserName(userId: string, newName: string): Promise<User | undefined> {
+  async updateUserName(
+    userId: string,
+    newName: string,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ fullName: newName })
@@ -118,7 +237,10 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateUserAccountNumber(userId: string, newAccountNumber: string): Promise<User | undefined> {
+  async updateUserAccountNumber(
+    userId: string,
+    newAccountNumber: string,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ accountNumber: newAccountNumber })
@@ -127,7 +249,10 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateUserDisplayName(userId: string, displayName: string | null): Promise<User | undefined> {
+  async updateUserDisplayName(
+    userId: string,
+    displayName: string | null,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ displayName })
@@ -136,7 +261,11 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateUserMonthlyValues(userId: string, expenses: string | null, income: string | null): Promise<User | undefined> {
+  async updateUserMonthlyValues(
+    userId: string,
+    expenses: string | null,
+    income: string | null,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ customMonthlyExpenses: expenses, customMonthlyIncome: income })
@@ -145,7 +274,10 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateUserPin(userId: string, newPin: string): Promise<User | undefined> {
+  async updateUserPin(
+    userId: string,
+    newPin: string,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ pin: newPin, hasSetPin: true })
@@ -154,7 +286,10 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async setUserRechargeUsername(userId: string, rechargeUsername: string): Promise<User | undefined> {
+  async setUserRechargeUsername(
+    userId: string,
+    rechargeUsername: string,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ rechargeUsername })
@@ -163,7 +298,16 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async transferBalance(fromUserId: string, toUserId: string, amount: number): Promise<{ success: boolean; error?: string; fromUser?: User; toUser?: User }> {
+  async transferBalance(
+    fromUserId: string,
+    toUserId: string,
+    amount: number,
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    fromUser?: User;
+    toUser?: User;
+  }> {
     const fromUser = await this.getUser(fromUserId);
     const toUser = await this.getUser(toUserId);
 
@@ -174,7 +318,10 @@ export class DatabaseStorage implements IStorage {
       return { success: false, error: "Utente destinatario non trovato" };
     }
     if (fromUserId === toUserId) {
-      return { success: false, error: "Non puoi trasferire denaro a te stesso" };
+      return {
+        success: false,
+        error: "Non puoi trasferire denaro a te stesso",
+      };
     }
 
     const fromBalance = parseFloat(fromUser.balance || "0");
@@ -185,7 +332,10 @@ export class DatabaseStorage implements IStorage {
     const toRealPurchased = parseFloat(toUser.realPurchasedBalance || "0");
 
     if (amount <= 0) {
-      return { success: false, error: "L'importo deve essere maggiore di zero" };
+      return {
+        success: false,
+        error: "L'importo deve essere maggiore di zero",
+      };
     }
     if (amount > fromBalance) {
       return { success: false, error: "Saldo insufficiente" };
@@ -194,13 +344,28 @@ export class DatabaseStorage implements IStorage {
     // P2P transfers permanently deduct from ALL balances (cannot be recovered with fake income)
     const newFromBalance = (fromBalance - amount).toFixed(2);
     const newToBalance = (toBalance + amount).toFixed(2);
-    const newFromPurchased = Math.max(0, fromPurchasedBalance - amount).toFixed(2);
+    const newFromPurchased = Math.max(0, fromPurchasedBalance - amount).toFixed(
+      2,
+    );
     const newToPurchased = (toPurchasedBalance + amount).toFixed(2);
-    const newFromRealPurchased = Math.max(0, fromRealPurchased - amount).toFixed(2);
+    const newFromRealPurchased = Math.max(
+      0,
+      fromRealPurchased - amount,
+    ).toFixed(2);
     const newToRealPurchased = (toRealPurchased + amount).toFixed(2);
 
-    const updatedFromUser = await this.updateUserAllBalances(fromUserId, newFromBalance, newFromPurchased, newFromRealPurchased);
-    const updatedToUser = await this.updateUserAllBalances(toUserId, newToBalance, newToPurchased, newToRealPurchased);
+    const updatedFromUser = await this.updateUserAllBalances(
+      fromUserId,
+      newFromBalance,
+      newFromPurchased,
+      newFromRealPurchased,
+    );
+    const updatedToUser = await this.updateUserAllBalances(
+      toUserId,
+      newToBalance,
+      newToPurchased,
+      newToRealPurchased,
+    );
 
     if (!updatedFromUser || !updatedToUser) {
       return { success: false, error: "Errore durante il trasferimento" };
@@ -219,22 +384,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTransaction(id: string): Promise<Transaction | undefined> {
-    const result = await db.select().from(transactions).where(eq(transactions.id, id));
+    const result = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, id));
     return result[0];
   }
 
-  async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
-    const result = await db.insert(transactions).values(insertTransaction).returning();
+  async createTransaction(
+    insertTransaction: InsertTransaction,
+  ): Promise<Transaction> {
+    const result = await db
+      .insert(transactions)
+      .values(insertTransaction)
+      .returning();
     return result[0];
   }
 
-  async createMultipleTransactions(insertTransactions: InsertTransaction[]): Promise<Transaction[]> {
+  async createMultipleTransactions(
+    insertTransactions: InsertTransaction[],
+  ): Promise<Transaction[]> {
     if (insertTransactions.length === 0) return [];
-    const result = await db.insert(transactions).values(insertTransactions).returning();
+    const result = await db
+      .insert(transactions)
+      .values(insertTransactions)
+      .returning();
     return result;
   }
 
-  async updateTransaction(id: string, updates: { amount?: string; description?: string }): Promise<Transaction | undefined> {
+  async updateTransaction(
+    id: string,
+    updates: { amount?: string; description?: string },
+  ): Promise<Transaction | undefined> {
     const result = await db
       .update(transactions)
       .set(updates)
@@ -247,7 +428,10 @@ export class DatabaseStorage implements IStorage {
     try {
       // Delete all related data first (foreign key constraints)
       // 1. Get all conversations for user and delete their messages
-      const userConversations = await db.select().from(conversations).where(eq(conversations.userId, userId));
+      const userConversations = await db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.userId, userId));
       for (const conv of userConversations) {
         await db.delete(messages).where(eq(messages.conversationId, conv.id));
       }
@@ -256,9 +440,13 @@ export class DatabaseStorage implements IStorage {
       // 3. Delete transactions
       await db.delete(transactions).where(eq(transactions.userId, userId));
       // 4. Delete preset settings
-      await db.delete(userPresetSettings).where(eq(userPresetSettings.userId, userId));
+      await db
+        .delete(userPresetSettings)
+        .where(eq(userPresetSettings.userId, userId));
       // 5. Delete custom presets
-      await db.delete(userCustomPresets).where(eq(userCustomPresets.userId, userId));
+      await db
+        .delete(userCustomPresets)
+        .where(eq(userCustomPresets.userId, userId));
       // 6. Finally delete the user
       await db.delete(users).where(eq(users.id, userId));
       return true;
@@ -268,20 +456,38 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPresetSettings(userId: string): Promise<UserPresetSettings | undefined> {
-    const result = await db.select().from(userPresetSettings).where(eq(userPresetSettings.userId, userId));
+  async getPresetSettings(
+    userId: string,
+  ): Promise<UserPresetSettings | undefined> {
+    const result = await db
+      .select()
+      .from(userPresetSettings)
+      .where(eq(userPresetSettings.userId, userId));
     return result[0];
   }
 
-  async savePresetSettings(userId: string, settings: { deletedPresets?: string[]; disabledPresets?: string[]; customPresets?: any[] }): Promise<UserPresetSettings> {
+  async savePresetSettings(
+    userId: string,
+    settings: {
+      deletedPresets?: string[];
+      disabledPresets?: string[];
+      customPresets?: any[];
+    },
+  ): Promise<UserPresetSettings> {
     const existing = await this.getPresetSettings(userId);
     if (existing) {
       const result = await db
         .update(userPresetSettings)
         .set({
-          deletedPresets: settings.deletedPresets ? JSON.stringify(settings.deletedPresets) : existing.deletedPresets,
-          disabledPresets: settings.disabledPresets ? JSON.stringify(settings.disabledPresets) : existing.disabledPresets,
-          customPresets: settings.customPresets ? JSON.stringify(settings.customPresets) : existing.customPresets,
+          deletedPresets: settings.deletedPresets
+            ? JSON.stringify(settings.deletedPresets)
+            : existing.deletedPresets,
+          disabledPresets: settings.disabledPresets
+            ? JSON.stringify(settings.disabledPresets)
+            : existing.disabledPresets,
+          customPresets: settings.customPresets
+            ? JSON.stringify(settings.customPresets)
+            : existing.customPresets,
         })
         .where(eq(userPresetSettings.userId, userId))
         .returning();
@@ -301,20 +507,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAppSetting(key: string): Promise<string | null> {
-    const result = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    const result = await db
+      .select()
+      .from(appSettings)
+      .where(eq(appSettings.key, key));
     return result[0]?.value ?? null;
   }
 
   async setAppSetting(key: string, value: string): Promise<void> {
-    const existing = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    const existing = await db
+      .select()
+      .from(appSettings)
+      .where(eq(appSettings.key, key));
     if (existing.length > 0) {
-      await db.update(appSettings).set({ value }).where(eq(appSettings.key, key));
+      await db
+        .update(appSettings)
+        .set({ value })
+        .where(eq(appSettings.key, key));
     } else {
       await db.insert(appSettings).values({ key, value });
     }
   }
 
-  async updateUserReferredBy(userId: string, referredBy: string): Promise<User | undefined> {
+  async updateUserReferredBy(
+    userId: string,
+    referredBy: string,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ referredBy })
@@ -323,7 +541,10 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateUserTotalRecharged(userId: string, amount: number): Promise<User | undefined> {
+  async updateUserTotalRecharged(
+    userId: string,
+    amount: number,
+  ): Promise<User | undefined> {
     const user = await this.getUser(userId);
     if (!user) return undefined;
     const currentTotal = parseFloat(user.totalRecharged || "0");
@@ -345,17 +566,32 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createReferralActivation(referrerId: string, referredId: string, bonusAmount: number): Promise<ReferralActivation> {
-    const result = await db.insert(referralActivations).values({
-      referrerId,
-      referredId,
-      bonusAmount: bonusAmount.toFixed(2),
-    }).returning();
+  async createReferralActivation(
+    referrerId: string,
+    referredId: string,
+    bonusAmount: number,
+  ): Promise<ReferralActivation> {
+    const result = await db
+      .insert(referralActivations)
+      .values({
+        referrerId,
+        referredId,
+        bonusAmount: bonusAmount.toFixed(2),
+      })
+      .returning();
     return result[0];
   }
 
-  async getReferralActivations(): Promise<(ReferralActivation & { referrerUsername?: string; referredUsername?: string })[]> {
-    const activations = await db.select().from(referralActivations).orderBy(desc(referralActivations.activatedAt));
+  async getReferralActivations(): Promise<
+    (ReferralActivation & {
+      referrerUsername?: string;
+      referredUsername?: string;
+    })[]
+  > {
+    const activations = await db
+      .select()
+      .from(referralActivations)
+      .orderBy(desc(referralActivations.activatedAt));
     const result = [];
     for (const activation of activations) {
       const referrer = await this.getUser(activation.referrerId);
@@ -370,7 +606,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByReferralCode(referralCode: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, referralCode));
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, referralCode));
     return result[0];
   }
 
@@ -392,7 +631,10 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async setUserBalance(userId: string, newBalance: string): Promise<User | undefined> {
+  async setUserBalance(
+    userId: string,
+    newBalance: string,
+  ): Promise<User | undefined> {
     const result = await db
       .update(users)
       .set({ balance: newBalance })
@@ -410,12 +652,15 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAllUsersSorted(sortBy: 'balance' | 'newest'): Promise<User[]> {
-    if (sortBy === 'balance') {
+  async getAllUsersSorted(sortBy: "balance" | "newest"): Promise<User[]> {
+    if (sortBy === "balance") {
       const result = await db.select().from(users).orderBy(desc(users.balance));
       return result;
     } else {
-      const result = await db.select().from(users).orderBy(desc(users.createdAt));
+      const result = await db
+        .select()
+        .from(users)
+        .orderBy(desc(users.createdAt));
       return result;
     }
   }
@@ -431,16 +676,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCustomPreset(id: number): Promise<UserCustomPreset | undefined> {
-    const result = await db.select().from(userCustomPresets).where(eq(userCustomPresets.id, id));
+    const result = await db
+      .select()
+      .from(userCustomPresets)
+      .where(eq(userCustomPresets.id, id));
     return result[0];
   }
 
-  async createCustomPreset(preset: InsertCustomPreset): Promise<UserCustomPreset> {
-    const result = await db.insert(userCustomPresets).values(preset).returning();
+  async createCustomPreset(
+    preset: InsertCustomPreset,
+  ): Promise<UserCustomPreset> {
+    const result = await db
+      .insert(userCustomPresets)
+      .values(preset)
+      .returning();
     return result[0];
   }
 
-  async updateCustomPreset(id: number, updates: Partial<InsertCustomPreset>): Promise<UserCustomPreset | undefined> {
+  async updateCustomPreset(
+    id: number,
+    updates: Partial<InsertCustomPreset>,
+  ): Promise<UserCustomPreset | undefined> {
     const result = await db
       .update(userCustomPresets)
       .set(updates)
@@ -450,11 +706,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCustomPreset(id: number): Promise<boolean> {
-    const result = await db.delete(userCustomPresets).where(eq(userCustomPresets.id, id)).returning();
+    const result = await db
+      .delete(userCustomPresets)
+      .where(eq(userCustomPresets.id, id))
+      .returning();
     return result.length > 0;
   }
 
-  async triggerPresetTransaction(userId: string, presetId: number): Promise<{ success: boolean; error?: string; transaction?: Transaction; user?: User }> {
+  async triggerPresetTransaction(
+    userId: string,
+    presetId: number,
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    transaction?: Transaction;
+    user?: User;
+  }> {
     const preset = await this.getCustomPreset(presetId);
     if (!preset) {
       return { success: false, error: "Preset non trovato" };
@@ -469,8 +736,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Calculate random amount within range
-    const amount = Math.floor(Math.random() * (preset.maxAmount - preset.minAmount + 1)) + preset.minAmount;
-    
+    const amount =
+      Math.floor(Math.random() * (preset.maxAmount - preset.minAmount + 1)) +
+      preset.minAmount;
+
     const currentBalance = parseFloat(user.balance || "0");
     const currentPurchased = parseFloat(user.purchasedBalance || "0");
     const realPurchased = parseFloat(user.realPurchasedBalance || "0");
@@ -478,19 +747,30 @@ export class DatabaseStorage implements IStorage {
     if (preset.type === "expense") {
       // Check against Saldo Certificato (realPurchasedBalance)
       if (realPurchased <= 0) {
-        return { success: false, error: "Saldo Certificato esaurito. Ricarica per continuare." };
+        return {
+          success: false,
+          error: "Saldo Certificato esaurito. Ricarica per continuare.",
+        };
       }
       if (amount > realPurchased) {
-        return { success: false, error: `Saldo Certificato insufficiente. Disponibile: ${realPurchased.toFixed(0)} EUR` };
+        return {
+          success: false,
+          error: `Saldo Certificato insufficiente. Disponibile: ${realPurchased.toFixed(0)} EUR`,
+        };
       }
-      
+
       // Deduct from ALL balances including realPurchasedBalance (Saldo Certificato)
       const newBalance = Math.max(0, currentBalance - amount).toFixed(2);
       const newPurchased = Math.max(0, currentPurchased - amount).toFixed(2);
       const newRealPurchased = (realPurchased - amount).toFixed(2);
 
       // Update all three balances atomically
-      const updatedUser = await this.updateUserAllBalances(userId, newBalance, newPurchased, newRealPurchased);
+      const updatedUser = await this.updateUserAllBalances(
+        userId,
+        newBalance,
+        newPurchased,
+        newRealPurchased,
+      );
 
       // Create REAL transaction record (not simulated)
       const transaction = await this.createTransaction({
@@ -509,17 +789,26 @@ export class DatabaseStorage implements IStorage {
       const totalRecharged = parseFloat(user.totalRecharged || "0");
       const recoveryAvailable = Math.max(0, totalRecharged - realPurchased);
       if (recoveryAvailable <= 0) {
-        return { success: false, error: "Saldo Certificato già al massimo. Non puoi aggiungere altre entrate." };
+        return {
+          success: false,
+          error:
+            "Saldo Certificato già al massimo. Non puoi aggiungere altre entrate.",
+        };
       }
-      
+
       // Cap the income amount to available recovery
       const cappedAmount = Math.min(amount, recoveryAvailable);
-      
+
       const newBalance = (currentBalance + cappedAmount).toFixed(2);
       const newPurchased = (currentPurchased + cappedAmount).toFixed(2);
       const newRealPurchased = (realPurchased + cappedAmount).toFixed(2);
 
-      const updatedUser = await this.updateUserAllBalances(userId, newBalance, newPurchased, newRealPurchased);
+      const updatedUser = await this.updateUserAllBalances(
+        userId,
+        newBalance,
+        newPurchased,
+        newRealPurchased,
+      );
 
       const transaction = await this.createTransaction({
         userId,
@@ -536,4 +825,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new PostgresStorage();

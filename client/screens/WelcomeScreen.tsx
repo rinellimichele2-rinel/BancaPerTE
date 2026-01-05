@@ -15,7 +15,12 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/lib/auth-context";
 import { Icon } from "@/components/Icon";
-import { BankColors, Spacing, BorderRadius, Typography } from "@/constants/theme";
+import {
+  BankColors,
+  Spacing,
+  BorderRadius,
+  Typography,
+} from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -29,23 +34,29 @@ export default function WelcomeScreen() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [welcomeName, setWelcomeName] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleEnter = async () => {
     if (userId) {
       navigation.navigate(needsSetup ? "PinSetup" : "PinEntry");
       return;
     }
-    
+
     if (!username.trim()) return;
-    
+
     setIsLoading(true);
+    setLoginError(null);
     try {
       const result = await login(username.trim());
       setWelcomeName(username.trim());
       setShowWelcome(true);
       setIsNewUser(result.needsSetup);
+      navigation.navigate(result.needsSetup ? "PinSetup" : "PinEntry");
     } catch (error) {
       console.error("Login error:", error);
+      setLoginError(
+        error instanceof Error ? error.message : "Errore durante il login",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -57,14 +68,26 @@ export default function WelcomeScreen() {
 
   return (
     <LinearGradient
-      colors={[BankColors.primaryLight, BankColors.primary, BankColors.primaryDark]}
+      colors={[
+        BankColors.primaryLight,
+        BankColors.primary,
+        BankColors.primaryDark,
+      ]}
       style={styles.container}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
-        <View style={[styles.content, { paddingTop: insets.top + Spacing["3xl"], paddingBottom: insets.bottom + Spacing["3xl"] }]}>
+        <View
+          style={[
+            styles.content,
+            {
+              paddingTop: insets.top + Spacing["3xl"],
+              paddingBottom: insets.bottom + Spacing["3xl"],
+            },
+          ]}
+        >
           <View style={styles.logoContainer}>
             <Text style={styles.logoText}>INTESA</Text>
             <View style={styles.logoIcon}>
@@ -127,6 +150,9 @@ export default function WelcomeScreen() {
                     <Text style={styles.enterButtonText}>Entra</Text>
                   )}
                 </Pressable>
+                {loginError ? (
+                  <Text style={styles.loginErrorText}>{loginError}</Text>
+                ) : null}
               </>
             )}
           </View>
@@ -137,7 +163,9 @@ export default function WelcomeScreen() {
                 <View style={styles.quickActionIcon}>
                   <Icon name="smartphone" size={24} color={BankColors.white} />
                 </View>
-                <Text style={styles.quickActionText}>Prelievo{"\n"}cardless</Text>
+                <Text style={styles.quickActionText}>
+                  Prelievo{"\n"}cardless
+                </Text>
               </Pressable>
               <Pressable style={styles.quickAction}>
                 <View style={styles.quickActionIcon}>
@@ -153,7 +181,11 @@ export default function WelcomeScreen() {
               </Pressable>
               <Pressable style={styles.quickAction}>
                 <View style={styles.quickActionIcon}>
-                  <Icon name="more-vertical" size={24} color={BankColors.white} />
+                  <Icon
+                    name="more-vertical"
+                    size={24}
+                    color={BankColors.white}
+                  />
                 </View>
                 <Text style={styles.quickActionText}>Altro</Text>
               </Pressable>
@@ -245,17 +277,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
   },
+  loginErrorText: {
+    color: BankColors.error,
+    fontSize: 14,
+    textAlign: "center",
+  },
   bottomActions: {
     gap: Spacing.lg,
   },
   quickActions: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
     paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
   },
   quickAction: {
     alignItems: "center",
     gap: Spacing.xs,
+    flex: 1,
+    maxWidth: 85,
   },
   quickActionIcon: {
     width: 56,
