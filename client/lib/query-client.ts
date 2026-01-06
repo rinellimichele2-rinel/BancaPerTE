@@ -10,19 +10,7 @@ export function getApiUrl(): string {
     // console.log("Determining API URL...");
   }
 
-  // Priority 1: Check standard Expo env var for API URL
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-
-  // Priority 2: Check standard Vite env var (if used in web context)
-  // @ts-ignore - process.env might not be typed for VITE_
-  if (process.env.VITE_API_URL) {
-    // @ts-ignore
-    return process.env.VITE_API_URL;
-  }
-
-  // Priority 3: Check window location (Most reliable for web deployments)
+  // Priority 1: Check window location (Most reliable for web deployments)
   if (typeof window !== "undefined") {
     const origin = window.location.origin;
     if (origin.includes("localhost:8081")) {
@@ -31,6 +19,14 @@ export function getApiUrl(): string {
     // If we are on a production domain (e.g. onrender.com), use it as the API base
     return origin;
   }
+
+  // Priority 2: Check standard Expo env var for API URL
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // Priority 3: Check standard Vite env var (if used in web context)
+
 
   const host = process.env.EXPO_PUBLIC_DOMAIN;
   if (host && host.trim()) {

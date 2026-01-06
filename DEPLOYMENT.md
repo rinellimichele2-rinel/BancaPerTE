@@ -1,6 +1,6 @@
 # Guida al Deployment Automatico su Render
 
-**Funziona esattamente come Replit - Zero configurazione manuale! 🎉**
+**Zero configurazione manuale! 🎉**
 
 ## 🚀 Deploy in 3 Passi (2 minuti)
 
