@@ -825,4 +825,6 @@ export class SQLiteStorage implements IStorage {
   }
 }
 
-export const storage = new PostgresStorage();
+export const storage = process.env.DATABASE_URL
+  ? new PostgresStorage()
+  : new SQLiteStorage();

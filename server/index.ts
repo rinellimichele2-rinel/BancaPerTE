@@ -8,6 +8,14 @@ import * as path from "path";
 const app = express();
 const log = console.log;
 
+// Auto-generate ADMIN_PASSWORD if not set (for automatic deployment)
+if (!process.env.ADMIN_PASSWORD) {
+  const autoPassword = "admin" + Math.random().toString(36).substring(2, 10);
+  process.env.ADMIN_PASSWORD = autoPassword;
+  log("⚠️  ADMIN_PASSWORD non configurato. Password auto-generata:", autoPassword);
+  log("   Salva questa password per accedere al pannello admin!");
+}
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -16,34 +24,45 @@ declare module "http" {
 
 function setupCors(app: express.Application) {
   app.use((req, res, next) => {
-    const origins = new Set<string>();
-
-    if (process.env.EXPO_PUBLIC_DOMAIN) {
-      origins.add(process.env.EXPO_PUBLIC_DOMAIN);
-    }
-
-    // Allow localhost for local development
-    origins.add("http://localhost:8081");
-    origins.add("http://localhost:5001");
-    origins.add("http://127.0.0.1:8081");
-    origins.add("http://127.0.0.1:5001");
-
+    // Automatic CORS - works like Replit
+    // Allow all requests in production from same domain, all localhost in dev
+    
     const origin = req.header("origin");
-
-    if (origin && origins.has(origin)) {
-      res.header("Access-Control-Allow-Origin", origin);
-      res.header(
-        "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS",
-      );
+    const host = req.get("host");
+    
+    // Allow same-origin requests (no origin header or same domain)
+    if (!origin || (host && origin.includes(host))) {
+      res.header("Access-Control-Allow-Origin", origin || "*");
+      res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
       res.header("Access-Control-Allow-Headers", "Content-Type");
       res.header("Access-Control-Allow-Credentials", "true");
+      
+      if (req.method === "OPTIONS") {
+        return res.sendStatus(200);
+      }
+      return next();
     }
-
-    if (req.method === "OPTIONS") {
-      return res.sendStatus(200);
+    
+    // Allow localhost for local development
+    if (
+      origin && (
+        origin.includes("localhost") || 
+        origin.includes("127.0.0.1") ||
+        origin.includes("192.168.")
+      )
+    ) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+      res.header("Access-Control-Allow-Headers", "Content-Type");
+      res.header("Access-Control-Allow-Credentials", "true");
+      
+      if (req.method === "OPTIONS") {
+        return res.sendStatus(200);
+      }
+      return next();
     }
-
+    
+    // Default: no CORS headers (will fail)
     next();
   });
 }
@@ -277,6 +296,35 @@ function setupErrorHandler(app: express.Application) {
 
   const port = parseInt(process.env.PORT || "5001", 10);
   server.listen(port, "0.0.0.0", () => {
-    log(`express server serving on port ${port}`);
+    log("=".repeat(60));
+    log("✅ Server avviato con successo!");
+    log("=".repeat(60));
+    log(`🌐 Server in ascolto su: http://0.0.0.0:${port}`);
+    log(`📱 Ambiente: ${process.env.NODE_ENV || "development"}`);
+    
+    if (process.env.DATABASE_URL) {
+      log("✅ Database PostgreSQL collegato");
+    } else {
+      log("⚠️  Database SQLite (sviluppo locale)");
+    }
+    
+    if (process.env.ADMIN_PASSWORD) {
+      if (process.env.ADMIN_PASSWORD.startsWith("admin")) {
+        log("=".repeat(60));
+        log("🔐 PASSWORD ADMIN AUTO-GENERATA:");
+        log(`   ${process.env.ADMIN_PASSWORD}`);
+        log("   Salva questa password per accedere a /admin");
+        log("=".repeat(60));
+      } else {
+        log("✅ Password admin configurata manualmente");
+      }
+    }
+    
+    log("");
+    log("Endpoints disponibili:");
+    log(`  • Web App: http://localhost:${port}/`);
+    log(`  • Admin Panel: http://localhost:${port}/admin`);
+    log(`  • API Health: http://localhost:${port}/api/server-date`);
+    log("=".repeat(60));
   });
 })();

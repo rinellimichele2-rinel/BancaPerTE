@@ -2,7 +2,7 @@ services:
   - type: web
     name: bank-interface-flow
     env: node
-    region: frankfurt # Cambia in base alla tua regione preferita (oregon, frankfurt, singapore)
+    region: frankfurt
     buildCommand: npm install --include=dev && npm run server:build && npx expo export --platform web --output-dir static-build
     startCommand: npm run server:prod
     healthCheckPath: /api/server-date
@@ -15,14 +15,10 @@ services:
         fromDatabase:
           name: bank-db
           property: connectionString
-      - key: EXPO_PUBLIC_API_URL
-        sync: false # Imposta manualmente dopo il deployment con l'URL Render
-      - key: ADMIN_PASSWORD
-        sync: false # Imposta manualmente con una password sicura
 
 databases:
   - name: bank-db
     databaseName: bank
     user: bank_user
-    region: frankfurt # Stessa regione del web service
+    region: frankfurt
     plan: free

@@ -95,11 +95,6 @@ function generateRandomTransaction(
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", (req, res, next) => {
     if (req.path === "/server-date") return next();
-    if (!process.env.DATABASE_URL) {
-      return res.status(503).json({
-        error: "Server non configurato: DATABASE_URL mancante",
-      });
-    }
     next();
   });
 

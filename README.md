@@ -44,9 +44,30 @@ App bancaria mobile costruita con React Native, Expo e PostgreSQL.
 
 ---
 
-## 🌐 Deployment Online
+## 🌐 Deployment Automatico su Render
 
-Vedi la [Guida Completa al Deployment](./DEPLOYMENT.md) per pubblicare l'app su Render.
+**Funziona come Replit - Zero configurazione manuale!**
+
+### Deploy in 3 Click:
+1. Vai su [render.com](https://render.com) e crea account
+2. New → Web Service → Connetti GitHub repo
+3. Render rileva `render.yaml` e crea tutto automaticamente ✨
+
+**Fatto!** L'app sarà disponibile su `https://your-app.onrender.com` dopo 5-10 minuti.
+
+### Cosa viene configurato automaticamente:
+✅ Web Service con Node.js  
+✅ Database PostgreSQL collegato  
+✅ Password admin auto-generata (mostrata nei log al primo avvio)  
+✅ CORS configurato automaticamente  
+✅ Build e deployment automatici ad ogni push  
+
+### Come trovare la password admin:
+1. Vai su Render Dashboard → Tuo servizio → Logs
+2. Cerca: `ADMIN_PASSWORD non configurato. Password auto-generata: adminXXXXXXXX`
+3. Salva quella password per accedere a `/admin`
+
+**Nessuna variabile d'ambiente da configurare manualmente!** 🎉
 
 ### Deployment Rapido
 
