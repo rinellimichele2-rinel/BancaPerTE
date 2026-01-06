@@ -5,6 +5,11 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
  * @returns {string} The API base URL
  */
 export function getApiUrl(): string {
+  // Debug log (visible in browser console)
+  if (typeof window !== "undefined") {
+    // console.log("Determining API URL...");
+  }
+
   // Priority 1: Check standard Expo env var for API URL
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
@@ -28,6 +33,7 @@ export function getApiUrl(): string {
     const url = new URL(`https://${host}`);
     return url.href;
   }
+  
   if (typeof window !== "undefined") {
     const origin = window.location.origin;
     if (origin.includes("localhost:8081")) {
@@ -53,15 +59,21 @@ export async function apiRequest(
   const baseUrl = getApiUrl();
   const url = new URL(route, baseUrl);
 
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
 
-  await throwIfResNotOk(res);
-  return res;
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error: any) {
+    console.error(`API Request failed: ${method} ${url}`, error);
+    // Enhance error message with URL for debugging
+    throw new Error(`${error.message} (URL: ${url.toString()})`);
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -73,16 +85,21 @@ export const getQueryFn: <T>(options: {
     const baseUrl = getApiUrl();
     const url = new URL(queryKey.join("/") as string, baseUrl);
 
-    const res = await fetch(url, {
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(url, {
+        credentials: "include",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      return await res.json();
+    } catch (error: any) {
+      console.error(`Query failed: ${url}`, error);
+      throw new Error(`${error.message} (URL: ${url.toString()})`);
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

@@ -72,6 +72,9 @@ function setupBodyParsing(app: express.Application) {
 
 function setupRequestLogging(app: express.Application) {
   app.use((req, res, next) => {
+    // Log immediately on receipt
+    console.log(`[Incoming] ${req.method} ${req.url} (Origin: ${req.headers.origin || 'unknown'})`);
+    
     const start = Date.now();
     const path = req.path;
     let capturedJsonResponse: Record<string, unknown> | undefined = undefined;
@@ -83,7 +86,8 @@ function setupRequestLogging(app: express.Application) {
     };
 
     res.on("finish", () => {
-      if (!path.startsWith("/api")) return;
+      // Always log API requests
+      if (!path.startsWith("/api") && path !== "/" && !path.endsWith(".html")) return;
 
       const duration = Date.now() - start;
 
