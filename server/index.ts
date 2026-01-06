@@ -205,16 +205,43 @@ function configureExpoAndLanding(app: express.Application) {
     }
 
     if (req.path === "/") {
-      const indexPath = path.resolve(process.cwd(), "static-build", "index.html");
+      // Try static-build first (specified in render.yaml)
+      let indexPath = path.resolve(process.cwd(), "static-build", "index.html");
       if (fs.existsSync(indexPath)) {
         return res.sendFile(indexPath);
       }
-      return serveLandingPage({
-        req,
-        res,
-        landingPageTemplate,
-        appName,
-      });
+
+      // Try dist as fallback (default expo output)
+      indexPath = path.resolve(process.cwd(), "dist", "index.html");
+      if (fs.existsSync(indexPath)) {
+        return res.sendFile(indexPath);
+      }
+
+      // If neither exists, show debug info instead of Landing Page
+      // This helps diagnose why the build artifacts are missing
+      const rootFiles = fs.readdirSync(process.cwd());
+      const staticBuildExists = fs.existsSync(path.resolve(process.cwd(), "static-build"));
+      const staticBuildFiles = staticBuildExists 
+        ? fs.readdirSync(path.resolve(process.cwd(), "static-build")) 
+        : "Folder not found";
+      
+      return res.status(500).send(`
+        <html>
+          <head><title>Deployment Error</title></head>
+          <body style="font-family: sans-serif; padding: 20px;">
+            <h1>⚠️ Web App Build Not Found</h1>
+            <p>The server could not find the <code>index.html</code> file.</p>
+            <h3>Debug Info:</h3>
+            <ul>
+              <li><strong>Current Directory (CWD):</strong> ${process.cwd()}</li>
+              <li><strong>Looking for:</strong> ${path.resolve(process.cwd(), "static-build", "index.html")}</li>
+              <li><strong>Root Files:</strong> ${rootFiles.join(", ")}</li>
+              <li><strong>static-build folder:</strong> ${JSON.stringify(staticBuildFiles)}</li>
+            </ul>
+            <p>Please check the build logs on Render.</p>
+          </body>
+        </html>
+      `);
     }
 
     next();
