@@ -39,15 +39,6 @@ function stripProtocol(domain) {
 }
 
 function getDeploymentDomain() {
-  // Check Replit deployment environment variables first
-  if (process.env.REPLIT_INTERNAL_APP_DOMAIN) {
-    return stripProtocol(process.env.REPLIT_INTERNAL_APP_DOMAIN);
-  }
-
-  if (process.env.REPLIT_DEV_DOMAIN) {
-    return stripProtocol(process.env.REPLIT_DEV_DOMAIN);
-  }
-
   // Check Render deployment environment variable
   if (process.env.RENDER_EXTERNAL_URL) {
     return stripProtocol(process.env.RENDER_EXTERNAL_URL);
@@ -58,7 +49,7 @@ function getDeploymentDomain() {
   }
 
   console.warn(
-    "WARNING: No deployment domain found. Set RENDER_EXTERNAL_URL, REPLIT_INTERNAL_APP_DOMAIN, REPLIT_DEV_DOMAIN, or EXPO_PUBLIC_DOMAIN. Defaulting to localhost.",
+    "WARNING: No deployment domain found. Set RENDER_EXTERNAL_URL or EXPO_PUBLIC_DOMAIN. Defaulting to localhost.",
   );
   return "localhost";
 }

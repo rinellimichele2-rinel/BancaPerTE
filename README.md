@@ -114,7 +114,6 @@ Bank-Interface-Flow/
 │   ├── storage.pg.ts   # Layer di accesso dati (PostgreSQL)
 │   ├── db.ts           # Configurazione database SQLite
 │   ├── db.pg.ts        # Configurazione database PostgreSQL
-│   └── replit_integrations/  # Integrazioni AI
 ├── shared/             # Codice condiviso
 │   ├── schema.ts       # Schema database SQLite
 │   ├── schema.pg.ts    # Schema database PostgreSQL
@@ -172,7 +171,6 @@ npm run lint
 - Express.js
 - Drizzle ORM
 - PostgreSQL / SQLite
-- OpenAI (per consulente AI)
 
 ### DevOps
 - Render (deployment)

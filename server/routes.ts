@@ -1,8 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "node:http";
 import { storage } from "./storage";
-import { registerChatRoutes } from "./replit_integrations/chat";
-import { registerNewsRoutes } from "./replit_integrations/news";
 import { DEFAULT_PRESETS, type PresetTransaction } from "../shared/presets";
 
 type UserPresetSettings = {
@@ -104,12 +102,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   });
-
-  // Register AI chat routes for financial advisor
-  registerChatRoutes(app);
-
-  // Register AI-curated news feed routes
-  registerNewsRoutes(app);
 
   // Server date endpoint for client synchronization with Europe/Rome timezone
   app.get("/api/server-date", (req, res) => {
