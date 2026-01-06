@@ -22,6 +22,16 @@ export function getApiUrl(): string {
     return process.env.VITE_API_URL;
   }
 
+  // Priority 3: Check window location (Most reliable for web deployments)
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin;
+    if (origin.includes("localhost:8081")) {
+      return "http://localhost:5000";
+    }
+    // If we are on a production domain (e.g. onrender.com), use it as the API base
+    return origin;
+  }
+
   const host = process.env.EXPO_PUBLIC_DOMAIN;
   if (host && host.trim()) {
     if (host.startsWith("http://") || host.startsWith("https://")) {
@@ -34,13 +44,6 @@ export function getApiUrl(): string {
     return url.href;
   }
   
-  if (typeof window !== "undefined") {
-    const origin = window.location.origin;
-    if (origin.includes("localhost:8081")) {
-      return "http://localhost:5000";
-    }
-    return origin;
-  }
   return "http://localhost:5000";
 }
 
