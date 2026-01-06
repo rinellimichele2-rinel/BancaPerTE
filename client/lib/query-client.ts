@@ -11,7 +11,7 @@ export function getApiUrl(): string {
   }
 
   // Priority 1: Check window location (Most reliable for web deployments)
-  if (typeof window !== "undefined") {
+  if (typeof window !== "undefined" && window.location) {
     const origin = window.location.origin;
     if (origin.includes("localhost:8081")) {
       return "http://localhost:5000";
@@ -24,6 +24,12 @@ export function getApiUrl(): string {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
+
+  // Priority 3: Fallback for mobile app (Expo Go) if no env var is set
+  // This ensures the mobile app has a valid URL to connect to
+  // Updated based on actual incoming requests seen in logs
+  return "https://bank-interface-flow-teaq.onrender.com"; 
+
 
   // Priority 3: Check standard Vite env var (if used in web context)
 
