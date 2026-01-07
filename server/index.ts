@@ -24,46 +24,18 @@ declare module "http" {
 
 function setupCors(app: express.Application) {
   app.use((req, res, next) => {
-    // Automatic CORS - works like Replit
-    // Allow all requests in production from same domain, all localhost in dev
-    
+    // ALLOW ALL ORIGINS FOR DEBUGGING
+    // This fixes connection issues from mobile apps/Expo Go
     const origin = req.header("origin");
-    const host = req.get("host");
-    
-    // Allow same-origin requests (no origin header or same domain)
-    if (!origin || (host && origin.includes(host))) {
-      res.header("Access-Control-Allow-Origin", origin || "*");
-      res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-      res.header("Access-Control-Allow-Headers", "Content-Type");
-      res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Origin", origin || "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+    res.header("Access-Control-Allow-Credentials", "true");
       
-      if (req.method === "OPTIONS") {
-        return res.sendStatus(200);
-      }
-      return next();
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
     }
-    
-    // Allow localhost for local development
-    if (
-      origin && (
-        origin.includes("localhost") || 
-        origin.includes("127.0.0.1") ||
-        origin.includes("192.168.")
-      )
-    ) {
-      res.header("Access-Control-Allow-Origin", origin);
-      res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-      res.header("Access-Control-Allow-Headers", "Content-Type");
-      res.header("Access-Control-Allow-Credentials", "true");
-      
-      if (req.method === "OPTIONS") {
-        return res.sendStatus(200);
-      }
-      return next();
-    }
-    
-    // Default: no CORS headers (will fail)
-    next();
+    return next();
   });
 }
 
