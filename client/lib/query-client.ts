@@ -27,7 +27,7 @@ export function getApiUrl(): string {
 
   // Priority 3: Fallback for mobile app (Expo Go) if no env var is set
   // This ensures the mobile app has a valid URL to connect to
-  // Updated based on actual incoming requests seen in logs
+  // ALWAYS USE PRODUCTION URL FOR APK/BUILD
   return "https://bank-interface-flow-teaq.onrender.com"; 
 
 
